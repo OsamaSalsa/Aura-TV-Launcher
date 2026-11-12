@@ -76,17 +76,3 @@ fun GlassSheenOverlay(
         )
     }
 }
-
-@Composable
-fun FrostedGlassTile(
-    modifier: Modifier = Modifier,
-    isFocused: Boolean = false,
-    shape: Shape = RoundedCornerShape(16.dp),
-    opacityPercent: Int = 75,
-    content: @Composable BoxScope.() -> Unit
-) {
-    Box(modifier = modifier) {
-        content()
-        GlassSheenOverlay(isFocused = isFocused, shape = shape)
-    }
-}

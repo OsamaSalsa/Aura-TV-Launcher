@@ -412,4 +412,13 @@
     <string name="settings_custom_greeting_desc">Introduce un mensaje de bienvenida personalizado</string>
     <string name="settings_custom_greeting_hint">Ej. Bienvenido a casa</string>
     <string name="settings_custom_greeting_save">Guardar saludo</string>
+    <string name="settings_iptv_delete_all">Eliminar todas las listas</string>
+    <string name="status_all_playlists_removed">Todas las listas IPTV eliminadas</string>
+    <string name="screensaver_video_custom_item_title">Video personalizado de YouTube (%s)</string>
+    <string name="screensaver_video_custom_item_sub">Video personalizado añadido • ID: %s</string>
+    <string name="screensaver_video_restore_defaults">Restaurar videos predeterminados</string>
+    <string name="status_screensaver_video_added">Video de salvapantallas añadido y aplicado</string>
+    <string name="status_screensaver_video_removed">Video eliminado del salvapantallas</string>
+    <string name="status_screensaver_videos_restored">Videos predeterminados restaurados</string>
+    <string name="screensaver_no_videos">No hay videos en la lista. Añade un enlace de YouTube abajo o restaura los predeterminados.</string>
 </resources>

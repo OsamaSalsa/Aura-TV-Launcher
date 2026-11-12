@@ -412,4 +412,13 @@
     <string name="settings_custom_greeting_desc">Введите собственное приветствие или имя</string>
     <string name="settings_custom_greeting_hint">Например, Добро пожаловать домой</string>
     <string name="settings_custom_greeting_save">Сохранить приветствие</string>
+    <string name="settings_iptv_delete_all">Удалить все списки</string>
+    <string name="status_all_playlists_removed">Все списки IPTV удалены</string>
+    <string name="screensaver_video_custom_item_title">Свое видео YouTube (%s)</string>
+    <string name="screensaver_video_custom_item_sub">Добавленное видео • ID: %s</string>
+    <string name="screensaver_video_restore_defaults">Восстановить стандартные видео</string>
+    <string name="status_screensaver_video_added">Видео для заставки добавлено и применено</string>
+    <string name="status_screensaver_video_removed">Видео удалено из заставки</string>
+    <string name="status_screensaver_videos_restored">Стандартные видео восстановлены</string>
+    <string name="screensaver_no_videos">В списке нет видео. Добавьте ссылку на YouTube ниже или восстановите стандартные.</string>
 </resources>

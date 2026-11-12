@@ -77,7 +77,11 @@ class IptvRepository(
     }
 
     suspend fun initializeDefaultsIfNeeded() = withContext(Dispatchers.IO) {
-        loadPresetPlaylists()
+        val alreadyInitialized = preferences.iptvPresetsInitializedFlow.first()
+        if (!alreadyInitialized) {
+            loadPresetPlaylists()
+            preferences.setIptvPresetsInitialized(true)
+        }
 
         val active = iptvDao.getActivePlaylist().first()
         if (active != null && iptvDao.getCountByPlaylist(active.id) == 0) {
@@ -172,6 +176,12 @@ class IptvRepository(
             val nextActive = remainingPlaylists.first()
             switchActivePlaylist(nextActive.id)
         }
+        Result.success(Unit)
+    }
+
+    suspend fun deleteAllPlaylists(): Result<Unit> = withContext(Dispatchers.IO) {
+        iptvDao.clearAllPlaylists()
+        iptvDao.clearAll()
         Result.success(Unit)
     }
 

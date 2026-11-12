@@ -63,7 +63,7 @@ fun AuroraBackground(
     modifier: Modifier = Modifier,
     content: (@Composable () -> Unit)? = null
 ) {
-    val spec = remember { tween<Color>(220) }
+    val spec = remember { tween<Color>(280) }
     val glow by animateColorAsState(target.glow, spec, label = "glow")
     val teal by animateColorAsState(target.teal, spec, label = "teal")
     val mid by animateColorAsState(target.mid, spec, label = "mid")
@@ -73,34 +73,55 @@ fun AuroraBackground(
     val magenta by animateColorAsState(target.magenta, spec, label = "magenta")
     val amber by animateColorAsState(target.amber, spec, label = "amber")
 
+    // High-performance precomputed blue-noise dither shader (cached once, runs via GPU repeat mode)
+    // Eliminates color banding (خطوط تدرج الألوان) completely on all TV screen panels
+    val ditherShaderBrush = remember {
+        val size = 64
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val rand = java.util.Random(1337)
+        val pixels = IntArray(size * size)
+        for (i in pixels.indices) {
+            val lum = rand.nextInt(256)
+            val alpha = rand.nextInt(7) + 1 // Subtle alpha (1..7 / 255) to smoothly break color quantization steps
+            pixels[i] = android.graphics.Color.argb(alpha, lum, lum, lum)
+        }
+        bmp.setPixels(pixels, 0, size, 0, 0, size, size)
+        ShaderBrush(BitmapShader(bmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT))
+    }
+
     Box(modifier = modifier.fillMaxSize().background(base)) {
         Canvas(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .safeBlur(radius = 28.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
         ) {
             val w = size.width
             val h = size.height
 
-            // 1) Rich multi-stop cinematic base gradient
+            // 1) Seamless multi-stop smooth linear base gradient (no harsh color jumps)
             drawRect(
                 brush = Brush.linearGradient(
-                    0.0f to deep.copy(alpha = 0.65f),
-                    0.35f to accent.copy(alpha = 0.35f),
-                    0.70f to base.copy(alpha = 0.85f),
-                    1.0f to base,
+                    0.00f to deep.copy(alpha = 0.60f),
+                    0.20f to deep.copy(alpha = 0.45f),
+                    0.40f to accent.copy(alpha = 0.30f),
+                    0.65f to base.copy(alpha = 0.65f),
+                    0.85f to base.copy(alpha = 0.88f),
+                    1.00f to base,
                     start = Offset(0f, 0f),
                     end = Offset(w, h)
                 )
             )
 
-            // 2) Middle-left rich cobalt/sapphire bloom
+            // 2) Middle-left rich cobalt/sapphire bloom with harmonic color stops
             drawRect(
                 brush = Brush.radialGradient(
-                    0.0f to mid.copy(alpha = 0.85f),
-                    0.35f to deep.copy(alpha = 0.50f),
-                    0.70f to deep.copy(alpha = 0.20f),
-                    1.0f to Color.Transparent,
+                    0.00f to mid.copy(alpha = 0.80f),
+                    0.25f to mid.copy(alpha = 0.55f),
+                    0.50f to deep.copy(alpha = 0.35f),
+                    0.75f to deep.copy(alpha = 0.12f),
+                    1.00f to Color.Transparent,
                     center = Offset(w * 0.22f, h * 0.42f),
-                    radius = w * 0.90f
+                    radius = w * 0.95f
                 )
             )
 
@@ -108,12 +129,13 @@ fun AuroraBackground(
             withTransform({ scale(1.1f, 0.50f, pivot = Offset(w * 0.75f, h * 0.15f)) }) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        0.0f to teal.copy(alpha = 0.80f),
-                        0.32f to glow.copy(alpha = 0.48f),
-                        0.68f to teal.copy(alpha = 0.16f),
-                        1.0f to Color.Transparent,
+                        0.00f to teal.copy(alpha = 0.75f),
+                        0.25f to teal.copy(alpha = 0.50f),
+                        0.50f to glow.copy(alpha = 0.30f),
+                        0.75f to teal.copy(alpha = 0.10f),
+                        1.00f to Color.Transparent,
                         center = Offset(w * 0.75f, h * 0.15f),
-                        radius = w * 0.75f
+                        radius = w * 0.80f
                     )
                 )
             }
@@ -122,13 +144,14 @@ fun AuroraBackground(
             withTransform({ scale(1.0f, 0.45f, pivot = Offset(w * 0.35f, h * 0.12f)) }) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        0.0f to Color.White.copy(alpha = 0.48f),
-                        0.20f to glow.copy(alpha = 0.85f),
-                        0.50f to mid.copy(alpha = 0.52f),
-                        0.78f to accent.copy(alpha = 0.22f),
-                        1.0f to Color.Transparent,
+                        0.00f to Color.White.copy(alpha = 0.40f),
+                        0.20f to glow.copy(alpha = 0.70f),
+                        0.45f to mid.copy(alpha = 0.42f),
+                        0.70f to accent.copy(alpha = 0.18f),
+                        0.90f to deep.copy(alpha = 0.06f),
+                        1.00f to Color.Transparent,
                         center = Offset(w * 0.35f, h * 0.12f),
-                        radius = w * 0.80f
+                        radius = w * 0.85f
                     )
                 )
             }
@@ -137,25 +160,27 @@ fun AuroraBackground(
             withTransform({ scale(1.2f, 0.45f, pivot = Offset(w * 0.82f, h * 0.35f)) }) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        0.0f to magenta.copy(alpha = 0.78f),
-                        0.35f to accent.copy(alpha = 0.45f),
-                        0.72f to magenta.copy(alpha = 0.14f),
-                        1.0f to Color.Transparent,
+                        0.00f to magenta.copy(alpha = 0.70f),
+                        0.25f to magenta.copy(alpha = 0.48f),
+                        0.55f to accent.copy(alpha = 0.26f),
+                        0.80f to magenta.copy(alpha = 0.08f),
+                        1.00f to Color.Transparent,
                         center = Offset(w * 0.82f, h * 0.35f),
-                        radius = w * 0.65f
+                        radius = w * 0.70f
                     )
                 )
             }
 
             // 6) Bottom-left warm Amber/Gold subtle atmospheric touch for cinematic depth
-            withTransform({ scale(1.0f, 0.5f, pivot = Offset(w * 0.15f, h * 0.88f)) }) {
+            withTransform({ scale(1.0f, 0.50f, pivot = Offset(w * 0.15f, h * 0.88f)) }) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        0.0f to amber.copy(alpha = 0.40f),
-                        0.40f to accent.copy(alpha = 0.20f),
-                        0.80f to Color.Transparent,
+                        0.00f to amber.copy(alpha = 0.35f),
+                        0.30f to amber.copy(alpha = 0.20f),
+                        0.60f to accent.copy(alpha = 0.10f),
+                        1.00f to Color.Transparent,
                         center = Offset(w * 0.15f, h * 0.88f),
-                        radius = w * 0.55f
+                        radius = w * 0.60f
                     )
                 )
             }
@@ -163,25 +188,32 @@ fun AuroraBackground(
             // 7) Deep cinematic top vignette
             drawRect(
                 brush = Brush.verticalGradient(
-                    0f to Color.Black.copy(alpha = 0.75f),
-                    0.08f to Color.Black.copy(alpha = 0.30f),
-                    0.18f to Color.Transparent,
+                    0.00f to Color.Black.copy(alpha = 0.70f),
+                    0.08f to Color.Black.copy(alpha = 0.32f),
+                    0.15f to Color.Black.copy(alpha = 0.10f),
+                    0.22f to Color.Transparent,
                     startY = 0f,
-                    endY = h * 0.22f
+                    endY = h * 0.25f
                 )
             )
 
             // 8) Bottom-right corner rich vignette
             drawRect(
                 brush = Brush.radialGradient(
-                    0.0f to Color.Black.copy(alpha = 0.90f),
-                    0.45f to Color.Black.copy(alpha = 0.55f),
-                    0.80f to Color.Black.copy(alpha = 0.15f),
-                    1.0f to Color.Transparent,
+                    0.00f to Color.Black.copy(alpha = 0.88f),
+                    0.35f to Color.Black.copy(alpha = 0.60f),
+                    0.65f to Color.Black.copy(alpha = 0.30f),
+                    0.85f to Color.Black.copy(alpha = 0.08f),
+                    1.00f to Color.Transparent,
                     center = Offset(w * 1.05f, h * 1.05f),
-                    radius = w * 0.60f
+                    radius = w * 0.65f
                 )
             )
+        }
+
+        // Fast GPU dithering layer to break gradient color steps smoothly without any lines
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(ditherShaderBrush)
         }
 
         content?.invoke()

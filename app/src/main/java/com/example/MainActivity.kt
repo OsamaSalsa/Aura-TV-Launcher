@@ -113,6 +113,12 @@ class MainActivity : ComponentActivity() {
 
         val app = application as AuraTvApp
 
+        // Use 32-bit RGBA_8888 color depth and hardware dithering to eliminate gradient color banding on TV panels
+        try {
+            window.setFormat(android.graphics.PixelFormat.RGBA_8888)
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DITHER)
+        } catch (_: Exception) {}
+
         // Read initial screensaver preference immediately so window flags match before first frame
         updateScreenAwakePolicy(true)
 

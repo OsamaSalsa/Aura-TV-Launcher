@@ -75,7 +75,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -911,7 +910,6 @@ fun HomeScreen(
                     showUniversalSearch = true
                 },
                 onOpenControlCenter = { showControlCenter = true },
-                onOpenAmbientMode = { showAmbientMode = true },
                 isScrolled = isScrolled,
                 isEditingMode = isCurrentlyEditing,
                 onToggleEditMode = {

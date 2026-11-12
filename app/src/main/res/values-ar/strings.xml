@@ -411,4 +411,13 @@
     <string name="settings_custom_greeting_desc">اكتب اسمك أو عبارة ترحيب مفضلة لعرضها أعلى الساعة</string>
     <string name="settings_custom_greeting_hint">مثال: أهلاً بك يا أسامة، مرحباً بكم</string>
     <string name="settings_custom_greeting_save">حفظ الترحيب</string>
+    <string name="settings_iptv_delete_all">حذف جميع القوائم</string>
+    <string name="status_all_playlists_removed">تم حذف جميع قوائم IPTV</string>
+    <string name="screensaver_video_custom_item_title">فيديو يوتيوب مخصص (%s)</string>
+    <string name="screensaver_video_custom_item_sub">فيديو مضاف لشاشة التوقف • المعرف: %s</string>
+    <string name="screensaver_video_restore_defaults">استعادة الفيديوهات الافتراضية</string>
+    <string name="status_screensaver_video_added">تمت إضافة وتفعيل فيديو شاشة التوقف</string>
+    <string name="status_screensaver_video_removed">تم حذف الفيديو من شاشة التوقف</string>
+    <string name="status_screensaver_videos_restored">تمت استعادة الفيديوهات الافتراضية لشاشة التوقف</string>
+    <string name="screensaver_no_videos">لا توجد فيديوهات حالياً. أضف رابط يوتيوب بالأسفل أو استعد الفيديوهات الافتراضية.</string>
 </resources>

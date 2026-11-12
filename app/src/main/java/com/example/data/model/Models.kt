@@ -51,29 +51,3 @@ data class IptvPlaylist(
     val isActive: Boolean = false,
     val channelCount: Int = 0
 )
-
-/**
- * Represents an allowed YouTube channel for the Mini YouTube module.
- */
-@Entity(tableName = "youtube_allowed_channels")
-data class YouTubeChannel(
-    @PrimaryKey
-    val channelId: String,
-    val name: String,
-    val handle: String = "",
-    val avatarUrl: String = "",
-    val customAdded: Boolean = true
-)
-
-/**
- * Represents a parsed video entry from YouTube RSS feed or API.
- */
-data class YouTubeVideo(
-    val videoId: String,
-    val title: String,
-    val channelTitle: String,
-    val channelId: String,
-    val thumbnailUrl: String,
-    val publishedDate: String,
-    val description: String = ""
-)

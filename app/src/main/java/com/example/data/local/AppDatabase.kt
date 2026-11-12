@@ -6,16 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.data.model.IptvChannel
 import com.example.data.model.IptvPlaylist
-import com.example.data.model.YouTubeChannel
 
 @Database(
-    entities = [IptvChannel::class, YouTubeChannel::class, IptvPlaylist::class],
-    version = 3,
+    entities = [IptvChannel::class, IptvPlaylist::class],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun iptvDao(): IptvDao
-    abstract fun youtubeDao(): YouTubeDao
 
     companion object {
         @Volatile

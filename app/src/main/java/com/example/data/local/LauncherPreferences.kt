@@ -47,6 +47,10 @@ class LauncherPreferences(private val context: Context) {
         val KEY_DATE_FORMAT_STYLE = stringPreferencesKey("date_format_style")
         val KEY_GREETING_MODE = stringPreferencesKey("greeting_display_mode")
         val KEY_CUSTOM_GREETING_TEXT = stringPreferencesKey("custom_greeting_text")
+        val KEY_IPTV_PRESETS_INITIALIZED = booleanPreferencesKey("iptv_presets_initialized")
+        val KEY_CUSTOM_SCREENSAVER_VIDEOS = stringSetPreferencesKey("custom_screensaver_videos")
+        val KEY_DELETED_SCREENSAVER_PRESETS = stringSetPreferencesKey("deleted_screensaver_presets")
+        val DEFAULT_PRESET_VIDEO_IDS = listOf("EG_g7BFaL5s", "TtLeec_DR-Y", "8xXHeRnLwNQ")
     }
 
     val showOnlyTvAppsFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -356,6 +360,78 @@ class LauncherPreferences(private val context: Context) {
     suspend fun setScreensaverVideo(videoId: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SCREENSAVER_VIDEO] = videoId
+        }
+    }
+
+    val iptvPresetsInitializedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_IPTV_PRESETS_INITIALIZED] ?: false
+    }
+
+    suspend fun setIptvPresetsInitialized(initialized: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_IPTV_PRESETS_INITIALIZED] = initialized
+        }
+    }
+
+    val customScreensaverVideosFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CUSTOM_SCREENSAVER_VIDEOS] ?: emptySet()
+    }
+
+    val deletedScreensaverPresetsFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DELETED_SCREENSAVER_PRESETS] ?: emptySet()
+    }
+
+    suspend fun addCustomScreensaverVideo(videoId: String, customTitle: String = "") {
+        val cleanId = videoId.trim()
+        if (cleanId.isBlank()) return
+        context.dataStore.edit { prefs ->
+            // If it was a deleted preset, restore it
+            val deletedPresets = (prefs[KEY_DELETED_SCREENSAVER_PRESETS] ?: emptySet()).toMutableSet()
+            if (deletedPresets.remove(cleanId)) {
+                prefs[KEY_DELETED_SCREENSAVER_PRESETS] = deletedPresets
+            }
+            // If not one of the built-in presets, add to custom videos set
+            if (!DEFAULT_PRESET_VIDEO_IDS.contains(cleanId)) {
+                val currentCustom = (prefs[KEY_CUSTOM_SCREENSAVER_VIDEOS] ?: emptySet()).toMutableSet()
+                currentCustom.removeAll { it.substringBefore("|") == cleanId }
+                val entry = if (customTitle.isNotBlank()) "$cleanId|${customTitle.trim()}" else cleanId
+                currentCustom.add(entry)
+                prefs[KEY_CUSTOM_SCREENSAVER_VIDEOS] = currentCustom
+            }
+            prefs[KEY_SCREENSAVER_VIDEO] = cleanId
+        }
+    }
+
+    suspend fun deleteScreensaverVideo(videoId: String) {
+        val cleanId = videoId.trim()
+        context.dataStore.edit { prefs ->
+            val currentCustom = (prefs[KEY_CUSTOM_SCREENSAVER_VIDEOS] ?: emptySet()).toMutableSet()
+            currentCustom.removeAll { it.substringBefore("|") == cleanId }
+            prefs[KEY_CUSTOM_SCREENSAVER_VIDEOS] = currentCustom
+
+            val deletedPresets = (prefs[KEY_DELETED_SCREENSAVER_PRESETS] ?: emptySet()).toMutableSet()
+            if (DEFAULT_PRESET_VIDEO_IDS.contains(cleanId)) {
+                deletedPresets.add(cleanId)
+                prefs[KEY_DELETED_SCREENSAVER_PRESETS] = deletedPresets
+            }
+
+            val currentSelected = prefs[KEY_SCREENSAVER_VIDEO] ?: "EG_g7BFaL5s"
+            if (currentSelected == cleanId) {
+                val remainingPresets = DEFAULT_PRESET_VIDEO_IDS.filterNot { deletedPresets.contains(it) }
+                val remainingCustom = currentCustom.map { it.substringBefore("|") }
+                val nextVideo = (remainingCustom + remainingPresets).firstOrNull() ?: ""
+                prefs[KEY_SCREENSAVER_VIDEO] = nextVideo
+            }
+        }
+    }
+
+    suspend fun restoreDefaultScreensaverVideos() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DELETED_SCREENSAVER_PRESETS] = emptySet()
+            val currentSelected = prefs[KEY_SCREENSAVER_VIDEO] ?: ""
+            if (currentSelected.isBlank()) {
+                prefs[KEY_SCREENSAVER_VIDEO] = "EG_g7BFaL5s"
+            }
         }
     }
 }

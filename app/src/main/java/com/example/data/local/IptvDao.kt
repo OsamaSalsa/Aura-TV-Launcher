@@ -75,6 +75,9 @@ interface IptvDao {
     @Query("DELETE FROM iptv_playlists WHERE id = :playlistId")
     suspend fun deletePlaylist(playlistId: Long)
 
+    @Query("DELETE FROM iptv_playlists")
+    suspend fun clearAllPlaylists()
+
     @Query("UPDATE iptv_playlists SET isActive = (id = :activeId)")
     suspend fun setActivePlaylistInternal(activeId: Long)
 

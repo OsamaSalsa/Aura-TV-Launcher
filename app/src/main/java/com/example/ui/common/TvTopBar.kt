@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LiveTv
@@ -92,7 +91,6 @@ fun TvTopBar(
     onOpenYouTube: () -> Unit,
     onOpenSearch: (() -> Unit)? = null,
     onOpenControlCenter: (() -> Unit)? = null,
-    onOpenAmbientMode: (() -> Unit)? = null,
     isScrolled: Boolean = false,
     isEditingMode: Boolean = false,
     onToggleEditMode: (() -> Unit)? = null,
@@ -407,18 +405,6 @@ fun TvTopBar(
                     icon = Icons.Default.RocketLaunch,
                     text = "",
                     onClick = onOpenControlCenter,
-                    onFocused = onNonAppFocused,
-                    onRequestFocusDown = onRequestFocusDown,
-                    glassOpacity = glassOpacity,
-                    showText = false
-                )
-            }
-
-            if (onOpenAmbientMode != null) {
-                TvActionButton(
-                    icon = Icons.Default.Bedtime,
-                    text = "",
-                    onClick = onOpenAmbientMode,
                     onFocused = onNonAppFocused,
                     onRequestFocusDown = onRequestFocusDown,
                     glassOpacity = glassOpacity,

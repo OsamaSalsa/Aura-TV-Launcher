@@ -101,7 +101,6 @@ import com.example.R
 import com.example.ui.common.TvFocusableCard
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvAccentRed
-import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvMidnightBackground
 import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
@@ -144,12 +143,14 @@ fun SettingsScreen(
     val screensaverMode by viewModel.screensaverMode.collectAsState()
     val screensaverWallpaper by viewModel.screensaverWallpaper.collectAsState()
     val screensaverVideo by viewModel.screensaverVideo.collectAsState()
+    val customScreensaverVideos by viewModel.customScreensaverVideos.collectAsState()
+    val deletedScreensaverPresets by viewModel.deletedScreensaverPresets.collectAsState()
     var showPreviewScreensaver by remember { mutableStateOf(false) }
 
     var newPlaylistName by remember { mutableStateOf("") }
     var newPlaylistUrl by remember { mutableStateOf("") }
     var customWallpaperInput by remember(customWallpaperUrl) { mutableStateOf(customWallpaperUrl) }
-    var customVideoInput by remember(screensaverVideo) { mutableStateOf(screensaverVideo) }
+    var customVideoInput by remember { mutableStateOf("") }
 
     var isDefaultLauncher by remember { mutableStateOf(viewModel.isDefaultLauncher(context)) }
     var hasFilePermission by remember { mutableStateOf(FilePermissionHelper.hasStoragePermission(context)) }
@@ -1146,118 +1147,355 @@ fun SettingsScreen(
 
                                     if (screensaverMode == "video_stream") {
                                         Spacer(modifier = Modifier.height(18.dp))
-                                        Text(
-                                            text = stringResource(R.string.screensaver_video_choice),
-                                            color = TvAccentGold,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = stringResource(R.string.screensaver_video_choice_desc),
-                                            color = TvTextSecondary,
-                                            fontSize = 12.sp
-                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = stringResource(R.string.screensaver_video_choice),
+                                                    color = TvAccentGold,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = stringResource(R.string.screensaver_video_choice_desc),
+                                                    color = TvTextSecondary,
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                            if (deletedScreensaverPresets.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                TvActionButton(
+                                                    text = stringResource(R.string.screensaver_video_restore_defaults),
+                                                    icon = Icons.Default.Refresh,
+                                                    onClick = { viewModel.restoreDefaultScreensaverVideos() },
+                                                    baseColor = Color(0xFF334155),
+                                                    focusedColor = TvAccentGold
+                                                )
+                                            }
+                                        }
                                         Spacer(modifier = Modifier.height(14.dp))
 
-                                        // Curated Preset Relaxing Videos
+                                        val activeVideoId = extractYouTubeVideoId(screensaverVideo)
+                                        val visiblePresets = screensaverPresetVideos.filterNot {
+                                            deletedScreensaverPresets.contains(it.id)
+                                        }
+                                        val presetIds = screensaverPresetVideos.map { it.id }.toSet()
+                                        val customVideoEntries = buildList {
+                                            customScreensaverVideos.forEach { raw ->
+                                                val id = raw.substringBefore("|").trim()
+                                                val customTitle = raw.substringAfter("|", "").trim()
+                                                if (id.isNotBlank() && !presetIds.contains(id)) {
+                                                    add(id to customTitle)
+                                                }
+                                            }
+                                            if (
+                                                activeVideoId.isNotBlank() &&
+                                                !presetIds.contains(activeVideoId) &&
+                                                !deletedScreensaverPresets.contains(activeVideoId) &&
+                                                none { it.first == activeVideoId }
+                                            ) {
+                                                add(activeVideoId to "")
+                                            }
+                                        }
+
+                                        // Saved & Preset Relaxing Videos with Delete Button on Each Item
                                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                            screensaverPresetVideos.forEach { presetVideo ->
-                                                val isSelected = extractYouTubeVideoId(screensaverVideo) == presetVideo.id
-                                                TvFocusableCard(
-                                                    onClick = {
-                                                        viewModel.setScreensaverVideo(presetVideo.id)
-                                                        customVideoInput = presetVideo.id
-                                                    },
-                                                    scaleUpRatio = 1.02f,
-                                                    shape = RoundedCornerShape(12.dp),
+                                            if (visiblePresets.isEmpty() && customVideoEntries.isEmpty()) {
+                                                Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .height(72.dp)
-                                                ) { isFocused ->
-                                                    Row(
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Color(0xFF0F172A))
+                                                        .padding(18.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(R.string.screensaver_no_videos),
+                                                        color = TvTextSecondary,
+                                                        fontSize = 13.sp,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
+
+                                            visiblePresets.forEach { presetVideo ->
+                                                val isSelected = activeVideoId == presetVideo.id
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    TvFocusableCard(
+                                                        onClick = {
+                                                            viewModel.setScreensaverVideo(presetVideo.id)
+                                                        },
+                                                        scaleUpRatio = 1.02f,
+                                                        shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(
-                                                                if (isSelected) TvAccentGold.copy(alpha = 0.2f)
-                                                                else if (isFocused) Color(0xFF334155)
-                                                                else Color(0xFF0F172A)
-                                                            )
-                                                            .border(
-                                                                width = if (isSelected) 1.5.dp else if (isFocused) 1.dp else 0.5.dp,
-                                                                color = if (isSelected) TvAccentGold else if (isFocused) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
-                                                                shape = RoundedCornerShape(12.dp)
-                                                            )
-                                                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        // Video Thumbnail
+                                                            .weight(1f)
+                                                            .height(72.dp)
+                                                    ) { isFocused ->
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    if (isSelected) TvAccentGold.copy(alpha = 0.2f)
+                                                                    else if (isFocused) Color(0xFF334155)
+                                                                    else Color(0xFF0F172A)
+                                                                )
+                                                                .border(
+                                                                    width = if (isSelected) 1.5.dp else if (isFocused) 1.dp else 0.5.dp,
+                                                                    color = if (isSelected) TvAccentGold else if (isFocused) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                                                                    shape = RoundedCornerShape(12.dp)
+                                                                )
+                                                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .width(88.dp)
+                                                                    .height(54.dp)
+                                                                    .clip(RoundedCornerShape(8.dp))
+                                                                    .background(Color.Black)
+                                                            ) {
+                                                                AsyncImage(
+                                                                    model = "https://img.youtube.com/vi/${presetVideo.id}/hqdefault.jpg",
+                                                                    contentDescription = null,
+                                                                    contentScale = ContentScale.Crop,
+                                                                    modifier = Modifier.fillMaxSize()
+                                                                )
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(24.dp)
+                                                                        .align(Alignment.Center)
+                                                                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.PlayArrow,
+                                                                        contentDescription = null,
+                                                                        tint = Color.White,
+                                                                        modifier = Modifier
+                                                                            .size(16.dp)
+                                                                            .align(Alignment.Center)
+                                                                    )
+                                                                }
+                                                            }
+
+                                                            Spacer(modifier = Modifier.width(16.dp))
+
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = stringResource(presetVideo.titleRes),
+                                                                    color = if (isSelected || isFocused) TvTextPrimary else TvTextPrimary.copy(alpha = 0.9f),
+                                                                    fontSize = 14.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = stringResource(presetVideo.subtitleRes),
+                                                                    color = TvTextSecondary,
+                                                                    fontSize = 11.sp,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                            }
+
+                                                            Spacer(modifier = Modifier.width(10.dp))
+
+                                                            if (isSelected) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(28.dp)
+                                                                        .background(TvAccentGold, CircleShape),
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Check,
+                                                                        contentDescription = "Selected",
+                                                                        tint = Color.Black,
+                                                                        modifier = Modifier.size(18.dp)
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    TvFocusableCard(
+                                                        onClick = { viewModel.deleteScreensaverVideo(presetVideo.id) },
+                                                        scaleUpRatio = 1.06f,
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .width(56.dp)
+                                                            .height(72.dp)
+                                                    ) { isDelFocused ->
                                                         Box(
                                                             modifier = Modifier
-                                                                .width(88.dp)
-                                                                .height(54.dp)
-                                                                .clip(RoundedCornerShape(8.dp))
-                                                                .background(Color.Black)
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    if (isDelFocused) TvAccentRed
+                                                                    else TvAccentRed.copy(alpha = 0.18f)
+                                                                )
+                                                                .border(
+                                                                    width = 1.dp,
+                                                                    color = if (isDelFocused) Color.White else TvAccentRed.copy(alpha = 0.4f),
+                                                                    shape = RoundedCornerShape(12.dp)
+                                                                ),
+                                                            contentAlignment = Alignment.Center
                                                         ) {
-                                                            AsyncImage(
-                                                                model = "https://img.youtube.com/vi/${presetVideo.id}/hqdefault.jpg",
-                                                                contentDescription = null,
-                                                                contentScale = ContentScale.Crop,
-                                                                modifier = Modifier.fillMaxSize()
+                                                            Icon(
+                                                                imageVector = Icons.Default.Delete,
+                                                                contentDescription = stringResource(R.string.action_delete),
+                                                                tint = if (isDelFocused) Color.White else TvAccentRed,
+                                                                modifier = Modifier.size(22.dp)
                                                             )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            customVideoEntries.forEach { (customId, customTitle) ->
+                                                val isSelected = activeVideoId == customId
+                                                val displayTitle = if (customTitle.isNotBlank()) {
+                                                    customTitle
+                                                } else {
+                                                    stringResource(R.string.screensaver_video_custom_item_title).format(customId)
+                                                }
+                                                val displaySub = stringResource(R.string.screensaver_video_custom_item_sub).format(customId)
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    TvFocusableCard(
+                                                        onClick = {
+                                                            viewModel.setScreensaverVideo(customId)
+                                                        },
+                                                        scaleUpRatio = 1.02f,
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .height(72.dp)
+                                                    ) { isFocused ->
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    if (isSelected) TvAccentGold.copy(alpha = 0.2f)
+                                                                    else if (isFocused) Color(0xFF334155)
+                                                                    else Color(0xFF0F172A)
+                                                                )
+                                                                .border(
+                                                                    width = if (isSelected) 1.5.dp else if (isFocused) 1.dp else 0.5.dp,
+                                                                    color = if (isSelected) TvAccentGold else if (isFocused) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                                                                    shape = RoundedCornerShape(12.dp)
+                                                                )
+                                                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .size(24.dp)
-                                                                    .align(Alignment.Center)
-                                                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                                                    .width(88.dp)
+                                                                    .height(54.dp)
+                                                                    .clip(RoundedCornerShape(8.dp))
+                                                                    .background(Color.Black)
                                                             ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.PlayArrow,
+                                                                AsyncImage(
+                                                                    model = "https://img.youtube.com/vi/$customId/hqdefault.jpg",
                                                                     contentDescription = null,
-                                                                    tint = Color.White,
+                                                                    contentScale = ContentScale.Crop,
+                                                                    modifier = Modifier.fillMaxSize()
+                                                                )
+                                                                Box(
                                                                     modifier = Modifier
-                                                                        .size(16.dp)
+                                                                        .size(24.dp)
                                                                         .align(Alignment.Center)
+                                                                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.PlayArrow,
+                                                                        contentDescription = null,
+                                                                        tint = Color.White,
+                                                                        modifier = Modifier
+                                                                            .size(16.dp)
+                                                                            .align(Alignment.Center)
+                                                                    )
+                                                                }
+                                                            }
+
+                                                            Spacer(modifier = Modifier.width(16.dp))
+
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = displayTitle,
+                                                                    color = if (isSelected || isFocused) TvTextPrimary else TvTextPrimary.copy(alpha = 0.9f),
+                                                                    fontSize = 14.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = displaySub,
+                                                                    color = TvTextSecondary,
+                                                                    fontSize = 11.sp,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
                                                                 )
                                                             }
-                                                        }
 
-                                                        Spacer(modifier = Modifier.width(16.dp))
+                                                            Spacer(modifier = Modifier.width(10.dp))
 
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = stringResource(presetVideo.titleRes),
-                                                                color = if (isSelected || isFocused) TvTextPrimary else TvTextPrimary.copy(alpha = 0.9f),
-                                                                fontSize = 14.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                            Text(
-                                                                text = stringResource(presetVideo.subtitleRes),
-                                                                color = TvTextSecondary,
-                                                                fontSize = 11.sp,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                        }
-
-                                                        Spacer(modifier = Modifier.width(10.dp))
-
-                                                        if (isSelected) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(28.dp)
-                                                                    .background(TvAccentGold, CircleShape),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Check,
-                                                                    contentDescription = "Selected",
-                                                                    tint = Color.Black,
-                                                                    modifier = Modifier.size(18.dp)
-                                                                )
+                                                            if (isSelected) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(28.dp)
+                                                                        .background(TvAccentGold, CircleShape),
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Check,
+                                                                        contentDescription = "Selected",
+                                                                        tint = Color.Black,
+                                                                        modifier = Modifier.size(18.dp)
+                                                                    )
+                                                                }
                                                             }
+                                                        }
+                                                    }
+
+                                                    TvFocusableCard(
+                                                        onClick = { viewModel.deleteScreensaverVideo(customId) },
+                                                        scaleUpRatio = 1.06f,
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .width(56.dp)
+                                                            .height(72.dp)
+                                                    ) { isDelFocused ->
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    if (isDelFocused) TvAccentRed
+                                                                    else TvAccentRed.copy(alpha = 0.18f)
+                                                                )
+                                                                .border(
+                                                                    width = 1.dp,
+                                                                    color = if (isDelFocused) Color.White else TvAccentRed.copy(alpha = 0.4f),
+                                                                    shape = RoundedCornerShape(12.dp)
+                                                                ),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Delete,
+                                                                contentDescription = stringResource(R.string.action_delete),
+                                                                tint = if (isDelFocused) Color.White else TvAccentRed,
+                                                                modifier = Modifier.size(22.dp)
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -1312,25 +1550,19 @@ fun SettingsScreen(
                                                     modifier = Modifier.weight(1f)
                                                 )
 
-                                                Button(
+                                                TvActionButton(
+                                                    text = stringResource(R.string.screensaver_video_custom_save),
+                                                    icon = Icons.Default.Add,
                                                     onClick = {
                                                         if (customVideoInput.isNotBlank()) {
-                                                            viewModel.setScreensaverVideo(customVideoInput.trim())
+                                                            viewModel.addCustomScreensaverVideo(customVideoInput.trim())
+                                                            customVideoInput = ""
                                                         }
                                                     },
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = TvAccentGold,
-                                                        contentColor = Color.Black
-                                                    ),
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    baseColor = TvAccentGold,
+                                                    focusedColor = TvAccentGold,
                                                     modifier = Modifier.height(52.dp)
-                                                ) {
-                                                    Text(
-                                                        text = stringResource(R.string.screensaver_video_custom_save),
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 12.sp
-                                                    )
-                                                }
+                                                )
                                             }
                                         }
                                     }
@@ -1433,14 +1665,29 @@ fun SettingsScreen(
                                 }
                             }
 
-                            // Saved IPTV Playlists Header
+                            // Saved IPTV Playlists Header with Delete All Option
                             item {
-                                Text(
-                                    text = stringResource(R.string.settings_iptv_saved_header).format(iptvPlaylists.size),
-                                    color = TvTextPrimary,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.settings_iptv_saved_header).format(iptvPlaylists.size),
+                                        color = TvTextPrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (iptvPlaylists.isNotEmpty()) {
+                                        TvActionButton(
+                                            text = stringResource(R.string.settings_iptv_delete_all),
+                                            icon = Icons.Default.Delete,
+                                            onClick = { viewModel.deleteAllIptvPlaylists() },
+                                            baseColor = TvAccentRed.copy(alpha = 0.25f),
+                                            focusedColor = TvAccentRed
+                                        )
+                                    }
+                                }
                             }
 
                             if (iptvPlaylists.isEmpty()) {
@@ -1470,130 +1717,118 @@ fun SettingsScreen(
                                         chunk.forEach { playlist ->
                                             val isActive = (playlist.id == activeIptvPlaylist?.id)
                                             Box(modifier = Modifier.weight(1f)) {
-                                                TvFocusableCard(
-                                                    onClick = {
-                                                        if (!isActive) viewModel.switchIptvPlaylist(playlist.id)
-                                                    },
-                                                    scaleUpRatio = 1.02f,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) { isFocused ->
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .background(
-                                                                when {
-                                                                    isFocused -> Color(0xFF1E293B)
-                                                                    isActive -> TvAccentGold.copy(alpha = 0.25f)
-                                                                    else -> Color(0xFF1E293B).copy(alpha = 0.5f)
-                                                                }
-                                                            )
-                                                            .border(
-                                                                width = if (isFocused) 2.dp else if (isActive) 1.dp else 0.dp,
-                                                                color = if (isFocused) TvAccentGold else if (isActive) TvAccentGold else Color.Transparent,
-                                                                shape = RoundedCornerShape(14.dp)
-                                                            )
-                                                            .padding(16.dp)
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .background(
+                                                            if (isActive) TvAccentGold.copy(alpha = 0.2f)
+                                                            else Color(0xFF1E293B).copy(alpha = 0.55f)
+                                                        )
+                                                        .border(
+                                                            width = if (isActive) 1.5.dp else 1.dp,
+                                                            color = if (isActive) TvAccentGold else Color.White.copy(alpha = 0.08f),
+                                                            shape = RoundedCornerShape(14.dp)
+                                                        )
+                                                        .padding(16.dp)
+                                                ) {
+                                                    // Top Header with Icon, Name, and Active Tag
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.fillMaxWidth()
                                                     ) {
-                                                        // Top Header with Icon, Name, and Active Tag
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            modifier = Modifier.fillMaxWidth()
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(34.dp)
+                                                                .clip(CircleShape)
+                                                                .background(if (isActive) TvAccentGold.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.1f)),
+                                                            contentAlignment = Alignment.Center
                                                         ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.LiveTv,
+                                                                contentDescription = null,
+                                                                tint = if (isActive) TvAccentGold else TvTextPrimary,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                        Spacer(modifier = Modifier.width(10.dp))
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = playlist.name,
+                                                                color = TvTextPrimary,
+                                                                fontSize = 15.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            Text(
+                                                                text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
+                                                                color = if (isActive) TvAccentGold else TvTextSecondary,
+                                                                fontSize = 12.sp
+                                                            )
+                                                        }
+                                                        if (isActive) {
+                                                            Spacer(modifier = Modifier.width(6.dp))
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .size(34.dp)
-                                                                    .clip(CircleShape)
-                                                                    .background(if (isActive) TvAccentGold.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.1f)),
-                                                                contentAlignment = Alignment.Center
+                                                                    .clip(RoundedCornerShape(6.dp))
+                                                                    .background(TvAccentGold)
+                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
                                                             ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.LiveTv,
-                                                                    contentDescription = null,
-                                                                    tint = if (isActive) TvAccentGold else TvTextPrimary,
-                                                                    modifier = Modifier.size(18.dp)
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(10.dp))
-                                                            Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
-                                                                    text = playlist.name,
-                                                                    color = TvTextPrimary,
-                                                                    fontSize = 15.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    maxLines = 1,
-                                                                    overflow = TextOverflow.Ellipsis
+                                                                    text = stringResource(R.string.settings_iptv_active_tag),
+                                                                    color = Color.Black,
+                                                                    fontSize = 10.sp,
+                                                                    fontWeight = FontWeight.Bold
                                                                 )
-                                                                Text(
-                                                                    text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
-                                                                    color = if (isActive) TvAccentGold else TvTextSecondary,
-                                                                    fontSize = 12.sp
-                                                                )
-                                                            }
-                                                            if (isActive) {
-                                                                Spacer(modifier = Modifier.width(6.dp))
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .clip(RoundedCornerShape(6.dp))
-                                                                        .background(TvAccentGold)
-                                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                ) {
-                                                                    Text(
-                                                                        text = stringResource(R.string.settings_iptv_active_tag),
-                                                                        color = Color.Black,
-                                                                        fontSize = 10.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                }
                                                             }
                                                         }
+                                                    }
 
-                                                        Spacer(modifier = Modifier.height(10.dp))
+                                                    Spacer(modifier = Modifier.height(10.dp))
 
-                                                        Text(
-                                                            text = playlist.url,
-                                                            color = TvTextSecondary.copy(alpha = 0.7f),
-                                                            fontSize = 11.sp,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
+                                                    Text(
+                                                        text = playlist.url,
+                                                        color = TvTextSecondary.copy(alpha = 0.7f),
+                                                        fontSize = 11.sp,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+
+                                                    Spacer(modifier = Modifier.height(14.dp))
+
+                                                    // Action Row: Activate/Sync + Delete Button (Non-nested for smooth TV D-Pad focus)
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        if (!isActive) {
+                                                            TvActionButton(
+                                                                text = stringResource(R.string.settings_iptv_activate_button),
+                                                                onClick = { viewModel.switchIptvPlaylist(playlist.id) },
+                                                                baseColor = TvAccentGold,
+                                                                focusedColor = TvAccentGold,
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                        } else {
+                                                            TvActionButton(
+                                                                text = stringResource(R.string.settings_iptv_sync_button),
+                                                                icon = Icons.Default.Refresh,
+                                                                onClick = { viewModel.refreshIptvPlaylist() },
+                                                                baseColor = TvAccentGold.copy(alpha = 0.8f),
+                                                                focusedColor = TvAccentGold,
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                        }
+
+                                                        TvActionButton(
+                                                            text = stringResource(R.string.action_delete),
+                                                            icon = Icons.Default.Delete,
+                                                            onClick = { viewModel.deleteIptvPlaylist(playlist.id) },
+                                                            baseColor = TvAccentRed.copy(alpha = 0.25f),
+                                                            focusedColor = TvAccentRed
                                                         )
-
-                                                        Spacer(modifier = Modifier.height(14.dp))
-
-                                                        // Action Row
-                                                        Row(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            if (!isActive) {
-                                                                TvActionButton(
-                                                                    text = stringResource(R.string.settings_iptv_activate_button),
-                                                                    onClick = { viewModel.switchIptvPlaylist(playlist.id) },
-                                                                    baseColor = TvAccentGold,
-                                                                    focusedColor = TvAccentGold
-                                                                )
-                                                            } else {
-                                                                TvActionButton(
-                                                                    text = stringResource(R.string.settings_iptv_sync_button),
-                                                                    icon = Icons.Default.Refresh,
-                                                                    onClick = { viewModel.refreshIptvPlaylist() },
-                                                                    baseColor = TvAccentGold.copy(alpha = 0.8f),
-                                                                    focusedColor = TvAccentGold
-                                                                )
-                                                            }
-
-                                                            TvFocusableCard(
-                                                                onClick = { viewModel.deleteIptvPlaylist(playlist.id) },
-                                                                modifier = Modifier.size(34.dp)
-                                                            ) { isDelFocused ->
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Delete,
-                                                                    contentDescription = "Delete Playlist",
-                                                                    tint = if (isDelFocused) TvAccentRed else TvTextSecondary,
-                                                                    modifier = Modifier.align(Alignment.Center)
-                                                                )
-                                                            }
-                                                        }
                                                     }
                                                 }
                                             }

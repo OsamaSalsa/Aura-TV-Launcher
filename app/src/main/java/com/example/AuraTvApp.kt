@@ -3,7 +3,6 @@ package com.example
 import android.app.Application
 import com.example.data.AppRepository
 import com.example.data.IptvRepository
-import com.example.data.YouTubeRepository
 import com.example.data.local.AppDatabase
 import com.example.data.local.LauncherPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -27,9 +26,6 @@ class AuraTvApp : Application() {
     lateinit var iptvRepository: IptvRepository
         private set
 
-    lateinit var youtubeRepository: YouTubeRepository
-        private set
-
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -45,12 +41,10 @@ class AuraTvApp : Application() {
         preferences = LauncherPreferences(this)
         appRepository = AppRepository(this, preferences)
         iptvRepository = IptvRepository(database.iptvDao(), preferences)
-        youtubeRepository = YouTubeRepository(database.youtubeDao())
 
-        // Initialize defaults for IPTV and YouTube
+        // Initialize defaults for IPTV
         applicationScope.launch(Dispatchers.IO) {
             iptvRepository.initializeDefaultsIfNeeded()
-            youtubeRepository.initializeDefaultsIfNeeded()
         }
     }
 

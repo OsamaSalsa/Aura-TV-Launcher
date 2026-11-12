@@ -161,10 +161,61 @@ class SettingsViewModel(
     val screensaverVideo: StateFlow<String> = preferences.screensaverVideoFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "EG_g7BFaL5s")
 
+    val customScreensaverVideos: StateFlow<Set<String>> = preferences.customScreensaverVideosFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val deletedScreensaverPresets: StateFlow<Set<String>> = preferences.deletedScreensaverPresetsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
     fun setScreensaverVideo(videoId: String) {
         viewModelScope.launch {
-            preferences.setScreensaverVideo(videoId)
+            preferences.setScreensaverVideo(videoId.trim())
         }
+    }
+
+    fun addCustomScreensaverVideo(videoInput: String, customTitle: String = "") {
+        val extractedId = extractYouTubeId(videoInput)
+        if (extractedId.isBlank()) return
+        viewModelScope.launch {
+            preferences.addCustomScreensaverVideo(extractedId, customTitle)
+            _statusMessage.value = StatusUiText.Resource(R.string.status_screensaver_video_added)
+        }
+    }
+
+    fun deleteScreensaverVideo(videoId: String) {
+        viewModelScope.launch {
+            preferences.deleteScreensaverVideo(videoId)
+            _statusMessage.value = StatusUiText.Resource(R.string.status_screensaver_video_removed)
+        }
+    }
+
+    fun restoreDefaultScreensaverVideos() {
+        viewModelScope.launch {
+            preferences.restoreDefaultScreensaverVideos()
+            _statusMessage.value = StatusUiText.Resource(R.string.status_screensaver_videos_restored)
+        }
+    }
+
+    private fun extractYouTubeId(input: String): String {
+        val trimmed = input.trim()
+        if (trimmed.isEmpty()) return ""
+        if (trimmed.length == 11 && !trimmed.contains("/") && !trimmed.contains(".")) {
+            return trimmed
+        }
+        val patterns = listOf(
+            "(?<=watch\\?v=)[^&#?\\s]+",
+            "(?<=youtu\\.be/)[^&#?\\s]+",
+            "(?<=embed/)[^&#?\\s]+",
+            "(?<=shorts/)[^&#?\\s]+",
+            "(?<=live/)[^&#?\\s]+"
+        )
+        for (pattern in patterns) {
+            val match = Regex(pattern).find(trimmed)
+            if (match != null && match.value.isNotBlank()) {
+                return match.value
+            }
+        }
+        return trimmed
     }
 
 
@@ -334,6 +385,13 @@ class SettingsViewModel(
         viewModelScope.launch {
             iptvRepository.deletePlaylist(playlistId)
             _statusMessage.value = StatusUiText.Resource(R.string.status_playlist_removed)
+        }
+    }
+
+    fun deleteAllIptvPlaylists() {
+        viewModelScope.launch {
+            iptvRepository.deleteAllPlaylists()
+            _statusMessage.value = StatusUiText.Resource(R.string.status_all_playlists_removed)
         }
     }
 

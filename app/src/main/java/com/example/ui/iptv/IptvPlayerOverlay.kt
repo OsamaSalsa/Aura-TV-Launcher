@@ -88,7 +88,6 @@ import com.example.data.model.IptvChannel
 import com.example.ui.common.TvFocusableCard
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvAccentRed
-import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvMidnightBackground
 import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary

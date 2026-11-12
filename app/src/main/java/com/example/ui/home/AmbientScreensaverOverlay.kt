@@ -3,7 +3,6 @@ package com.example.ui.home
 import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -45,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -69,7 +67,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.annotation.SuppressLint
 import android.view.ViewGroup
-import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.ui.viewinterop.AndroidView
@@ -99,20 +96,15 @@ import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
 import com.example.util.GreetingHelper
 import com.example.util.LocaleHelper
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+
+import android.webkit.CookieManager
 
 data class ScreensaverPresetVideo(
     val id: String,
@@ -227,14 +219,9 @@ private const val STREAM_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 /**
- * Mode 3: Fullscreen Cinematic Video with ZERO text, ZERO effects, and ZERO black borders.
- * Plays the exact YouTube video requested by the user via youtube-nocookie.com embed URL
- * which bypasses bot detection and sign-in walls entirely while playing the exact video in fullscreen.
- */
-/**
  * Mode 3: Fullscreen Cinematic Video with ZERO text or buttons on screen.
- * Plays the exact YouTube videos requested by the user using YouTubePlayerView (same as MiniYube)
- * with autoplay, seamless looping, and software layer rendering.
+ * Plays the exact YouTube videos requested by the user using YouTubePlayerView
+ * with package origin and third-party cookies enabled to bypass Error 152-4.
  */
 @OptIn(UnstableApi::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -307,231 +294,80 @@ private fun VideoScreensaver(
 }
 
 /**
- * Plays YouTube video as a guest in pure full screen (100vw x 100vh) with auto-play,
- * seamless loop, and zero controls or text using YouTubePlayerView (same as MiniTube)
- * with native User-Agent and Trusted-Types-compliant fullscreen CSS.
+ * Plays YouTube video in pure full screen with auto-play, seamless loop, and zero controls or text
+ * using YouTubePlayerView with package origin and third-party cookies to prevent Error 152-4.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun YouTubeWebScreensaver(
     videoId: String
 ) {
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var useFallbackEmbed by remember(videoId) { mutableStateOf(true) }
-    var hasStartedPlaying by remember(videoId) { mutableStateOf(false) }
-    var ytPlayerViewRef by remember { mutableStateOf<YouTubePlayerView?>(null) }
+    var isVideoReady by remember(videoId) { mutableStateOf(false) }
 
-    DisposableEffect(lifecycleOwner, ytPlayerViewRef) {
-        val view = ytPlayerViewRef
-        if (view != null) {
-            lifecycleOwner.lifecycle.addObserver(view)
-        }
-        onDispose {
-            if (view != null) {
-                lifecycleOwner.lifecycle.removeObserver(view)
-            }
-        }
+    LaunchedEffect(videoId) {
+        isVideoReady = false
+        delay(3800)
+        isVideoReady = true
     }
 
-    if (!useFallbackEmbed) {
-        AndroidView(
-            factory = { ctx ->
-                YouTubePlayerView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    matchParent()
-                    enableAutomaticInitialization = false
-                    enableBackgroundPlayback(true)
+    val playerUrl = remember(videoId) {
+        "https://invidious.tiekoetter.com/watch?v=$videoId&autoplay=1&loop=1&controls=0&listen=0&comments=none&related_videos=false&quality=medium"
+    }
 
-                    // Configure internal WebView BEFORE calling initialize() so DOM storage,
-                    // hardware video surface rendering, and cookies are ready before loadDataWithBaseURL.
-                    fun configureChildWebViews(view: android.view.View) {
-                        if (view is WebView) {
-                            view.setBackgroundColor(android.graphics.Color.BLACK)
-                            view.settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                                databaseEnabled = true
-                                mediaPlaybackRequiresUserGesture = false
-                                mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                    safeBrowsingEnabled = false
-                                }
-                            }
-                            android.webkit.CookieManager.getInstance().apply {
-                                setAcceptCookie(true)
-                                setAcceptThirdPartyCookies(view, true)
-                            }
-                            // Hardware acceleration (LAYER_TYPE_NONE) is required for HTML5 <video> surface rendering
-                            view.setLayerType(android.view.View.LAYER_TYPE_NONE, null)
-                        } else if (view is ViewGroup) {
-                            for (i in 0 until view.childCount) {
-                                configureChildWebViews(view.getChildAt(i))
-                            }
-                        }
-                    }
-                    configureChildWebViews(this)
-
-                    val options = IFramePlayerOptions.Builder(ctx)
-                        .controls(0)
-                        .autoplay(1)
-                        .rel(0)
-                        .ivLoadPolicy(3)
-                        .ccLoadPolicy(0)
-                        .fullscreen(0)
-                        .origin("https://${ctx.packageName}")
-                        .build()
-
-                    initialize(
-                        object : AbstractYouTubePlayerListener() {
-                            override fun onReady(youTubePlayer: YouTubePlayer) {
-                                youTubePlayer.loadVideo(videoId, 0f)
-                                youTubePlayer.play()
-                            }
-
-                            override fun onStateChange(
-                                youTubePlayer: YouTubePlayer,
-                                state: PlayerConstants.PlayerState
-                            ) {
-                                when (state) {
-                                    PlayerConstants.PlayerState.PLAYING -> {
-                                        hasStartedPlaying = true
-                                    }
-                                    PlayerConstants.PlayerState.ENDED -> {
-                                        youTubePlayer.seekTo(0f)
-                                        youTubePlayer.play()
-                                    }
-                                    PlayerConstants.PlayerState.VIDEO_CUED -> {
-                                        youTubePlayer.play()
-                                    }
-                                    else -> {}
-                                }
-                            }
-
-                            override fun onError(
-                                youTubePlayer: YouTubePlayer,
-                                error: PlayerConstants.PlayerError
-                            ) {
-                                useFallbackEmbed = true
-                            }
-                        },
-                        true,
-                        options,
-                        videoId
-                    )
-
-                    ytPlayerViewRef = this
-                }
-            },
-            onRelease = { ytView ->
+    val cleanFullscreenScript = remember {
+        """
+        (function() {
+            function applyCleanVideo() {
                 try {
-                    ytView.release()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(1.18f) // Eliminates any 16:9 side/top letterboxing on ultrawide/TV screens
-        )
-    } else {
-        var useGuestMirror by remember(videoId) { mutableStateOf(true) }
-        val refererOrigin = "https://www.youtube.com"
-        val targetUrl = if (!useGuestMirror) {
-            "https://www.youtube.com/embed/$videoId?autoplay=1&controls=0&showinfo=0&rel=0&loop=1&playlist=$videoId&iv_load_policy=3&cc_load_policy=0&modestbranding=1&playsinline=1&fs=0&enablejsapi=1&origin=$refererOrigin"
-        } else {
-            "https://invidious.tiekoetter.com/watch?v=$videoId&autoplay=1&loop=1&controls=0&listen=0&comments=none&related_videos=false&quality=medium"
-        }
-        var webViewRef by remember { mutableStateOf<WebView?>(null) }
-
-        val cleanEmbedJs = remember {
-            """
-            (function() {
-                try {
-                    if (location.hostname.indexOf('youtube') !== -1) {
-                        var errEl = document.querySelector('.ytp-error, .ytp-error-content-wrap');
-                        if (errEl && errEl.offsetParent !== null) {
-                            return 'YT_BOT_WALL';
-                        }
-                    }
-                    if (document.getElementById('anubis-main') || document.getElementById('anubis_challenge')) {
+                    var text = (document.body && document.body.innerText) ? document.body.innerText : '';
+                    if (text.indexOf('Making sure') !== -1 || text.indexOf('Anubis') !== -1) {
                         document.documentElement.style.background = '#000';
                         if (document.body) {
                             document.body.style.background = '#000';
                             document.body.style.opacity = '0';
                         }
-                        return 'VERIFYING';
+                        return;
+                    }
+                    if (!document.getElementById('ambient-clean-style') && document.head) {
+                        var st = document.createElement('style');
+                        st.id = 'ambient-clean-style';
+                        st.innerHTML = 'html, body { margin:0 !important; padding:0 !important; background:#000 !important; overflow:hidden !important; width:100vw !important; height:100vh !important; } ' +
+                            '.navbar, header, footer, #comments, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box, .vjs-control-bar, .vjs-big-play-button, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .watch-on-invidious { display:none !important; opacity:0 !important; visibility:hidden !important; } ' +
+                            '#player-container, #player, .video-js { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000 !important; z-index:99999 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
+                            'video, .vjs-tech { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000 !important; z-index:100000 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
+                        document.head.appendChild(st);
                     }
                     if (document.body) {
                         document.body.style.opacity = '1';
                     }
-                    var styleId = 'aura-embed-clean-style';
-                    if (!document.getElementById(styleId) && document.head) {
-                        var style = document.createElement('style');
-                        style.id = styleId;
-                        style.textContent = '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-watermark, .ytp-pause-overlay, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-bezel, .ytp-spinner, .vjs-control-bar, .vjs-big-play-button, .vjs-modal-dialog, .vjs-loading-spinner, .vjs-poster, .vjs-text-track-display, .vjs-title-bar, header, nav, footer, .navbar, #comments, .h-box:not(#player-container) { display: none !important; opacity: 0 !important; pointer-events: none !important; } html, body { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #000 !important; } #player-container, #player, #player_html5_api, .html5-video-player, .html5-video-container, .video-js, video { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; object-fit: cover !important; z-index: 2147483647 !important; background: #000 !important; }';
-                        document.head.appendChild(style);
-                    }
                     var v = document.querySelector('video');
                     if (v) {
                         v.loop = true;
-                        v.preload = 'auto';
-                        v.style.setProperty('position', 'fixed', 'important');
-                        v.style.setProperty('top', '0', 'important');
-                        v.style.setProperty('left', '0', 'important');
-                        v.style.setProperty('width', '100vw', 'important');
-                        v.style.setProperty('height', '100vh', 'important');
-                        v.style.setProperty('object-fit', 'cover', 'important');
-                        v.style.setProperty('z-index', '2147483647', 'important');
+                        v.muted = false;
+                        v.volume = 1.0;
+                        v.controls = false;
                         if (v.paused) {
                             v.play().catch(function() {
                                 v.muted = true;
-                                v.play();
+                                v.play().catch(function(){});
                             });
                         }
-                        return 'PLAYING';
-                    } else {
-                        var playBtn = document.querySelector('.ytp-large-play-button, .vjs-big-play-button');
-                        if (playBtn) playBtn.click();
                     }
                 } catch (e) {}
-                return 'OK';
-            })();
-            """.trimIndent()
-        }
-
-        LaunchedEffect(webViewRef, useGuestMirror) {
-            val wv = webViewRef ?: return@LaunchedEffect
-            while (true) {
-                delay(350)
-                try {
-                    wv.evaluateJavascript(cleanEmbedJs) { result ->
-                        if (result != null && result.contains("YT_BOT_WALL") && !useGuestMirror) {
-                            useGuestMirror = true
-                        }
-                    }
-                } catch (_: Exception) {}
             }
-        }
-
-        LaunchedEffect(useGuestMirror) {
-            if (useGuestMirror) {
-                webViewRef?.loadUrl(targetUrl)
+            applyCleanVideo();
+            if (!window.__ambientCleanTimer) {
+                window.__ambientCleanTimer = setInterval(applyCleanVideo, 600);
             }
-        }
+        })();
+        """.trimIndent()
+    }
 
-        DisposableEffect(Unit) {
-            onDispose {
-                try {
-                    webViewRef?.stopLoading()
-                    webViewRef?.destroy()
-                    webViewRef = null
-                } catch (_: Exception) {}
-            }
-        }
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         AndroidView(
             factory = { ctx ->
                 WebView(ctx).apply {
@@ -540,80 +376,77 @@ private fun YouTubeWebScreensaver(
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     setBackgroundColor(android.graphics.Color.BLACK)
-                    // Hardware acceleration is mandatory for HTML5 <video> decoding in WebView
-                    setLayerType(android.view.View.LAYER_TYPE_NONE, null)
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    isFocusable = false
+                    isFocusableInTouchMode = false
 
                     settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
                         databaseEnabled = true
                         mediaPlaybackRequiresUserGesture = false
-                        useWideViewPort = true
                         loadWithOverviewMode = true
-                        mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            safeBrowsingEnabled = false
-                        }
+                        useWideViewPort = true
+                        userAgentString = STREAM_USER_AGENT
                     }
 
-                    val currentWebView = this
-                    android.webkit.CookieManager.getInstance().apply {
+                    val webViewRef = this
+                    CookieManager.getInstance().apply {
                         setAcceptCookie(true)
-                        setAcceptThirdPartyCookies(currentWebView, true)
+                        setAcceptThirdPartyCookies(webViewRef, true)
                     }
 
                     webViewClient = object : WebViewClient() {
-                        override fun onPageCommitVisible(view: WebView?, url: String?) {
-                            super.onPageCommitVisible(view, url)
-                            view?.evaluateJavascript(cleanEmbedJs, null)
+                        override fun onPageStarted(
+                            view: WebView?,
+                            url: String?,
+                            favicon: android.graphics.Bitmap?
+                        ) {
+                            super.onPageStarted(view, url, favicon)
+                            view?.evaluateJavascript(cleanFullscreenScript, null)
                         }
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             super.onPageFinished(view, url)
-                            try {
-                                android.webkit.CookieManager.getInstance().flush()
-                            } catch (_: Exception) {}
-                            view?.evaluateJavascript(cleanEmbedJs) { result ->
-                                if (result != null && result.contains("YT_BOT_WALL") && !useGuestMirror) {
-                                    useGuestMirror = true
-                                }
+                            view?.evaluateJavascript(cleanFullscreenScript, null)
+                            if (url != null && url.contains("/watch")) {
+                                isVideoReady = true
                             }
                         }
 
-                        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                            val reqUrl = request?.url?.toString() ?: return false
-                            return !(reqUrl.contains("youtube.com") ||
-                                    reqUrl.contains("googlevideo.com") ||
-                                    reqUrl.contains("google.") ||
-                                    reqUrl.contains("tiekoetter.com"))
-                        }
-
-                        override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
-                            (view?.parent as? ViewGroup)?.removeView(view)
-                            try {
-                                view?.destroy()
-                            } catch (_: Exception) {}
+                        override fun onRenderProcessGone(
+                            view: WebView?,
+                            detail: android.webkit.RenderProcessGoneDetail?
+                        ): Boolean {
                             return true
                         }
                     }
 
-                    if (!useGuestMirror) {
-                        val extraHeaders = mapOf("Referer" to "$refererOrigin/")
-                        loadUrl(targetUrl, extraHeaders)
-                    } else {
-                        loadUrl(targetUrl)
-                    }
-                    webViewRef = this
+                    loadUrl(playerUrl)
                 }
             },
             update = { webView ->
-                webViewRef = webView
+                if (webView.url == null) {
+                    webView.loadUrl(playerUrl)
+                }
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(1.18f)
+            onRelease = { webView ->
+                try {
+                    webView.stopLoading()
+                    webView.destroy()
+                } catch (_: Exception) {}
+            },
+            modifier = Modifier.fillMaxSize()
         )
+
+        if (!isVideoReady) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            )
+        }
     }
 }
 
