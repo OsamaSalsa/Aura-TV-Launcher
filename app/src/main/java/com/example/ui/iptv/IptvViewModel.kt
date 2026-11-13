@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.IptvRepository
 import com.example.data.model.IptvChannel
+import com.example.data.model.IptvPlaylist
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,8 +14,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-import com.example.data.model.IptvPlaylist
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IptvViewModel(
@@ -27,6 +26,9 @@ class IptvViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
     val playlists: StateFlow<List<IptvPlaylist>> = iptvRepository.playlistsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -36,11 +38,53 @@ class IptvViewModel(
     val rawCategories: StateFlow<List<String>> = iptvRepository.categoriesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val favoriteChannels: StateFlow<List<IptvChannel>> = iptvRepository.favoriteChannelsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun switchPlaylist(playlistId: Long) {
         viewModelScope.launch {
+            _isSyncing.value = true
             _selectedCategory.value = "All"
             _searchQuery.value = ""
             iptvRepository.switchActivePlaylist(playlistId)
+            _isSyncing.value = false
+        }
+    }
+
+    fun refreshActivePlaylist() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            iptvRepository.refreshActivePlaylist()
+            _isSyncing.value = false
+        }
+    }
+
+    fun addPlaylist(name: String, url: String) {
+        if (url.isBlank()) return
+        viewModelScope.launch {
+            _isSyncing.value = true
+            iptvRepository.addPlaylist(name, url, activateImmediately = true)
+            _isSyncing.value = false
+        }
+    }
+
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch {
+            iptvRepository.deletePlaylist(playlistId)
+        }
+    }
+
+    fun deleteAllPlaylists() {
+        viewModelScope.launch {
+            iptvRepository.deleteAllPlaylists()
+        }
+    }
+
+    fun loadPresetPlaylists() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            iptvRepository.loadPresetPlaylists()
+            _isSyncing.value = false
         }
     }
 
@@ -105,6 +149,10 @@ class IptvViewModel(
     fun toggleFavorite(channel: IptvChannel) {
         viewModelScope.launch {
             iptvRepository.toggleFavorite(channel)
+            val current = _currentPlayingChannel.value
+            if (current != null && current.id == channel.id) {
+                _currentPlayingChannel.value = current.copy(isFavorite = !current.isFavorite)
+            }
         }
     }
 
@@ -116,7 +164,6 @@ class IptvViewModel(
         val current = _currentPlayingChannel.value
         if (current != null) {
             _playbackError.value = null
-            // Trigger restart by briefly setting to null or resetting
             val target = current.copy()
             _currentPlayingChannel.value = null
             _currentPlayingChannel.value = target

@@ -128,31 +128,49 @@ private fun sanitizeFileName(name: String): String {
     return if (clean.isEmpty()) "app_${System.currentTimeMillis()}.apk" else clean
 }
 
-private fun extractFileName(url: String, contentDisposition: String?, mimeType: String?): String {
+private fun extractFileName(
+    url: String,
+    contentDisposition: String?,
+    mimeType: String?,
+    discoveredName: String? = null
+): String {
     // 1. Content-Disposition header
     if (!contentDisposition.isNullOrBlank()) {
         val cdMatcher = Regex("""filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?""", RegexOption.IGNORE_CASE)
             .find(contentDisposition)
         if (cdMatcher != null) {
-            val name = cdMatcher.groupValues[1].trim()
-            if (name.isNotEmpty()) {
-                val s = sanitizeFileName(name)
+            val rawName = Uri.decode(cdMatcher.groupValues[1].trim())
+            if (rawName.isNotEmpty()) {
+                val s = sanitizeFileName(rawName)
                 return if (s.endsWith(".apk", ignoreCase = true)) s else "$s.apk"
             }
         }
     }
 
-    // 2. Extract from URL (e.g. /lm-fos-re-1-1-9-apk.6272018/ or app-v1.apk)
+    // 2. Discovered name from HTML intermediate page (e.g. Google Drive virus-scan warning)
+    if (!discoveredName.isNullOrBlank()) {
+        val cleanDiscovered = sanitizeFileName(Uri.decode(discoveredName.trim()))
+        if (cleanDiscovered.isNotEmpty()) {
+            return if (cleanDiscovered.endsWith(".apk", ignoreCase = true)) cleanDiscovered else "$cleanDiscovered.apk"
+        }
+    }
+
+    // 3. Extract from URL (e.g. /lm-fos-re-1-1-9-apk.6272018/ or app-v1.apk)
     val apkMatcher = Regex("""/([a-zA-Z0-9_\-\.]+?)(?:-apk|\.apk)(?:\.[0-9]+)?(?:/|\?|#|$)""", RegexOption.IGNORE_CASE)
         .find(url)
     if (apkMatcher != null) {
-        val baseName = apkMatcher.groupValues[1].trim()
+        val baseName = Uri.decode(apkMatcher.groupValues[1].trim())
         if (baseName.isNotEmpty()) {
             return sanitizeFileName("$baseName.apk")
         }
     }
 
-    // 3. Fallback to URLUtil
+    val driveId = com.example.ui.common.DownloadUrlResolver.extractGoogleDriveFileId(url)
+    if (!driveId.isNullOrBlank()) {
+        return sanitizeFileName("gdrive_${driveId.take(10)}.apk")
+    }
+
+    // 4. Fallback to URLUtil
     val guessed = URLUtil.guessFileName(url, contentDisposition, mimeType)
     val sanitized = sanitizeFileName(guessed)
     return when {
@@ -213,9 +231,11 @@ fun MiniDownloaderScreen(
     ) {
         downloadJob?.cancel()
         downloadJob = scope.launch(Dispatchers.IO) {
-            var currentUrl = downloadUrl
+            var currentUrl = com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(downloadUrl)
             var currentReferer = referer ?: "http://aftv.news/"
-            val browserUserAgent = if (!userAgent.isNullOrBlank()) {
+            var discoveredHtmlFileName: String? = null
+            val sessionCookies = linkedMapOf<String, String>()
+            val baseUserAgent = if (!userAgent.isNullOrBlank()) {
                 userAgent
             } else {
                 "Mozilla/5.0 (Linux; Android 10; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Downloader/1.4.3"
@@ -233,23 +253,33 @@ fun MiniDownloaderScreen(
             try {
                 var connection: HttpURLConnection? = null
                 var redirects = 0
-                val maxRedirects = 12
+                val maxRedirects = 14
 
                 while (redirects < maxRedirects) {
                     val urlObj = URL(currentUrl)
+                    val effectiveUa = com.example.ui.common.DownloadUrlResolver.resolveUserAgentForUrl(currentUrl, baseUserAgent)
                     val conn = (urlObj.openConnection() as HttpURLConnection).apply {
                         instanceFollowRedirects = false
                         connectTimeout = 20000
                         readTimeout = 30000
-                        setRequestProperty("User-Agent", browserUserAgent)
-                        setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/vnd.android.package-archive,*/*;q=0.8")
+                        setRequestProperty("User-Agent", effectiveUa)
+                        setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/vnd.android.package-archive,application/octet-stream,*/*;q=0.8")
                         setRequestProperty("Accept-Language", "en-US,en;q=0.9,ar;q=0.8")
                         setRequestProperty("Referer", currentReferer)
                         setRequestProperty("Connection", "keep-alive")
 
-                        val cookies = CookieManager.getInstance().getCookie(currentUrl)
-                        if (!cookies.isNullOrBlank()) {
-                            setRequestProperty("Cookie", cookies)
+                        val webViewCookies = CookieManager.getInstance().getCookie(currentUrl)
+                        val mergedCookies = buildString {
+                            if (!webViewCookies.isNullOrBlank()) {
+                                append(webViewCookies.trim().trimEnd(';'))
+                            }
+                            if (sessionCookies.isNotEmpty()) {
+                                if (isNotEmpty()) append("; ")
+                                append(sessionCookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+                            }
+                        }
+                        if (mergedCookies.isNotBlank()) {
+                            setRequestProperty("Cookie", mergedCookies)
                         }
                     }
 
@@ -257,6 +287,12 @@ fun MiniDownloaderScreen(
 
                     conn.headerFields["Set-Cookie"]?.forEach { cookieHeader ->
                         CookieManager.getInstance().setCookie(currentUrl, cookieHeader)
+                        val pair = cookieHeader.substringBefore(";").trim()
+                        val k = pair.substringBefore("=", "").trim()
+                        val v = pair.substringAfter("=", "").trim()
+                        if (k.isNotEmpty()) {
+                            sessionCookies[k] = v
+                        }
                     }
 
                     if (code in 300..399) {
@@ -266,19 +302,22 @@ fun MiniDownloaderScreen(
                             break
                         }
                         currentReferer = currentUrl
-                        currentUrl = if (newLoc.startsWith("http://", ignoreCase = true) || newLoc.startsWith("https://", ignoreCase = true)) {
+                        val resolvedLoc = if (newLoc.startsWith("http://", ignoreCase = true) || newLoc.startsWith("https://", ignoreCase = true)) {
                             newLoc
                         } else {
                             URL(urlObj, newLoc).toString()
                         }
+                        currentUrl = com.example.ui.common.DownloadUrlResolver.unwrapIntentUrl(resolvedLoc)
                         redirects++
                     } else if (code in 200..299) {
                         val contentType = conn.contentType
                         val finalDisposition = conn.getHeaderField("Content-Disposition")
                         val isApkDirect = currentUrl.endsWith(".apk", ignoreCase = true) ||
+                                finalDisposition?.contains("attachment", ignoreCase = true) == true ||
                                 finalDisposition?.contains(".apk", ignoreCase = true) == true ||
                                 contentType?.contains("vnd.android.package-archive", ignoreCase = true) == true ||
-                                contentType?.contains("octet-stream", ignoreCase = true) == true
+                                contentType?.contains("octet-stream", ignoreCase = true) == true ||
+                                contentType?.contains("application/x-apk", ignoreCase = true) == true
 
                         if (!isApkDirect && contentType?.startsWith("text/html", ignoreCase = true) == true) {
                             val htmlBody = try {
@@ -288,18 +327,15 @@ fun MiniDownloaderScreen(
                             }
                             conn.disconnect()
 
-                            val targetLink = Regex("""href=["']([^"']+\.apk[^"']*)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
-                                ?: Regex("""id=["']redirect_message["'][^>]*href=["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
-                                ?: Regex("""window\.location(?:\.href)?\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
-                                ?: Regex("""meta\s+http-equiv=["']refresh["']\s+content=["'][^"']*url=([^"']+)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
+                            val htmlResult = com.example.ui.common.DownloadUrlResolver.parseHtmlDownloadPage(currentUrl, htmlBody)
+                            if (!htmlResult.discoveredFileName.isNullOrBlank()) {
+                                discoveredHtmlFileName = htmlResult.discoveredFileName
+                            }
+                            val targetLink = htmlResult.nextUrl
 
                             if (!targetLink.isNullOrBlank()) {
                                 currentReferer = currentUrl
-                                currentUrl = if (targetLink.startsWith("http://", ignoreCase = true) || targetLink.startsWith("https://", ignoreCase = true)) {
-                                    targetLink
-                                } else {
-                                    URL(urlObj, targetLink).toString()
-                                }
+                                currentUrl = targetLink
                                 redirects++
                                 continue
                             } else {
@@ -336,7 +372,12 @@ fun MiniDownloaderScreen(
                 val contentType = conn.contentType ?: mimeType
                 val finalDisposition = conn.getHeaderField("Content-Disposition") ?: contentDisposition
 
-                val guessedName = extractFileName(currentUrl, finalDisposition, contentType)
+                val guessedName = extractFileName(
+                    url = currentUrl,
+                    contentDisposition = finalDisposition,
+                    mimeType = contentType,
+                    discoveredName = discoveredHtmlFileName
+                )
                 val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
                 if (!downloadDir.exists()) downloadDir.mkdirs()
                 val outputFile = File(downloadDir, guessedName)
@@ -397,6 +438,17 @@ fun MiniDownloaderScreen(
             trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true) -> trimmed
             trimmed.contains(".") && !trimmed.all { it.isDigit() } -> "http://$trimmed"
             else -> "http://aftv.news/$trimmed"
+        }
+
+        if (com.example.ui.common.DownloadUrlResolver.shouldInterceptAsDownload(finalUrl)) {
+            launchDownload(
+                com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(finalUrl),
+                null,
+                null,
+                "application/vnd.android.package-archive",
+                finalUrl
+            )
+            return
         }
 
         downloadState = DownloadState.Idle
@@ -1499,19 +1551,23 @@ fun BrowserScreen(
                             }
 
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                            val targetUrl = request?.url?.toString() ?: return false
-                            val isApk = targetUrl.endsWith(".apk", ignoreCase = true) ||
-                                        targetUrl.contains(".apk?", ignoreCase = true) ||
-                                        targetUrl.contains(".apk&", ignoreCase = true) ||
-                                        targetUrl.contains("-apk.", ignoreCase = true)
-                            if (isApk) {
+                            val rawUrl = request?.url?.toString() ?: return false
+                            if (com.example.ui.common.DownloadUrlResolver.shouldInterceptAsDownload(rawUrl)) {
                                 onRequestDownload(
-                                    targetUrl,
+                                    com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(rawUrl),
                                     view?.settings?.userAgentString,
                                     null,
                                     "application/vnd.android.package-archive",
                                     currentDisplayUrl
                                 )
+                                return true
+                            }
+                            if (rawUrl.startsWith("intent://", ignoreCase = true)) {
+                                val unwrapped = com.example.ui.common.DownloadUrlResolver.unwrapIntentUrl(rawUrl)
+                                if (unwrapped != rawUrl && (unwrapped.startsWith("http://", ignoreCase = true) || unwrapped.startsWith("https://", ignoreCase = true))) {
+                                    view?.loadUrl(unwrapped)
+                                    return true
+                                }
                                 return true
                             }
                             return false
@@ -1521,12 +1577,9 @@ fun BrowserScreen(
                             super.onReceivedError(view, request, error)
                             if (request?.isForMainFrame == true) {
                                 val failingUrl = request.url?.toString() ?: ""
-                                val isApk = failingUrl.endsWith(".apk", ignoreCase = true) ||
-                                            failingUrl.contains(".apk?", ignoreCase = true) ||
-                                            failingUrl.contains(".apk&", ignoreCase = true)
-                                if (isApk) {
+                                if (com.example.ui.common.DownloadUrlResolver.shouldInterceptAsDownload(failingUrl)) {
                                     onRequestDownload(
-                                        failingUrl,
+                                        com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(failingUrl),
                                         view?.settings?.userAgentString,
                                         null,
                                         "application/vnd.android.package-archive",
@@ -1545,6 +1598,7 @@ fun BrowserScreen(
                         override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: Bitmap?) {
                             super.onPageStarted(view, startedUrl, favicon)
                             injectWebViewStabilityShim(view, disableWebGl = true)
+                            com.example.ui.common.DownloadUrlResolver.injectPopupAndBlankTargetShim(view)
                             isLoading = true
                             startedUrl?.let { currentDisplayUrl = it }
                         }
@@ -1552,6 +1606,7 @@ fun BrowserScreen(
                         override fun onPageFinished(view: WebView?, finishedUrl: String?) {
                             super.onPageFinished(view, finishedUrl)
                             injectWebViewStabilityShim(view, disableWebGl = true)
+                            com.example.ui.common.DownloadUrlResolver.injectPopupAndBlankTargetShim(view)
                             isLoading = false
                             finishedUrl?.let { currentDisplayUrl = it }
 

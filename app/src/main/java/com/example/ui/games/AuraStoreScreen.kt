@@ -118,26 +118,43 @@ private fun sanitizeFileName(name: String): String {
     return if (clean.isEmpty()) "app_${System.currentTimeMillis()}.apk" else clean
 }
 
-private fun extractApkFileName(url: String, contentDisposition: String?, mimeType: String?): String {
+private fun extractApkFileName(
+    url: String,
+    contentDisposition: String?,
+    mimeType: String?,
+    discoveredName: String? = null
+): String {
     if (!contentDisposition.isNullOrBlank()) {
         val cdMatcher = Regex("""filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?""", RegexOption.IGNORE_CASE)
             .find(contentDisposition)
         if (cdMatcher != null) {
-            val name = cdMatcher.groupValues[1].trim()
-            if (name.isNotEmpty()) {
-                val s = sanitizeFileName(name)
+            val rawName = Uri.decode(cdMatcher.groupValues[1].trim())
+            if (rawName.isNotEmpty()) {
+                val s = sanitizeFileName(rawName)
                 return if (s.endsWith(".apk", ignoreCase = true)) s else "$s.apk"
             }
+        }
+    }
+
+    if (!discoveredName.isNullOrBlank()) {
+        val cleanDiscovered = sanitizeFileName(Uri.decode(discoveredName.trim()))
+        if (cleanDiscovered.isNotEmpty()) {
+            return if (cleanDiscovered.endsWith(".apk", ignoreCase = true)) cleanDiscovered else "$cleanDiscovered.apk"
         }
     }
 
     val apkMatcher = Regex("""/([a-zA-Z0-9_\-\.]+?)(?:-apk|\.apk)(?:\.[0-9]+)?(?:/|\?|#|$)""", RegexOption.IGNORE_CASE)
         .find(url)
     if (apkMatcher != null) {
-        val baseName = apkMatcher.groupValues[1].trim()
+        val baseName = Uri.decode(apkMatcher.groupValues[1].trim())
         if (baseName.isNotEmpty()) {
             return sanitizeFileName("$baseName.apk")
         }
+    }
+
+    val driveId = com.example.ui.common.DownloadUrlResolver.extractGoogleDriveFileId(url)
+    if (!driveId.isNullOrBlank()) {
+        return sanitizeFileName("gdrive_${driveId.take(10)}.apk")
     }
 
     val guessed = URLUtil.guessFileName(url, contentDisposition, mimeType)
@@ -213,7 +230,7 @@ fun AuraStoreScreen(
     // Virtual Mouse State for TV Remote Control
     var isMouseModeEnabled by remember { mutableStateOf(false) }
 
-    // Download engine identical to Mini Downloader
+    // Download engine supporting direct APK links, Google Drive (including virus-scan warning bypass), and MediaFire
     fun startDownload(
         downloadUrl: String,
         userAgent: String?,
@@ -223,9 +240,11 @@ fun AuraStoreScreen(
     ) {
         downloadJob?.cancel()
         downloadJob = scope.launch(Dispatchers.IO) {
-            var currentUrl = downloadUrl
+            var currentUrl = com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(downloadUrl)
             var currentReferer = referer ?: AURA_STORE_URL
-            val browserUserAgent = if (!userAgent.isNullOrBlank()) {
+            var discoveredHtmlFileName: String? = null
+            val sessionCookies = linkedMapOf<String, String>()
+            val baseUserAgent = if (!userAgent.isNullOrBlank()) {
                 userAgent
             } else {
                 AURA_STORE_USER_AGENT
@@ -243,23 +262,33 @@ fun AuraStoreScreen(
             try {
                 var connection: HttpURLConnection? = null
                 var redirects = 0
-                val maxRedirects = 12
+                val maxRedirects = 14
 
                 while (redirects < maxRedirects) {
                     val urlObj = URL(currentUrl)
+                    val effectiveUa = com.example.ui.common.DownloadUrlResolver.resolveUserAgentForUrl(currentUrl, baseUserAgent)
                     val conn = (urlObj.openConnection() as HttpURLConnection).apply {
                         instanceFollowRedirects = false
                         connectTimeout = 20000
                         readTimeout = 30000
-                        setRequestProperty("User-Agent", browserUserAgent)
-                        setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/vnd.android.package-archive,*/*;q=0.8")
+                        setRequestProperty("User-Agent", effectiveUa)
+                        setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/vnd.android.package-archive,application/octet-stream,*/*;q=0.8")
                         setRequestProperty("Accept-Language", "$appLanguage,en;q=0.9")
                         setRequestProperty("Referer", currentReferer)
                         setRequestProperty("Connection", "keep-alive")
 
-                        val cookies = CookieManager.getInstance().getCookie(currentUrl)
-                        if (!cookies.isNullOrBlank()) {
-                            setRequestProperty("Cookie", cookies)
+                        val webViewCookies = CookieManager.getInstance().getCookie(currentUrl)
+                        val mergedCookies = buildString {
+                            if (!webViewCookies.isNullOrBlank()) {
+                                append(webViewCookies.trim().trimEnd(';'))
+                            }
+                            if (sessionCookies.isNotEmpty()) {
+                                if (isNotEmpty()) append("; ")
+                                append(sessionCookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+                            }
+                        }
+                        if (mergedCookies.isNotBlank()) {
+                            setRequestProperty("Cookie", mergedCookies)
                         }
                     }
 
@@ -267,6 +296,12 @@ fun AuraStoreScreen(
 
                     conn.headerFields["Set-Cookie"]?.forEach { cookieHeader ->
                         CookieManager.getInstance().setCookie(currentUrl, cookieHeader)
+                        val pair = cookieHeader.substringBefore(";").trim()
+                        val k = pair.substringBefore("=", "").trim()
+                        val v = pair.substringAfter("=", "").trim()
+                        if (k.isNotEmpty()) {
+                            sessionCookies[k] = v
+                        }
                     }
 
                     if (code in 300..399) {
@@ -274,19 +309,22 @@ fun AuraStoreScreen(
                         conn.disconnect()
                         if (newLoc.isNullOrBlank()) break
                         currentReferer = currentUrl
-                        currentUrl = if (newLoc.startsWith("http://", ignoreCase = true) || newLoc.startsWith("https://", ignoreCase = true)) {
+                        val resolvedLoc = if (newLoc.startsWith("http://", ignoreCase = true) || newLoc.startsWith("https://", ignoreCase = true)) {
                             newLoc
                         } else {
                             URL(urlObj, newLoc).toString()
                         }
+                        currentUrl = com.example.ui.common.DownloadUrlResolver.unwrapIntentUrl(resolvedLoc)
                         redirects++
                     } else if (code in 200..299) {
                         val contentType = conn.contentType
                         val finalDisposition = conn.getHeaderField("Content-Disposition")
                         val isApkDirect = currentUrl.endsWith(".apk", ignoreCase = true) ||
+                                finalDisposition?.contains("attachment", ignoreCase = true) == true ||
                                 finalDisposition?.contains(".apk", ignoreCase = true) == true ||
                                 contentType?.contains("vnd.android.package-archive", ignoreCase = true) == true ||
-                                contentType?.contains("octet-stream", ignoreCase = true) == true
+                                contentType?.contains("octet-stream", ignoreCase = true) == true ||
+                                contentType?.contains("application/x-apk", ignoreCase = true) == true
 
                         if (!isApkDirect && contentType?.startsWith("text/html", ignoreCase = true) == true) {
                             val htmlBody = try {
@@ -294,17 +332,15 @@ fun AuraStoreScreen(
                             } catch (_: Exception) { "" }
                             conn.disconnect()
 
-                            val targetLink = Regex("""href=["']([^"']+\.apk[^"']*)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
-                                ?: Regex("""id=["']redirect_message["'][^>]*href=["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
-                                ?: Regex("""window\.location(?:\.href)?\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(htmlBody)?.groupValues?.get(1)
+                            val htmlResult = com.example.ui.common.DownloadUrlResolver.parseHtmlDownloadPage(currentUrl, htmlBody)
+                            if (!htmlResult.discoveredFileName.isNullOrBlank()) {
+                                discoveredHtmlFileName = htmlResult.discoveredFileName
+                            }
+                            val targetLink = htmlResult.nextUrl
 
                             if (!targetLink.isNullOrBlank()) {
                                 currentReferer = currentUrl
-                                currentUrl = if (targetLink.startsWith("http://", ignoreCase = true) || targetLink.startsWith("https://", ignoreCase = true)) {
-                                    targetLink
-                                } else {
-                                    URL(urlObj, targetLink).toString()
-                                }
+                                currentUrl = targetLink
                                 redirects++
                                 continue
                             } else {
@@ -327,7 +363,12 @@ fun AuraStoreScreen(
                 val conn = connection ?: throw Exception(context.getString(R.string.aurastore_download_failed))
                 val finalDisposition = conn.getHeaderField("Content-Disposition") ?: contentDisposition
                 val contentType = conn.contentType ?: mimeType
-                val guessedName = extractApkFileName(currentUrl, finalDisposition, contentType)
+                val guessedName = extractApkFileName(
+                    url = currentUrl,
+                    contentDisposition = finalDisposition,
+                    mimeType = contentType,
+                    discoveredName = discoveredHtmlFileName
+                )
 
                 val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
                 if (!downloadDir.exists()) downloadDir.mkdirs()
@@ -540,19 +581,23 @@ fun AuraStoreScreen(
                                         }
 
                                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                            val targetUrl = request?.url?.toString() ?: return false
-                                            val isApk = targetUrl.endsWith(".apk", ignoreCase = true) ||
-                                                        targetUrl.contains(".apk?", ignoreCase = true) ||
-                                                        targetUrl.contains(".apk&", ignoreCase = true) ||
-                                                        targetUrl.contains("-apk.", ignoreCase = true)
-                                            if (isApk) {
+                                            val rawUrl = request?.url?.toString() ?: return false
+                                            if (com.example.ui.common.DownloadUrlResolver.shouldInterceptAsDownload(rawUrl)) {
                                                 startDownload(
-                                                    targetUrl,
+                                                    com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(rawUrl),
                                                     view?.settings?.userAgentString,
                                                     null,
                                                     "application/vnd.android.package-archive",
                                                     AURA_STORE_URL
                                                 )
+                                                return true
+                                            }
+                                            if (rawUrl.startsWith("intent://", ignoreCase = true)) {
+                                                val unwrapped = com.example.ui.common.DownloadUrlResolver.unwrapIntentUrl(rawUrl)
+                                                if (unwrapped != rawUrl && (unwrapped.startsWith("http://", ignoreCase = true) || unwrapped.startsWith("https://", ignoreCase = true))) {
+                                                    view?.loadUrl(unwrapped)
+                                                    return true
+                                                }
                                                 return true
                                             }
                                             return false
@@ -562,12 +607,9 @@ fun AuraStoreScreen(
                                             super.onReceivedError(view, request, error)
                                             if (request?.isForMainFrame == true) {
                                                 val failingUrl = request.url?.toString() ?: ""
-                                                val isApk = failingUrl.endsWith(".apk", ignoreCase = true) ||
-                                                            failingUrl.contains(".apk?", ignoreCase = true) ||
-                                                            failingUrl.contains(".apk&", ignoreCase = true)
-                                                if (isApk) {
+                                                if (com.example.ui.common.DownloadUrlResolver.shouldInterceptAsDownload(failingUrl)) {
                                                     startDownload(
-                                                        failingUrl,
+                                                        com.example.ui.common.DownloadUrlResolver.normalizeInitialDownloadUrl(failingUrl),
                                                         view?.settings?.userAgentString,
                                                         null,
                                                         "application/vnd.android.package-archive",
@@ -580,12 +622,14 @@ fun AuraStoreScreen(
                                         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                             super.onPageStarted(view, url, favicon)
                                             injectWebViewStabilityShim(view, disableWebGl = true)
+                                            com.example.ui.common.DownloadUrlResolver.injectPopupAndBlankTargetShim(view)
                                             isLoading = true
                                         }
 
                                         override fun onPageFinished(view: WebView?, url: String?) {
                                             super.onPageFinished(view, url)
                                             injectWebViewStabilityShim(view, disableWebGl = true)
+                                            com.example.ui.common.DownloadUrlResolver.injectPopupAndBlankTargetShim(view)
                                             isLoading = false
                                             if (!isMouseModeEnabled) {
                                                 view?.post { view.requestFocus() }

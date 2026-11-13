@@ -37,14 +37,16 @@ class AuraTvApp : Application() {
             }
         }
 
+        // Validate WebView cache paths once synchronously before any WebView is constructed
+        com.example.ui.common.ensureWebViewCacheDirs(this)
+
         database = AppDatabase.getDatabase(this)
         preferences = LauncherPreferences(this)
         appRepository = AppRepository(this, preferences)
         iptvRepository = IptvRepository(database.iptvDao(), preferences)
 
-        // Initialize defaults for IPTV and ensure WebView Code Cache directories exist early
+        // Initialize defaults for IPTV
         applicationScope.launch(Dispatchers.IO) {
-            com.example.ui.common.ensureWebViewCacheDirs(this@AuraTvApp)
             iptvRepository.initializeDefaultsIfNeeded()
         }
     }

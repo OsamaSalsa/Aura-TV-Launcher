@@ -306,6 +306,8 @@ fun LauncherNavigation(
     appLanguage: String = "en"
 ) {
     var currentScreen by remember { mutableStateOf(LauncherScreen.HOME) }
+    var settingsInitialSection by remember { mutableStateOf(com.example.ui.settings.SettingsSection.SYSTEM) }
+    var settingsReturnScreen by remember { mutableStateOf(LauncherScreen.HOME) }
     var selectedChannelIdToPlay by remember { mutableStateOf<Long?>(null) }
     var voiceSearchTriggerTick by remember { mutableStateOf(0) }
 
@@ -529,6 +531,8 @@ fun LauncherNavigation(
                             currentScreen = LauncherScreen.MINI_DOWNLOADER
                         },
                         onOpenSettings = {
+                            settingsInitialSection = com.example.ui.settings.SettingsSection.SYSTEM
+                            settingsReturnScreen = LauncherScreen.HOME
                             currentScreen = LauncherScreen.SETTINGS
                         }
                     )
@@ -538,6 +542,8 @@ fun LauncherNavigation(
                     IptvScreen(
                         viewModel = iptvViewModel,
                         onOpenSettings = {
+                            settingsInitialSection = com.example.ui.settings.SettingsSection.IPTV
+                            settingsReturnScreen = LauncherScreen.IPTV
                             currentScreen = LauncherScreen.SETTINGS
                         },
                         onBackToHome = {
@@ -614,8 +620,9 @@ fun LauncherNavigation(
                 LauncherScreen.SETTINGS -> {
                     SettingsScreen(
                         viewModel = settingsViewModel,
+                        initialSection = settingsInitialSection,
                         onBackToHome = {
-                            currentScreen = LauncherScreen.HOME
+                            currentScreen = settingsReturnScreen
                         }
                     )
                 }

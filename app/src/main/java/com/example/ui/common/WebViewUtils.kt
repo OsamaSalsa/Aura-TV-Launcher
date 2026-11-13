@@ -64,31 +64,43 @@ fun grantSafeWebPermissions(request: PermissionRequest?) {
     } catch (_: Exception) {}
 }
 
+private val webViewCacheLock = Any()
+@Volatile
+private var webViewCachePrepared = false
+
 /**
- * Ensures Chromium's HTTP Cache / Code Cache directories exist and are directories (not stale files)
- * so SimpleBackendImpl never logs Failed to create directory errors during concurrent WebView init.
+ * Validates cacheDir and cleans up any broken non-directory entries along Chromium's cache path
+ * strictly before the first WebView initializes so SimpleBackendImpl never races or hits EACCES.
  */
 fun ensureWebViewCacheDirs(context: Context) {
-    try {
-        val cacheRoot = context.cacheDir ?: return
-        val targets = listOf(
-            "WebView/Default/HTTP Cache/Code Cache/js",
-            "WebView/Default/HTTP Cache/Code Cache/wasm"
-        )
-        for (rel in targets) {
-            val dir = File(cacheRoot, rel)
-            var parent: File? = dir
-            while (parent != null && parent != cacheRoot) {
-                if (parent.exists() && !parent.isDirectory) {
-                    parent.delete()
-                }
-                parent = parent.parentFile
+    if (webViewCachePrepared) return
+    synchronized(webViewCacheLock) {
+        if (webViewCachePrepared) return
+        try {
+            val cacheRoot = context.cacheDir ?: return
+            if (!cacheRoot.exists()) {
+                cacheRoot.mkdirs()
             }
-            if (!dir.exists()) {
-                dir.mkdirs()
+            cacheRoot.setReadable(true, true)
+            cacheRoot.setWritable(true, true)
+            cacheRoot.setExecutable(true, true)
+
+            val webViewRoot = File(cacheRoot, "WebView")
+            if (webViewRoot.exists() && !webViewRoot.isDirectory) {
+                webViewRoot.delete()
             }
-        }
-    } catch (_: Exception) {}
+            // If an interrupted run left an unreadable/unwritable Code Cache leaf, reset it cleanly before Chromium starts
+            val codeCacheJs = File(cacheRoot, "WebView/Default/HTTP Cache/Code Cache/js")
+            if (codeCacheJs.exists() && (!codeCacheJs.isDirectory || !codeCacheJs.canWrite() || !codeCacheJs.canRead())) {
+                codeCacheJs.deleteRecursively()
+            }
+            val codeCacheWasm = File(cacheRoot, "WebView/Default/HTTP Cache/Code Cache/wasm")
+            if (codeCacheWasm.exists() && (!codeCacheWasm.isDirectory || !codeCacheWasm.canWrite() || !codeCacheWasm.canRead())) {
+                codeCacheWasm.deleteRecursively()
+            }
+            webViewCachePrepared = true
+        } catch (_: Exception) {}
+    }
 }
 
 fun isWebViewDestroyed(webView: WebView?): Boolean =
@@ -99,7 +111,6 @@ fun isWebViewDestroyed(webView: WebView?): Boolean =
  * on emulators/TV boxes without /dev/dri/renderD128 or hardware MediaDrm factories.
  */
 fun hardenWebView(webView: WebView) {
-    ensureWebViewCacheDirs(webView.context)
     try {
         // LAYER_TYPE_NONE allows HTML5 <video> hardware surfaces to render video frames
         // while avoiding allocating an extra offscreen hardware layer buffer.

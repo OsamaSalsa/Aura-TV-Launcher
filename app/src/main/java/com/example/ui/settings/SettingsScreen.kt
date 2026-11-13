@@ -126,10 +126,11 @@ private data class SystemShortcutItem(
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    initialSection: SettingsSection = SettingsSection.SYSTEM,
     onBackToHome: () -> Unit
 ) {
     val context = LocalContext.current
-    var currentSection by remember { mutableStateOf(SettingsSection.SYSTEM) }
+    var currentSection by remember(initialSection) { mutableStateOf(initialSection) }
     val initialSidebarFocus = remember { androidx.compose.ui.focus.FocusRequester() }
 
     val isDynamicBg by viewModel.isDynamicBgEnabled.collectAsState()
@@ -371,7 +372,7 @@ fun SettingsScreen(
                         TvFocusableCard(
                             onClick = { currentSection = section },
                             onFocused = { currentSection = section },
-                            focusRequester = if (index == 0) initialSidebarFocus else remember { androidx.compose.ui.focus.FocusRequester() },
+                            focusRequester = if (section == initialSection) initialSidebarFocus else remember { androidx.compose.ui.focus.FocusRequester() },
                             scaleUpRatio = 1.03f,
                             shape = RoundedCornerShape(14.dp),
                             useDefaultBorder = false,
@@ -1651,11 +1652,105 @@ fun SettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(bottom = 32.dp)
                         ) {
-                            // Add New IPTV Playlist Card
+                            // 1. Active Playlist Live Dashboard Banner
+                            item {
+                                SettingsGlassCard(
+                                    highlightColor = TvAccentGold,
+                                    highlightActive = activeIptvPlaylist != null
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(TvAccentGold.copy(alpha = 0.18f))
+                                                    .border(1.dp, TvAccentGold.copy(alpha = 0.5f), RoundedCornerShape(14.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.LiveTv,
+                                                    contentDescription = null,
+                                                    tint = TvAccentGold,
+                                                    modifier = Modifier.size(26.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = activeIptvPlaylist?.name ?: stringResource(R.string.iptv_title),
+                                                        color = TvTextPrimary,
+                                                        fontSize = 17.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    if (activeIptvPlaylist != null) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                                .background(TvAccentGold)
+                                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = stringResource(R.string.settings_iptv_active_tag),
+                                                                color = Color.Black,
+                                                                fontSize = 10.sp,
+                                                                fontWeight = FontWeight.ExtraBold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(3.dp))
+                                                Text(
+                                                    text = activeIptvPlaylist?.let {
+                                                        "${stringResource(R.string.settings_iptv_channels_count).format(it.channelCount)} • ${it.url}"
+                                                    } ?: stringResource(R.string.iptv_no_playlist),
+                                                    color = TvTextSecondary,
+                                                    fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            TvActionButton(
+                                                text = stringResource(R.string.settings_iptv_sync_button),
+                                                icon = Icons.Default.Refresh,
+                                                onClick = { viewModel.refreshIptvPlaylist() },
+                                                baseColor = TvAccentGold.copy(alpha = 0.85f),
+                                                focusedColor = TvAccentGold
+                                            )
+                                            TvActionButton(
+                                                text = stringResource(R.string.settings_iptv_load_presets),
+                                                onClick = { viewModel.loadPresetPlaylists() },
+                                                baseColor = Color(0xFF23304A),
+                                                focusedColor = TvAccentGold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Add New IPTV Playlist Card (With TV Remote Quick-Insert Chips)
                             item {
                                 SettingsGlassCard {
                                     SettingsCardHeader(
-                                        icon = Icons.Default.LiveTv,
+                                        icon = Icons.Default.Add,
                                         title = stringResource(R.string.settings_iptv_add_new)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
@@ -1679,34 +1774,79 @@ fun SettingsScreen(
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        TvActionButton(
-                                            text = stringResource(R.string.settings_iptv_add_button),
-                                            icon = Icons.Default.Add,
-                                            onClick = {
-                                                if (newPlaylistUrl.isNotBlank()) {
-                                                    viewModel.addIptvPlaylist(newPlaylistName, newPlaylistUrl)
-                                                    newPlaylistName = ""
-                                                    newPlaylistUrl = ""
+                                    // TV Remote Quick-Fill URL Chips + Add Action Row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            listOf("https://", "http://", ".m3u", ".m3u8").forEach { token ->
+                                                TvFocusableCard(
+                                                    onClick = {
+                                                        newPlaylistUrl = if (token.startsWith("http")) {
+                                                            if (newPlaylistUrl.startsWith("http")) newPlaylistUrl else token + newPlaylistUrl
+                                                        } else {
+                                                            if (newPlaylistUrl.endsWith(token)) newPlaylistUrl else newPlaylistUrl + token
+                                                        }
+                                                    },
+                                                    scaleUpRatio = 1.06f,
+                                                    elevation = 0.dp,
+                                                    cardBackgroundColor = Color.Transparent,
+                                                    useDefaultBorder = false,
+                                                    modifier = Modifier.height(36.dp)
+                                                ) { isFocused ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxHeight()
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(
+                                                                if (isFocused) TvAccentGold else Color(0xFF1A2540)
+                                                            )
+                                                            .border(
+                                                                width = 1.dp,
+                                                                color = if (isFocused) Color.White else TvAccentGold.copy(alpha = 0.35f),
+                                                                shape = RoundedCornerShape(10.dp)
+                                                            )
+                                                            .padding(horizontal = 12.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = token,
+                                                            color = if (isFocused) Color.Black else TvAccentGold,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.ExtraBold
+                                                        )
+                                                    }
                                                 }
-                                            },
-                                            baseColor = TvAccentGold.copy(alpha = 0.88f),
-                                            focusedColor = TvAccentGold
-                                        )
+                                            }
+                                        }
 
-                                        TvActionButton(
-                                            text = stringResource(R.string.settings_iptv_load_presets),
-                                            onClick = { viewModel.loadPresetPlaylists() },
-                                            baseColor = Color(0xFF23304A),
-                                            focusedColor = TvAccentGold
-                                        )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            TvActionButton(
+                                                text = stringResource(R.string.settings_iptv_add_button),
+                                                icon = Icons.Default.Add,
+                                                onClick = {
+                                                    if (newPlaylistUrl.isNotBlank()) {
+                                                        viewModel.addIptvPlaylist(newPlaylistName, newPlaylistUrl)
+                                                        newPlaylistName = ""
+                                                        newPlaylistUrl = ""
+                                                    }
+                                                },
+                                                baseColor = TvAccentGold.copy(alpha = 0.90f),
+                                                focusedColor = TvAccentGold
+                                            )
+                                        }
                                     }
                                 }
                             }
 
-                            // Saved IPTV Playlists Header with Delete All Option
+                            // 3. Saved IPTV Playlists Header with Delete All Option
                             item {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1760,57 +1900,85 @@ fun SettingsScreen(
                                                     highlightColor = TvAccentGold,
                                                     highlightActive = isActive
                                                 ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
+                                                    // 1-Click TV-Remote-Focusable Playlist Header Card (Press OK to Activate or Sync!)
+                                                    TvFocusableCard(
+                                                        onClick = {
+                                                            if (isActive) {
+                                                                viewModel.refreshIptvPlaylist()
+                                                            } else {
+                                                                viewModel.switchIptvPlaylist(playlist.id)
+                                                            }
+                                                        },
+                                                        scaleUpRatio = 1.02f,
+                                                        elevation = 0.dp,
+                                                        cardBackgroundColor = Color.Transparent,
+                                                        useDefaultBorder = false,
                                                         modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Box(
+                                                    ) { cardFocused ->
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
                                                             modifier = Modifier
-                                                                .size(36.dp)
-                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .fillMaxWidth()
+                                                                .clip(RoundedCornerShape(12.dp))
                                                                 .background(
-                                                                    if (isActive) TvAccentGold.copy(alpha = 0.18f)
-                                                                    else Color.White.copy(alpha = 0.08f)
-                                                                ),
-                                                            contentAlignment = Alignment.Center
+                                                                    if (cardFocused) TvAccentGold.copy(alpha = 0.20f)
+                                                                    else Color.White.copy(alpha = 0.04f)
+                                                                )
+                                                                .border(
+                                                                    width = if (cardFocused) 2.dp else 1.dp,
+                                                                    color = if (cardFocused) TvAccentGold else Color.White.copy(alpha = 0.08f),
+                                                                    shape = RoundedCornerShape(12.dp)
+                                                                )
+                                                                .padding(12.dp)
                                                         ) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.LiveTv,
-                                                                contentDescription = null,
-                                                                tint = if (isActive) TvAccentGoldRadiant else TvTextPrimary,
-                                                                modifier = Modifier.size(19.dp)
-                                                            )
-                                                        }
-                                                        Spacer(modifier = Modifier.width(10.dp))
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = playlist.name,
-                                                                color = TvTextPrimary,
-                                                                fontSize = 15.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                            Text(
-                                                                text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
-                                                                color = if (isActive) TvAccentGoldRadiant else TvTextSecondary,
-                                                                fontSize = 12.sp
-                                                            )
-                                                        }
-                                                        if (isActive) {
-                                                            Spacer(modifier = Modifier.width(6.dp))
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .clip(RoundedCornerShape(8.dp))
-                                                                    .background(TvAccentGold)
-                                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                                                    .size(40.dp)
+                                                                    .clip(RoundedCornerShape(10.dp))
+                                                                    .background(
+                                                                        if (isActive || cardFocused) TvAccentGold.copy(alpha = 0.22f)
+                                                                        else Color.White.copy(alpha = 0.08f)
+                                                                    ),
+                                                                contentAlignment = Alignment.Center
                                                             ) {
-                                                                Text(
-                                                                    text = stringResource(R.string.settings_iptv_active_tag),
-                                                                    color = Color.Black,
-                                                                    fontSize = 10.sp,
-                                                                    fontWeight = FontWeight.ExtraBold
+                                                                Icon(
+                                                                    imageVector = if (isActive) Icons.Default.CheckCircle else Icons.Default.LiveTv,
+                                                                    contentDescription = null,
+                                                                    tint = if (isActive || cardFocused) TvAccentGoldRadiant else TvTextPrimary,
+                                                                    modifier = Modifier.size(20.dp)
                                                                 )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(12.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = playlist.name,
+                                                                    color = TvTextPrimary,
+                                                                    fontSize = 15.sp,
+                                                                    fontWeight = FontWeight.ExtraBold,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
+                                                                    color = if (isActive || cardFocused) TvAccentGoldRadiant else TvTextSecondary,
+                                                                    fontSize = 12.sp
+                                                                )
+                                                            }
+                                                            if (isActive) {
+                                                                Spacer(modifier = Modifier.width(6.dp))
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .clip(RoundedCornerShape(8.dp))
+                                                                        .background(TvAccentGold)
+                                                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                                                ) {
+                                                                    Text(
+                                                                        text = stringResource(R.string.settings_iptv_active_tag),
+                                                                        color = Color.Black,
+                                                                        fontSize = 10.sp,
+                                                                        fontWeight = FontWeight.ExtraBold
+                                                                    )
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -1825,7 +1993,7 @@ fun SettingsScreen(
                                                         overflow = TextOverflow.Ellipsis
                                                     )
 
-                                                    Spacer(modifier = Modifier.height(14.dp))
+                                                    Spacer(modifier = Modifier.height(12.dp))
 
                                                     Row(
                                                         modifier = Modifier.fillMaxWidth(),
