@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsEthernet
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.foundation.background
@@ -443,11 +444,11 @@ fun TvTopBar(
                 )
             }
 
-            // Settings Button: ONLY Icon (no text label "Settings")
+            // Control Center Button (long-press opens full Settings)
             TvActionButton(
-                icon = Icons.Default.Settings, 
-                text = "", 
-                onClick = onOpenControlCenter ?: onOpenSettings, 
+                icon = if (onOpenControlCenter != null) Icons.Default.Tune else Icons.Default.Settings,
+                text = "",
+                onClick = onOpenControlCenter ?: onOpenSettings,
                 onLongClick = onOpenSettings,
                 onFocused = onNonAppFocused,
                 onRequestFocusDown = onRequestFocusDown,
@@ -473,8 +474,8 @@ fun TvActionButton(
 ) {
     TvFocusableCard(
         onClick = onClick,
-        onLongClick = onLongClick ?: {},
-        onFocused = onFocused ?: {},
+        onLongClick = onLongClick,
+        onFocused = onFocused,
         focusRequester = focusRequester ?: remember { FocusRequester() },
         scaleUpRatio = 1.05f,
         useDefaultBorder = false,

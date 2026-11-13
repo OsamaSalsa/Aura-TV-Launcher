@@ -37,6 +37,19 @@ private val FastFocusTween = tween<Float>(durationMillis = 110, easing = FastOut
 private val FocusedGlowColor = TvAccentGoldRadiant.copy(alpha = 0.75f)
 private val UnfocusedBorderColor = Color.White.copy(alpha = 0.08f)
 
+fun isRemoteMenuKey(keyCode: Int): Boolean {
+    return keyCode == KeyEvent.KEYCODE_MENU ||
+        keyCode == KeyEvent.KEYCODE_TV_CONTENTS_MENU ||
+        keyCode == KeyEvent.KEYCODE_TV_MEDIA_CONTEXT_MENU ||
+        keyCode == KeyEvent.KEYCODE_SETTINGS ||
+        keyCode == KeyEvent.KEYCODE_BOOKMARK ||
+        keyCode == 82 ||
+        keyCode == 174 ||
+        keyCode == 176 ||
+        keyCode == 256 ||
+        keyCode == 257
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TvFocusableCard(
@@ -88,22 +101,22 @@ fun TvFocusableCard(
                     }
                 }
             }
-            .focusRequester(focusRequester)
-            .focusable()
             .onKeyEvent { keyEvent ->
                 val native = keyEvent.nativeKeyEvent
-                if (isFocused && native.action == KeyEvent.ACTION_DOWN) {
-                    val isMenuKey = native.keyCode == KeyEvent.KEYCODE_MENU ||
-                            native.keyCode == KeyEvent.KEYCODE_SETTINGS ||
-                            native.keyCode == 82 ||
-                            native.keyCode == 176
-                    if (isMenuKey && onLongClick != null) {
-                        onLongClick()
+                if (isFocused && onLongClick != null && isRemoteMenuKey(native.keyCode)) {
+                    if (native.action == KeyEvent.ACTION_DOWN) {
+                        if (native.repeatCount == 0) {
+                            onLongClick()
+                        }
+                        return@onKeyEvent true
+                    } else if (native.action == KeyEvent.ACTION_UP) {
                         return@onKeyEvent true
                     }
                 }
                 if (onLongClick != null && isFocused) {
-                    val isCenterOrEnter = native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || native.keyCode == KeyEvent.KEYCODE_ENTER
+                    val isCenterOrEnter = native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                        native.keyCode == KeyEvent.KEYCODE_ENTER ||
+                        native.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
                     if (isCenterOrEnter) {
                         if (native.action == KeyEvent.ACTION_DOWN) {
                             if (native.repeatCount >= 1 && !longClickTriggered) {
@@ -124,6 +137,8 @@ fun TvFocusableCard(
                 }
                 false
             }
+            .focusRequester(focusRequester)
+            .focusable()
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick

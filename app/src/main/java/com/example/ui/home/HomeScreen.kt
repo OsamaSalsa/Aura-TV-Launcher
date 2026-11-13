@@ -496,6 +496,45 @@ fun HomeScreen(
     val nonGameRows = remember(nonGameApps, clampedAppsPerRow) { nonGameApps.chunked(clampedAppsPerRow) }
     val gameRows = remember(gameApps, clampedAppsPerRow) { gameApps.chunked(clampedAppsPerRow) }
 
+    val firstItemFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+    val topBarFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val isScrolled by remember { androidx.compose.runtime.derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 50 } }
+
+    fun focusFirstContentItem() {
+        coroutineScope.launch {
+            try {
+                if (listState.firstVisibleItemIndex > 0) {
+                    listState.scrollToItem(0)
+                    kotlinx.coroutines.delay(60)
+                }
+                if (favoriteChannels.isNotEmpty()) {
+                    channelsRowState.scrollToItem(0)
+                    kotlinx.coroutines.delay(40)
+                }
+                try {
+                    firstItemFocusRequester.requestFocus()
+                } catch (_: Exception) {
+                    val firstChannelId = displayChannels.firstOrNull()?.id
+                    val firstAppPkg = displayApps.firstOrNull()?.packageName
+                    if (firstChannelId != null && channelFocusRequesters.containsKey(firstChannelId)) {
+                        channelFocusRequesters[firstChannelId]?.requestFocus()
+                    } else if (firstAppPkg != null && focusRequesters.containsKey(firstAppPkg)) {
+                        focusRequesters[firstAppPkg]?.requestFocus()
+                    } else {
+                        focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down)
+                    }
+                }
+            } catch (_: Exception) {
+                try {
+                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         IsolatedHomeBackground(
             viewModel = viewModel,
@@ -509,60 +548,29 @@ fun HomeScreen(
                 .fillMaxSize()
                 .onKeyEvent { keyEvent ->
                     val native = keyEvent.nativeKeyEvent
-                    if (native.action == android.view.KeyEvent.ACTION_DOWN) {
-                        if (native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS) {
+                    if (native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS) {
+                        if (native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0) {
                             showControlCenter = true
-                            true
-                        } else if (native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH) {
+                        }
+                        return@onKeyEvent true
+                    } else if (com.example.ui.common.isRemoteMenuKey(native.keyCode)) {
+                        if (native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0) {
+                            focusFirstContentItem()
+                        }
+                        return@onKeyEvent true
+                    } else if (native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH) {
+                        if (native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0) {
                             showUniversalSearch = true
-                            true
-                        } else false
-                    } else false
+                        }
+                        return@onKeyEvent true
+                    }
+                    false
                 }
         ) {
             val totalWidth = maxWidth
             val horizontalPadding = 48.dp * 2
             val itemSpacing = 18.dp
             val cardHeight = (totalWidth - horizontalPadding - (itemSpacing * (appsPerRow - 1))) / appsPerRow * 0.5625f
-            
-            val firstItemFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
-            val topBarFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
-            val coroutineScope = rememberCoroutineScope()
-            val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-            val isScrolled by remember { androidx.compose.runtime.derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 50 } }
-
-            fun focusFirstContentItem() {
-                coroutineScope.launch {
-                    try {
-                        if (listState.firstVisibleItemIndex > 0) {
-                            listState.scrollToItem(0)
-                            kotlinx.coroutines.delay(60)
-                        }
-                        if (favoriteChannels.isNotEmpty()) {
-                            channelsRowState.scrollToItem(0)
-                            kotlinx.coroutines.delay(40)
-                        }
-                        try {
-                            firstItemFocusRequester.requestFocus()
-                        } catch (_: Exception) {
-                            val firstChannelId = displayChannels.firstOrNull()?.id
-                            val firstAppPkg = displayApps.firstOrNull()?.packageName
-                            if (firstChannelId != null && channelFocusRequesters.containsKey(firstChannelId)) {
-                                channelFocusRequesters[firstChannelId]?.requestFocus()
-                            } else if (firstAppPkg != null && focusRequesters.containsKey(firstAppPkg)) {
-                                focusRequesters[firstAppPkg]?.requestFocus()
-                            } else {
-                                focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down)
-                            }
-                        }
-                    } catch (_: Exception) {
-                        try {
-                            focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down)
-                        } catch (_: Exception) {}
-                    }
-                }
-            }
 
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(150)
@@ -1050,21 +1058,13 @@ fun AppItemCard(
             .aspectRatio(1.77f)
             .onKeyEvent { keyEvent ->
                 val native = keyEvent.nativeKeyEvent
-                if (native.action == android.view.KeyEvent.ACTION_DOWN) {
-                    val isMenuKey = native.keyCode == android.view.KeyEvent.KEYCODE_MENU ||
-                            native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS ||
-                            native.keyCode == 82 ||
-                            native.keyCode == 176
-                    if (isMenuKey) {
-                        onLongClick?.invoke()
+                if (native.action == android.view.KeyEvent.ACTION_DOWN &&
+                    keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
+                    keyEvent.key == androidx.compose.ui.input.key.Key.DirectionUp
+                ) {
+                    if (onRequestFocusUp != null) {
+                        onRequestFocusUp()
                         true
-                    } else if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && 
-                        keyEvent.key == androidx.compose.ui.input.key.Key.DirectionUp
-                    ) {
-                        if (onRequestFocusUp != null) {
-                            onRequestFocusUp()
-                            true
-                        } else false
                     } else false
                 } else false
             }
@@ -1234,28 +1234,21 @@ fun FavoriteChannelCard(
             .size(cardSize)
             .onKeyEvent { keyEvent ->
                 val native = keyEvent.nativeKeyEvent
-                if (native.action == android.view.KeyEvent.ACTION_DOWN) {
-                    val isMenuKey = native.keyCode == android.view.KeyEvent.KEYCODE_MENU ||
-                            native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS ||
-                            native.keyCode == 82 ||
-                            native.keyCode == 176
-                    if (isMenuKey) {
-                        onLongClick()
-                        true
-                    } else if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
-                        if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionUp && !isHighlighted) {
-                            if (onRequestFocusUp != null) {
-                                onRequestFocusUp()
-                                true
-                            } else false
-                        } else if (isHighlighted) {
-                            if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionLeft) {
-                                onMoveLeft?.invoke()
-                                true
-                            } else if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionRight) {
-                                onMoveRight?.invoke()
-                                true
-                            } else false
+                if (native.action == android.view.KeyEvent.ACTION_DOWN &&
+                    keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown
+                ) {
+                    if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionUp && !isHighlighted) {
+                        if (onRequestFocusUp != null) {
+                            onRequestFocusUp()
+                            true
+                        } else false
+                    } else if (isHighlighted) {
+                        if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionLeft) {
+                            onMoveLeft?.invoke()
+                            true
+                        } else if (keyEvent.key == androidx.compose.ui.input.key.Key.DirectionRight) {
+                            onMoveRight?.invoke()
+                            true
                         } else false
                     } else false
                 } else false

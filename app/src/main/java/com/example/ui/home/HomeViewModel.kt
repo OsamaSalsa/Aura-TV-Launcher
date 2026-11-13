@@ -189,9 +189,7 @@ class HomeViewModel(
     }
 
     fun showAppMenu(app: AppItem) {
-        if (_reorderState.value == null) {
-            _selectedAppForMenu.value = app
-        }
+        _selectedAppForMenu.value = app
     }
 
     fun dismissAppMenu() {
@@ -226,9 +224,7 @@ class HomeViewModel(
     }
 
     fun showChannelMenu(channel: IptvChannel) {
-        if (_channelReorderState.value == null) {
-            _selectedChannelForMenu.value = channel
-        }
+        _selectedChannelForMenu.value = channel
     }
 
     fun dismissChannelMenu() {
