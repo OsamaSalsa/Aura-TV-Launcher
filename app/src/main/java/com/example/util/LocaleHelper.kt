@@ -34,9 +34,38 @@ object LocaleHelper {
         return Locale(effective)
     }
 
+    private fun applyConfigIfNeeded(resources: android.content.res.Resources?, locale: Locale) {
+        if (resources == null) return
+        val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (!resources.configuration.locales.isEmpty) resources.configuration.locales[0] else null
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale
+        }
+        if (currentLocale?.language == locale.language &&
+            resources.configuration.layoutDirection == android.text.TextUtils.getLayoutDirectionFromLocale(locale)
+        ) {
+            return
+        }
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        config.setLayoutDirection(locale)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val localeList = LocaleList(locale)
+            LocaleList.setDefault(localeList)
+            config.setLocales(localeList)
+        }
+        try {
+            @Suppress("DEPRECATION")
+            resources.updateConfiguration(config, resources.displayMetrics)
+        } catch (_: Exception) {}
+    }
+
     fun setLocale(context: Context, languageCode: String): Context {
         val locale = getLocale(languageCode)
-        Locale.setDefault(locale)
+        if (Locale.getDefault().language != locale.language) {
+            Locale.setDefault(locale)
+        }
 
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
@@ -48,46 +77,19 @@ object LocaleHelper {
             config.setLocales(localeList)
         }
 
-        try {
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(config, context.resources.displayMetrics)
-        } catch (_: Exception) {}
-
-        try {
-            context.applicationContext?.resources?.let { appRes ->
-                @Suppress("DEPRECATION")
-                appRes.updateConfiguration(config, appRes.displayMetrics)
-            }
-        } catch (_: Exception) {}
+        applyConfigIfNeeded(context.resources, locale)
+        applyConfigIfNeeded(context.applicationContext?.resources, locale)
 
         return context.createConfigurationContext(config)
     }
 
     fun applyLocaleToActivity(activity: android.app.Activity, languageCode: String) {
         val locale = getLocale(languageCode)
-        Locale.setDefault(locale)
-
-        val config = Configuration(activity.resources.configuration)
-        config.setLocale(locale)
-        config.setLayoutDirection(locale)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val localeList = LocaleList(locale)
-            LocaleList.setDefault(localeList)
-            config.setLocales(localeList)
+        if (Locale.getDefault().language != locale.language) {
+            Locale.setDefault(locale)
         }
-
-        try {
-            @Suppress("DEPRECATION")
-            activity.resources.updateConfiguration(config, activity.resources.displayMetrics)
-        } catch (_: Exception) {}
-
-        try {
-            activity.applicationContext?.resources?.let { appRes ->
-                @Suppress("DEPRECATION")
-                appRes.updateConfiguration(config, appRes.displayMetrics)
-            }
-        } catch (_: Exception) {}
+        applyConfigIfNeeded(activity.resources, locale)
+        applyConfigIfNeeded(activity.applicationContext?.resources, locale)
     }
 
     fun getAmPmString(hourOfDay: Int, languageCode: String): String {

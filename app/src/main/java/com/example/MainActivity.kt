@@ -113,17 +113,11 @@ class MainActivity : ComponentActivity() {
 
         val app = application as AuraTvApp
 
-        // Use 32-bit RGBA_8888 color depth and hardware dithering to eliminate gradient color banding on TV panels
-        try {
-            window.setFormat(android.graphics.PixelFormat.RGBA_8888)
-            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DITHER)
-        } catch (_: Exception) {}
-
         // Read initial screensaver preference immediately so window flags match before first frame
         updateScreenAwakePolicy(true)
 
         // Hide system bars (Status Bar, Navigation Bar) for full screen TV experience
-        hideSystemBars()
+        hideSystemBars(force = true)
 
         if (isVoiceOrSearchIntent(intent)) {
             _onVoiceSearchPressed.tryEmit(Unit)
@@ -133,7 +127,8 @@ class MainActivity : ComponentActivity() {
             val registryOwner = requireNotNull(androidx.activity.compose.LocalActivityResultRegistryOwner.current) {
                 "No ActivityResultRegistryOwner was provided"
             }
-            val currentLang by app.preferences.languageFlow.collectAsState(initial = "system")
+            val initialLang = remember { app.preferences.getCachedLanguage() }
+            val currentLang by app.preferences.languageFlow.collectAsState(initial = initialLang)
             val baseContext = LocalContext.current
             val localizedContext = remember(currentLang, baseContext) {
                 LocaleHelper.setLocale(baseContext, currentLang)
@@ -190,13 +185,19 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
-            hideSystemBars()
+            hideSystemBars(force = false)
             updateScreenAwakePolicy(shouldKeepScreenOnFlag)
         }
     }
 
-    private fun hideSystemBars() {
+    private fun hideSystemBars(force: Boolean = false) {
         try {
+            if (!force) {
+                val rootInsets = androidx.core.view.ViewCompat.getRootWindowInsets(window.decorView)
+                if (rootInsets != null && !rootInsets.isVisible(WindowInsetsCompat.Type.systemBars())) {
+                    return
+                }
+            }
             val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
             windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -310,6 +311,8 @@ fun LauncherNavigation(
     var settingsReturnScreen by remember { mutableStateOf(LauncherScreen.HOME) }
     var selectedChannelIdToPlay by remember { mutableStateOf<Long?>(null) }
     var voiceSearchTriggerTick by remember { mutableStateOf(0) }
+    var pendingUpdateInfo by remember { mutableStateOf<com.example.data.update.AppUpdateInfo?>(null) }
+    var dismissedUpdateVersion by remember { mutableStateOf<Int?>(null) }
 
     // Repositories & ViewModels
     val homeViewModel = remember {
@@ -424,6 +427,26 @@ fun LauncherNavigation(
                     }
                     app.startService(intent)
                 } catch (_: Exception) {}
+            }
+        }
+    }
+
+    // Auto-check GitHub (OsamaSalsa/Aura-TV-Launcher) for newer versions outside Google Play
+    LaunchedEffect(Unit) {
+        delay(2500)
+        val shouldAutoCheck = try {
+            app.preferences.autoCheckUpdatesFlow.first()
+        } catch (_: Exception) {
+            true
+        }
+        if (shouldAutoCheck) {
+            when (val res = com.example.data.update.AppUpdateManager.checkForUpdates()) {
+                is com.example.data.update.UpdateCheckResult.UpdateAvailable -> {
+                    if (res.info.mandatory || dismissedUpdateVersion != res.info.versionCode) {
+                        pendingUpdateInfo = res.info
+                    }
+                }
+                else -> {}
             }
         }
     }
@@ -621,12 +644,25 @@ fun LauncherNavigation(
                     SettingsScreen(
                         viewModel = settingsViewModel,
                         initialSection = settingsInitialSection,
+                        onUpdateAvailable = { updateInfo ->
+                            pendingUpdateInfo = updateInfo
+                        },
                         onBackToHome = {
                             currentScreen = settingsReturnScreen
                         }
                     )
                 }
             }
+        }
+
+        pendingUpdateInfo?.let { updateInfo ->
+            com.example.ui.common.AppUpdateDialog(
+                updateInfo = updateInfo,
+                onDismiss = {
+                    dismissedUpdateVersion = updateInfo.versionCode
+                    pendingUpdateInfo = null
+                }
+            )
         }
 
         androidx.compose.animation.AnimatedVisibility(

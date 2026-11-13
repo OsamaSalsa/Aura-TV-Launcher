@@ -428,4 +428,23 @@
     <string name="settings_app_lock_pin_placeholder">أدخل 4 أرقام (مثال: 1234)</string>
     <string name="status_app_lock_pin_saved">تم حفظ رمز قفل التطبيقات بنجاح</string>
     <string name="status_app_lock_pin_invalid">يجب أن يتكون الرمز من 4 أرقام بالضبط</string>
+
+    <!-- App Updates -->
+    <string name="update_dialog_title">تحديث جديد متاح</string>
+    <string name="update_default_changelog">يتوفر إصدار أحدث من Aura TV Launcher يتضمن تحسينات وإصلاحات جديدة.</string>
+    <string name="update_now">تحديث الآن</string>
+    <string name="update_install_now">تثبيت التحديث</string>
+    <string name="update_downloading">جارٍ تحميل التحديث…</string>
+    <string name="update_ready_to_install">اكتمل التحميل! اضغط موافق في نافذة التثبيت لإتمام التحديث.</string>
+    <string name="update_permission_hint">يرجى تفعيل السماح لتطبيق Aura TV بتثبيت التحديثات في الإعدادات، وسيبدأ التحميل تلقائياً عند العودة.</string>
+    <string name="update_open_permission_settings">السماح بالتثبيت</string>
+    <string name="update_download_failed">تعذر تحميل التحديث. تحقق من اتصال الإنترنت.</string>
+    <string name="update_install_launch_failed">تعذر فتح مثبّت الحزم.</string>
+    <string name="settings_updates_title">تحديثات التطبيق (Auto-Update)</string>
+    <string name="settings_updates_desc">الإصدار الحالي: v%1$s (بناء %2$d) • يتحقق تلقائياً من GitHub</string>
+    <string name="settings_updates_auto_check">التحقق التلقائي من التحديثات عند التشغيل</string>
+    <string name="settings_updates_check_now">فحص التحديثات الآن</string>
+    <string name="settings_updates_checking">جارٍ فحص التحديثات…</string>
+    <string name="status_update_up_to_date">أنت تستخدم أحدث إصدار بالفعل (v%1$s)</string>
+    <string name="status_update_check_failed">تعذر فحص التحديثات: %1$s</string>
 </resources>

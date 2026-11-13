@@ -50,6 +50,7 @@ class LauncherPreferences(private val context: Context) {
         val KEY_IPTV_PRESETS_INITIALIZED = booleanPreferencesKey("iptv_presets_initialized")
         val KEY_CUSTOM_SCREENSAVER_VIDEOS = stringSetPreferencesKey("custom_screensaver_videos")
         val KEY_DELETED_SCREENSAVER_PRESETS = stringSetPreferencesKey("deleted_screensaver_presets")
+        val KEY_AUTO_CHECK_UPDATES = booleanPreferencesKey("auto_check_updates")
         val DEFAULT_PRESET_VIDEO_IDS = listOf("EG_g7BFaL5s", "TtLeec_DR-Y", "8xXHeRnLwNQ")
     }
 
@@ -176,8 +177,20 @@ class LauncherPreferences(private val context: Context) {
         prefs[KEY_IPTV_URL] ?: DEFAULT_IPTV_URL
     }
 
+    private val quickPrefs by lazy {
+        context.applicationContext.getSharedPreferences("aura_quick_prefs", Context.MODE_PRIVATE)
+    }
+
+    fun getCachedLanguage(): String {
+        return quickPrefs.getString("app_language", null) ?: "system"
+    }
+
     val languageFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_LANGUAGE] ?: "system"
+        val lang = prefs[KEY_LANGUAGE] ?: "system"
+        if (quickPrefs.getString("app_language", null) != lang) {
+            quickPrefs.edit().putString("app_language", lang).apply()
+        }
+        lang
     }
 
     suspend fun saveAppOrder(orderList: List<String>) {
@@ -251,6 +264,7 @@ class LauncherPreferences(private val context: Context) {
     }
 
     suspend fun setLanguage(lang: String) {
+        quickPrefs.edit().putString("app_language", lang).apply()
         context.dataStore.edit { prefs ->
             prefs[KEY_LANGUAGE] = lang
         }
@@ -432,6 +446,16 @@ class LauncherPreferences(private val context: Context) {
             if (currentSelected.isBlank()) {
                 prefs[KEY_SCREENSAVER_VIDEO] = "EG_g7BFaL5s"
             }
+        }
+    }
+
+    val autoCheckUpdatesFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_CHECK_UPDATES] ?: true
+    }
+
+    suspend fun setAutoCheckUpdates(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_CHECK_UPDATES] = enabled
         }
     }
 }

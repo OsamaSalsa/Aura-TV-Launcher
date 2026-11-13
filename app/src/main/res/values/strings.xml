@@ -428,4 +428,23 @@
     <string name="settings_app_lock_pin_placeholder">Enter 4-digit PIN (e.g. 1234)</string>
     <string name="status_app_lock_pin_saved">App Lock PIN updated successfully</string>
     <string name="status_app_lock_pin_invalid">PIN must be exactly 4 digits</string>
+
+    <!-- App Updates -->
+    <string name="update_dialog_title">New Update Available</string>
+    <string name="update_default_changelog">A newer version of Aura TV Launcher is ready with improvements and bug fixes.</string>
+    <string name="update_now">Update Now</string>
+    <string name="update_install_now">Install Update</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_ready_to_install">Download complete! Confirm installation on your screen.</string>
+    <string name="update_permission_hint">Please allow Aura TV to install app updates in system settings. Download will start automatically when you return.</string>
+    <string name="update_open_permission_settings">Allow Install</string>
+    <string name="update_download_failed">Failed to download update. Please check your connection.</string>
+    <string name="update_install_launch_failed">Could not open package installer.</string>
+    <string name="settings_updates_title">App Updates (Auto-Update)</string>
+    <string name="settings_updates_desc">Current version: v%1$s (Build %2$d) • Checks GitHub for new releases</string>
+    <string name="settings_updates_auto_check">Check for Updates Automatically</string>
+    <string name="settings_updates_check_now">Check Now</string>
+    <string name="settings_updates_checking">Checking for updates…</string>
+    <string name="status_update_up_to_date">You are already using the latest version (v%1$s)</string>
+    <string name="status_update_check_failed">Could not check for updates: %1$s</string>
 </resources>

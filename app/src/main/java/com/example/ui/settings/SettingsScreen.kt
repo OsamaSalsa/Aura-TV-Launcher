@@ -58,6 +58,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material.icons.filled.Visibility
@@ -127,6 +128,7 @@ private data class SystemShortcutItem(
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     initialSection: SettingsSection = SettingsSection.SYSTEM,
+    onUpdateAvailable: (com.example.data.update.AppUpdateInfo) -> Unit = {},
     onBackToHome: () -> Unit
 ) {
     val context = LocalContext.current
@@ -153,6 +155,8 @@ fun SettingsScreen(
     val dnsBlockerMode by viewModel.dnsBlockerMode.collectAsState()
     val appLockPin by viewModel.appLockPin.collectAsState()
     var pinInput by remember(appLockPin) { mutableStateOf(appLockPin) }
+    val autoCheckUpdates by viewModel.autoCheckUpdates.collectAsState()
+    val isCheckingUpdates by viewModel.isCheckingUpdates.collectAsState()
     val glassOpacity by viewModel.glassOpacity.collectAsState()
     val showOnlyTvApps by viewModel.showOnlyTvApps.collectAsState()
     val appLanguage by viewModel.language.collectAsState()
@@ -791,6 +795,44 @@ fun SettingsScreen(
                                             modifier = Modifier.height(52.dp)
                                         )
                                     }
+                                }
+                            }
+
+                            // App Updates (GitHub Auto-Update) Card
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.SystemUpdate,
+                                        title = stringResource(R.string.settings_updates_title),
+                                        subtitle = stringResource(
+                                            R.string.settings_updates_desc,
+                                            com.example.BuildConfig.VERSION_NAME,
+                                            com.example.BuildConfig.VERSION_CODE
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    TvSelectField(
+                                        label = stringResource(R.string.settings_updates_auto_check),
+                                        options = listOf(
+                                            true to stringResource(R.string.settings_seconds_enabled),
+                                            false to stringResource(R.string.settings_seconds_disabled)
+                                        ),
+                                        selectedOption = autoCheckUpdates,
+                                        onOptionSelected = { viewModel.setAutoCheckUpdates(it) }
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    TvActionButton(
+                                        text = if (isCheckingUpdates) {
+                                            stringResource(R.string.settings_updates_checking)
+                                        } else {
+                                            stringResource(R.string.settings_updates_check_now)
+                                        },
+                                        icon = Icons.Default.Refresh,
+                                        onClick = { viewModel.checkForUpdates(onUpdateAvailable) },
+                                        baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                        focusedColor = TvAccentGold,
+                                        fillWidth = true
+                                    )
                                 }
                             }
                         }

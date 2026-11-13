@@ -19,6 +19,9 @@ import com.example.data.IptvRepository
 import com.example.data.local.LauncherPreferences
 import com.example.data.model.AppItem
 import com.example.data.model.IptvPlaylist
+import com.example.data.update.AppUpdateInfo
+import com.example.data.update.AppUpdateManager
+import com.example.data.update.UpdateCheckResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -134,6 +137,45 @@ class SettingsViewModel(
             }
         } else {
             _statusMessage.value = StatusUiText.Resource(R.string.status_app_lock_pin_invalid)
+        }
+    }
+
+    val autoCheckUpdates: StateFlow<Boolean> = preferences.autoCheckUpdatesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val _isCheckingUpdates = MutableStateFlow(false)
+    val isCheckingUpdates: StateFlow<Boolean> = _isCheckingUpdates.asStateFlow()
+
+    fun setAutoCheckUpdates(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setAutoCheckUpdates(enabled)
+        }
+    }
+
+    fun checkForUpdates(onUpdateAvailable: (AppUpdateInfo) -> Unit) {
+        if (_isCheckingUpdates.value) return
+        viewModelScope.launch {
+            _isCheckingUpdates.value = true
+            _statusMessage.value = StatusUiText.Resource(R.string.settings_updates_checking)
+            when (val result = AppUpdateManager.checkForUpdates()) {
+                is UpdateCheckResult.UpdateAvailable -> {
+                    _statusMessage.value = null
+                    onUpdateAvailable(result.info)
+                }
+                UpdateCheckResult.UpToDate -> {
+                    _statusMessage.value = StatusUiText.Resource(
+                        R.string.status_update_up_to_date,
+                        listOf(com.example.BuildConfig.VERSION_NAME)
+                    )
+                }
+                is UpdateCheckResult.Error -> {
+                    _statusMessage.value = StatusUiText.Resource(
+                        R.string.status_update_check_failed,
+                        listOf(result.message)
+                    )
+                }
+            }
+            _isCheckingUpdates.value = false
         }
     }
 
