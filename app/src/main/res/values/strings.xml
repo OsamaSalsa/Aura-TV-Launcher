@@ -447,4 +447,14 @@
     <string name="settings_updates_checking">Checking for updates…</string>
     <string name="status_update_up_to_date">You are already using the latest version (v%1$s)</string>
     <string name="status_update_check_failed">Could not check for updates: %1$s</string>
+    <string name="action_pause">Pause</string>
+    <string name="iptv_paused_tag">PAUSED</string>
+    <string name="iptv_hint_menu_cursor">Navigate Menu</string>
+    <string name="iptv_hint_change_channels">Switch Channels</string>
+    <string name="iptv_hint_select">Select</string>
+    <string name="iptv_hint_hide">Hide</string>
+    <string name="iptv_hide_menu">Hide Menu</string>
+    <string name="iptv_audio_unsupported_codec">Channel audio (%1$s) unsupported — playing video only</string>
+    <string name="iptv_audio_unsupported_generic">Channel audio is unsupported on this device — playing video only</string>
+    <string name="control_center_selected_label">Selected</string>
 </resources>

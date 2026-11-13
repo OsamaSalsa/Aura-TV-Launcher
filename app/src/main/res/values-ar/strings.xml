@@ -447,4 +447,14 @@
     <string name="settings_updates_checking">جارٍ فحص التحديثات…</string>
     <string name="status_update_up_to_date">أنت تستخدم أحدث إصدار بالفعل (v%1$s)</string>
     <string name="status_update_check_failed">تعذر فحص التحديثات: %1$s</string>
+    <string name="action_pause">إيقاف مؤقت</string>
+    <string name="iptv_paused_tag">متوقف مؤقتاً</string>
+    <string name="iptv_hint_menu_cursor">تحريك المؤشر بالمنيو</string>
+    <string name="iptv_hint_change_channels">تغيير القنوات</string>
+    <string name="iptv_hint_select">اختيار</string>
+    <string name="iptv_hint_hide">إخفاء</string>
+    <string name="iptv_hide_menu">إخفاء المنيو</string>
+    <string name="iptv_audio_unsupported_codec">صوت القناة (%1$s) غير مدعوم — يتم عرض الفيديو</string>
+    <string name="iptv_audio_unsupported_generic">صوت القناة غير مدعوم على هذا الجهاز — يتم عرض الفيديو</string>
+    <string name="control_center_selected_label">المختار</string>
 </resources>

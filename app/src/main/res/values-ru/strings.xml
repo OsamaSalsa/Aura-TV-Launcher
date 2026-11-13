@@ -424,4 +424,38 @@
     <string name="status_screensaver_video_removed">Видео удалено из заставки</string>
     <string name="status_screensaver_videos_restored">Стандартные видео восстановлены</string>
     <string name="screensaver_no_videos">В списке нет видео. Добавьте ссылку на YouTube ниже или восстановите стандартные.</string>
+    <string name="settings_app_lock_pin_title">PIN-код блокировки приложений</string>
+    <string name="settings_app_lock_pin_desc">Настройте 4-значный PIN-код для блокировки и разблокировки приложений (По умолчанию: 1234)</string>
+    <string name="settings_app_lock_pin_placeholder">Введите 4-значный PIN (напр. 1234)</string>
+    <string name="status_app_lock_pin_saved">PIN-код успешно обновлен</string>
+    <string name="status_app_lock_pin_invalid">PIN должен состоять ровно из 4 цифр</string>
+
+    <!-- App Updates -->
+    <string name="update_dialog_title">Доступно новое обновление</string>
+    <string name="update_default_changelog">Новая версия Aura TV Launcher готова с улучшениями и исправлениями.</string>
+    <string name="update_now">Обновить сейчас</string>
+    <string name="update_install_now">Установить обновление</string>
+    <string name="update_downloading">Загрузка обновления…</string>
+    <string name="update_ready_to_install">Загрузка завершена! Подтвердите установку на экране.</string>
+    <string name="update_permission_hint">Разрешите Aura TV установку обновлений в настройках системы. Загрузка начнется автоматически после возврата.</string>
+    <string name="update_open_permission_settings">Разрешить установку</string>
+    <string name="update_download_failed">Ошибка загрузки обновления. Проверьте подключение.</string>
+    <string name="update_install_launch_failed">Не удалось открыть установщик пакетов.</string>
+    <string name="settings_updates_title">Обновления (Auto-Update)</string>
+    <string name="settings_updates_desc">Текущая версия: v%1$s (Сборка %2$d) • Проверка релизов на GitHub</string>
+    <string name="settings_updates_auto_check">Проверять обновления автоматически</string>
+    <string name="settings_updates_check_now">Проверить сейчас</string>
+    <string name="settings_updates_checking">Поиск обновлений…</string>
+    <string name="status_update_up_to_date">Вы уже используете последнюю версию (v%1$s)</string>
+    <string name="status_update_check_failed">Не удалось проверить обновления: %1$s</string>
+    <string name="action_pause">Пауза</string>
+    <string name="iptv_paused_tag">ПАУЗА</string>
+    <string name="iptv_hint_menu_cursor">Навигация в меню</string>
+    <string name="iptv_hint_change_channels">Переключение каналов</string>
+    <string name="iptv_hint_select">Выбрать</string>
+    <string name="iptv_hint_hide">Скрыть</string>
+    <string name="iptv_hide_menu">Скрыть меню</string>
+    <string name="iptv_audio_unsupported_codec">Звук канала (%1$s) не поддерживается — только видео</string>
+    <string name="iptv_audio_unsupported_generic">Звук канала не поддерживается на этом устройстве — только видео</string>
+    <string name="control_center_selected_label">Выбрано</string>
 </resources>

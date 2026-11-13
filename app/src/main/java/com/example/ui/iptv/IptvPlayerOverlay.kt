@@ -320,7 +320,10 @@ fun IptvPlayerOverlay(
                                 val player = exoPlayerRef
                                 if (player != null && !player.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_AUDIO)) {
                                     audioDisabledForChannel = true
-                                    audioFallbackNotice = "صوت القناة (${incoming.sampleMimeType}) غير مدعوم — يتم عرض الفيديو"
+                                    audioFallbackNotice = context.getString(
+                                        R.string.iptv_audio_unsupported_codec,
+                                        incoming.sampleMimeType
+                                    )
                                     player.trackSelectionParameters = player.trackSelectionParameters
                                         .buildUpon()
                                         .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
@@ -473,7 +476,7 @@ fun IptvPlayerOverlay(
 
                 if (isAudioRendererFailure && !audioDisabledForChannel) {
                     audioDisabledForChannel = true
-                    audioFallbackNotice = "صوت القناة غير مدعوم على هذا الجهاز — يتم عرض الفيديو"
+                    audioFallbackNotice = context.getString(R.string.iptv_audio_unsupported_generic)
                     exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
                         .buildUpon()
                         .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
@@ -994,7 +997,7 @@ fun IptvPlayerOverlay(
                                     .background(Color.White)
                             )
                             Text(
-                                text = if (isPaused) "PAUSED" else stringResource(R.string.iptv_live_tag),
+                                text = if (isPaused) stringResource(R.string.iptv_paused_tag) else stringResource(R.string.iptv_live_tag),
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold
@@ -1226,10 +1229,10 @@ fun IptvPlayerOverlay(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                RemoteKeyBadge(keyLabel = "◀ ▶", actionLabel = "تحريك المؤشر بالمنيو")
-                                RemoteKeyBadge(keyLabel = "▲ ▼", actionLabel = "تغيير القنوات")
-                                RemoteKeyBadge(keyLabel = "OK", actionLabel = "اختيار")
-                                RemoteKeyBadge(keyLabel = "BACK", actionLabel = "إخفاء")
+                                RemoteKeyBadge(keyLabel = "◀ ▶", actionLabel = stringResource(R.string.iptv_hint_menu_cursor))
+                                RemoteKeyBadge(keyLabel = "▲ ▼", actionLabel = stringResource(R.string.iptv_hint_change_channels))
+                                RemoteKeyBadge(keyLabel = "OK", actionLabel = stringResource(R.string.iptv_hint_select))
+                                RemoteKeyBadge(keyLabel = "BACK", actionLabel = stringResource(R.string.iptv_hint_hide))
                             }
                         }
 
@@ -1256,7 +1259,7 @@ fun IptvPlayerOverlay(
                             // [0] Play / Pause (Initial Cursor Target)
                             PlayerControlHudButton(
                                 icon = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                label = if (isPaused) stringResource(R.string.action_play) else "إيقاف مؤقت",
+                                label = if (isPaused) stringResource(R.string.action_play) else stringResource(R.string.action_pause),
                                 isActive = isPaused,
                                 focusRequester = menuFocusRequesters[0],
                                 onFocused = {
@@ -1420,7 +1423,7 @@ fun IptvPlayerOverlay(
                                 label = if (onOpenIptvSettings != null) {
                                     stringResource(R.string.settings_open_iptv_settings)
                                 } else {
-                                    "إخفاء المنيو"
+                                    stringResource(R.string.iptv_hide_menu)
                                 },
                                 accentColor = TvAccentBlue,
                                 focusRequester = menuFocusRequesters[8],

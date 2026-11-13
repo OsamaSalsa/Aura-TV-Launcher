@@ -426,4 +426,38 @@
     <string name="status_screensaver_video_removed">Video rimosso dal salvaschermo</string>
     <string name="status_screensaver_videos_restored">Video predefiniti ripristinati</string>
     <string name="screensaver_no_videos">Nessun video nella lista. Aggiungi un link YouTube qui sotto o ripristina i predefiniti.</string>
+    <string name="settings_app_lock_pin_title">Codice PIN blocco app</string>
+    <string name="settings_app_lock_pin_desc">Personalizza il codice PIN a 4 cifre per bloccare e sbloccare le app protette (Predefinito: 1234)</string>
+    <string name="settings_app_lock_pin_placeholder">Inserisci PIN a 4 cifre (es. 1234)</string>
+    <string name="status_app_lock_pin_saved">Codice PIN aggiornato con successo</string>
+    <string name="status_app_lock_pin_invalid">Il PIN deve essere composto esattamente da 4 cifre</string>
+
+    <!-- App Updates -->
+    <string name="update_dialog_title">Nuovo aggiornamento disponibile</string>
+    <string name="update_default_changelog">È disponibile una nuova versione di Aura TV Launcher con miglioramenti e correzioni.</string>
+    <string name="update_now">Aggiorna ora</string>
+    <string name="update_install_now">Installa aggiornamento</string>
+    <string name="update_downloading">Download aggiornamento…</string>
+    <string name="update_ready_to_install">Download completato! Conferma l\'installazione sullo schermo.</string>
+    <string name="update_permission_hint">Consenti ad Aura TV di installare gli aggiornamenti nelle impostazioni. Il download partirà al rientro.</string>
+    <string name="update_open_permission_settings">Consenti installazione</string>
+    <string name="update_download_failed">Download non riuscito. Controlla la connessione Internet.</string>
+    <string name="update_install_launch_failed">Impossibile aprire il programma di installazione.</string>
+    <string name="settings_updates_title">Aggiornamenti app (Auto-Update)</string>
+    <string name="settings_updates_desc">Versione attuale: v%1$s (Build %2$d) • Controlla le versioni su GitHub</string>
+    <string name="settings_updates_auto_check">Controlla aggiornamenti automaticamente</string>
+    <string name="settings_updates_check_now">Controlla ora</string>
+    <string name="settings_updates_checking">Ricerca aggiornamenti…</string>
+    <string name="status_update_up_to_date">Stai già utilizzando l\'ultima versione (v%1$s)</string>
+    <string name="status_update_check_failed">Impossibile controllare gli aggiornamenti: %1$s</string>
+    <string name="action_pause">Pausa</string>
+    <string name="iptv_paused_tag">IN PAUSA</string>
+    <string name="iptv_hint_menu_cursor">Naviga menu</string>
+    <string name="iptv_hint_change_channels">Cambia canale</string>
+    <string name="iptv_hint_select">Seleziona</string>
+    <string name="iptv_hint_hide">Nascondi</string>
+    <string name="iptv_hide_menu">Nascondi menu</string>
+    <string name="iptv_audio_unsupported_codec">Audio del canale (%1$s) non supportato — solo video</string>
+    <string name="iptv_audio_unsupported_generic">Audio del canale non supportato su questo dispositivo — solo video</string>
+    <string name="control_center_selected_label">Selezionato</string>
 </resources>
