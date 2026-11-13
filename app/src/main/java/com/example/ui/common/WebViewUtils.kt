@@ -116,6 +116,11 @@ fun hardenWebView(webView: WebView) {
         // while avoiding allocating an extra offscreen hardware layer buffer.
         webView.setLayerType(View.LAYER_TYPE_NONE, null)
     } catch (_: Exception) {}
+    try {
+        // Ensure prior global pauseTimers() calls from another lifecycle cannot leave new WebViews frozen
+        webView.resumeTimers()
+        webView.onResume()
+    } catch (_: Exception) {}
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         try {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
@@ -158,7 +163,7 @@ fun hardenWebView(webView: WebView) {
  * 1. Stub navigator.requestMediaKeySystemAccess so Chromium never invokes native MediaDrm / DrmHalHidl.
  * 2. Stub navigator.serviceWorker.register so sites do not spawn background ServiceWorker processes.
  * 3. Filter out unsupported AV1 / HEVC / 10-bit HDR video codecs in MediaSource & mediaCapabilities
- *    so YouTube TV always selects standard H.264 (avc1) / 8-bit VP9 with full video + audio.
+ *    so YouTube TV always selects standard H.264 (avc1) with full video + audio.
  * 4. Force low-power WebGL attributes without failing on performance caveats.
  */
 fun injectWebViewStabilityShim(webView: WebView?, disableWebGl: Boolean = false) {
@@ -185,6 +190,8 @@ fun injectWebViewStabilityShim(webView: WebView?, disableWebGl: Boolean = false)
                     attrs.failIfMajorPerformanceCaveat = false;
                     attrs.antialias = false;
                     attrs.powerPreference = 'low-power';
+                    attrs.preserveDrawingBuffer = false;
+                    attrs.desynchronized = false;
                 }
                 return origGetCtx.call(this, type, attrs);
             };
@@ -298,16 +305,39 @@ fun BindWebViewLifecycle(webView: WebView?) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, webView) {
         if (webView == null) return@DisposableEffect onDispose {}
+        var pausedGlobally = false
         val observer = LifecycleEventObserver { _, event ->
             if (isWebViewDestroyed(webView)) return@LifecycleEventObserver
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
+                    pausedGlobally = true
+                    try {
+                        webView.evaluateJavascript(
+                            "try{document.querySelectorAll('video').forEach(function(v){if(!v.paused){v.dataset.auraPaused='1';v.pause();}});}catch(e){}",
+                            null
+                        )
+                    } catch (_: Exception) {}
                     try { webView.onPause() } catch (_: Exception) {}
                     try { webView.pauseTimers() } catch (_: Exception) {}
                 }
+                Lifecycle.Event.ON_STOP -> {
+                    try {
+                        webView.evaluateJavascript(
+                            "try{document.querySelectorAll('video').forEach(function(v){if(!v.paused){v.dataset.auraPaused='1';v.pause();}});}catch(e){}",
+                            null
+                        )
+                    } catch (_: Exception) {}
+                }
                 Lifecycle.Event.ON_RESUME -> {
+                    pausedGlobally = false
                     try { webView.resumeTimers() } catch (_: Exception) {}
                     try { webView.onResume() } catch (_: Exception) {}
+                    try {
+                        webView.evaluateJavascript(
+                            "try{document.querySelectorAll('video').forEach(function(v){if(v.dataset.auraPaused==='1'){delete v.dataset.auraPaused;v.play().catch(function(){});}});}catch(e){}",
+                            null
+                        )
+                    } catch (_: Exception) {}
                 }
                 else -> {}
             }
@@ -315,21 +345,70 @@ fun BindWebViewLifecycle(webView: WebView?) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            if (pausedGlobally) {
+                try { webView.resumeTimers() } catch (_: Exception) {}
+            }
         }
     }
 }
 
 @Volatile
 private var parkedKeepAliveWebView: WebView? = null
+private val rendererGoneWebViews: MutableSet<WebView> =
+    Collections.synchronizedSet(Collections.newSetFromMap(WeakHashMap()))
+
+/**
+ * WebViewClient used for parked/unloading WebViews so even an unexpected LMK kill of a backgrounded
+ * parked renderer returns true cleanly instead of throwing an unhandled render process exception.
+ */
+private class SafeParkedWebViewClient : WebViewClient() {
+    override fun onRenderProcessGone(
+        view: WebView?,
+        detail: android.webkit.RenderProcessGoneDetail?
+    ): Boolean {
+        if (view != null) {
+            safeDestroyWebView(view, rendererGone = true)
+        }
+        return true
+    }
+}
 
 /**
  * Safely and idempotently tears down a WebView instance.
- * When [rendererGone] is false (normal navigation/dismissal), unloads active media via about:blank
- * and parks a single idle instance so Chromium's RenderProcessHost refCount never drops to 0
+ * When [rendererGone] is false (normal navigation/dismissal), unloads active media/timers via about:blank
+ * and maintains one steady parked idle instance so Chromium's RenderProcessHost refCount never drops to 0
  * (preventing AwBrowserTerminator from unbinding/SIGKILLing SandboxedProcessService0 with code -1).
  */
 fun safeDestroyWebView(webView: WebView?, rendererGone: Boolean = false) {
     if (webView == null) return
+
+    if (rendererGone) {
+        rendererGoneWebViews.add(webView)
+        destroyedWebViews.add(webView)
+        if (parkedKeepAliveWebView === webView) {
+            parkedKeepAliveWebView = null
+        }
+        try {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+        } catch (_: Exception) {}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                webView.webViewRenderProcessClient = null
+            } catch (_: Exception) {}
+        }
+        try {
+            webView.removeAllViews()
+        } catch (_: Exception) {}
+        try {
+            webView.webChromeClient = null
+            webView.webViewClient = SafeParkedWebViewClient()
+        } catch (_: Exception) {}
+        try {
+            webView.destroy()
+        } catch (_: Exception) {}
+        return
+    }
+
     if (!destroyedWebViews.add(webView)) return
 
     try {
@@ -342,51 +421,63 @@ fun safeDestroyWebView(webView: WebView?, rendererGone: Boolean = false) {
         } catch (_: Exception) {}
     }
 
-    if (rendererGone) {
-        if (parkedKeepAliveWebView === webView) {
-            parkedKeepAliveWebView = null
-        }
-        try {
-            webView.removeAllViews()
-        } catch (_: Exception) {}
-        try {
-            webView.webChromeClient = null
-            webView.webViewClient = WebViewClient()
-        } catch (_: Exception) {}
-        try {
-            webView.destroy()
-        } catch (_: Exception) {}
-        return
-    }
+    // Release active media decoders, page intervals, and WebGL buffers cleanly before unloading
+    try {
+        webView.evaluateJavascript(
+            """
+            (function() {
+                try {
+                    if (window.__ambientCleanTimer) {
+                        clearInterval(window.__ambientCleanTimer);
+                        window.__ambientCleanTimer = null;
+                    }
+                    var media = document.querySelectorAll('video, audio');
+                    for (var i = 0; i < media.length; i++) {
+                        try {
+                            media[i].pause();
+                            media[i].removeAttribute('src');
+                            media[i].load();
+                        } catch (e) {}
+                    }
+                } catch (e) {}
+            })();
+            """.trimIndent(),
+            null
+        )
+    } catch (_: Exception) {}
 
     try {
         webView.stopLoading()
     } catch (_: Exception) {}
     try {
-        webView.loadUrl("about:blank")
+        webView.webChromeClient = null
+        webView.webViewClient = SafeParkedWebViewClient()
     } catch (_: Exception) {}
     try {
-        webView.onPause()
+        webView.loadUrl("about:blank")
     } catch (_: Exception) {}
     try {
         webView.clearHistory()
     } catch (_: Exception) {}
-    try {
-        webView.webChromeClient = null
-        webView.webViewClient = WebViewClient()
-    } catch (_: Exception) {}
 
-    val previousParked = parkedKeepAliveWebView
-    parkedKeepAliveWebView = webView
-
-    if (previousParked != null && previousParked !== webView) {
-        postOnMain(1500L) {
-            try {
-                previousParked.removeAllViews()
-            } catch (_: Exception) {}
-            try {
-                previousParked.destroy()
-            } catch (_: Exception) {}
+    val currentParked = parkedKeepAliveWebView
+    if (currentParked == null || rendererGoneWebViews.contains(currentParked)) {
+        // Become the steady keep-alive anchor and pause only after about:blank finishes committing
+        parkedKeepAliveWebView = webView
+        postOnMain(350L) {
+            if (!rendererGoneWebViews.contains(webView)) {
+                try { webView.onPause() } catch (_: Exception) {}
+            }
+        }
+    } else if (currentParked !== webView) {
+        // Keep the existing steady anchor untouched (preserving refCount >= 1) and destroy this unloaded instance
+        // only after about:blank has had time to release page resources cleanly.
+        postOnMain(900L) {
+            if (!rendererGoneWebViews.contains(webView)) {
+                try { webView.onPause() } catch (_: Exception) {}
+                try { webView.removeAllViews() } catch (_: Exception) {}
+                try { webView.destroy() } catch (_: Exception) {}
+            }
         }
     }
 }

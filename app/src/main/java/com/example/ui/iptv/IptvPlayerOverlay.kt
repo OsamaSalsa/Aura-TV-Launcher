@@ -80,6 +80,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -372,12 +375,54 @@ fun IptvPlayerOverlay(
             }
     }
 
+    var stoppedByLifecycle by remember { mutableStateOf(false) }
+    var codecRecoveryAttempts by remember(channel) { mutableStateOf(0) }
+    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    stoppedByLifecycle = true
+                    try {
+                        exoPlayer.playWhenReady = false
+                        exoPlayer.stop()
+                        exoPlayer.clearVideoSurface()
+                    } catch (_: Exception) {}
+                }
+                Lifecycle.Event.ON_START -> {
+                    if (stoppedByLifecycle) {
+                        stoppedByLifecycle = false
+                        try {
+                            playerViewRef?.let { pv -> exoPlayer.setVideoTextureView(pv.videoSurfaceView as? android.view.TextureView) }
+                        } catch (_: Exception) {}
+                        try {
+                            exoPlayer.prepare()
+                            exoPlayer.playWhenReady = true
+                        } catch (_: Exception) {}
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     DisposableEffect(channel) {
         isBuffering = true
         isPaused = false
         streamQualityBadge = null
         audioDisabledForChannel = false
         audioFallbackNotice = null
+        codecRecoveryAttempts = 0
+        stoppedByLifecycle = false
+        try {
+            exoPlayer.stop()
+        } catch (_: Exception) {}
         exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
             .buildUpon()
             .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
@@ -391,6 +436,9 @@ fun IptvPlayerOverlay(
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 isBuffering = (state == Player.STATE_BUFFERING)
+                if (state == Player.STATE_READY) {
+                    codecRecoveryAttempts = 0
+                }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -435,6 +483,31 @@ fun IptvPlayerOverlay(
                     return
                 }
 
+                // Recover gracefully if MediaCodec was reclaimed by Android's ResourceManagerService
+                val isCodecReclaimOrTransient = !stoppedByLifecycle &&
+                    codecRecoveryAttempts < 2 &&
+                    exoError?.type == ExoPlaybackException.TYPE_RENDERER &&
+                    (
+                        error.cause is IllegalStateException ||
+                            error.cause is android.media.MediaCodec.CodecException ||
+                            error.cause is androidx.media3.exoplayer.mediacodec.MediaCodecDecoderException ||
+                            error.cause is MediaCodecRenderer.DecoderInitializationException
+                        )
+
+                if (isCodecReclaimOrTransient) {
+                    codecRecoveryAttempts++
+                    mainHandler.postDelayed({
+                        if (exoPlayerRef === exoPlayer && !stoppedByLifecycle) {
+                            try {
+                                exoPlayer.stop()
+                                exoPlayer.prepare()
+                                exoPlayer.playWhenReady = true
+                            } catch (_: Exception) {}
+                        }
+                    }, 350L)
+                    return
+                }
+
                 isBuffering = false
                 val cause = error.cause
                 val errorDetails = when {
@@ -460,7 +533,11 @@ fun IptvPlayerOverlay(
     DisposableEffect(Unit) {
         onDispose {
             exoPlayerRef = null
-            exoPlayer.release()
+            playerViewRef?.player = null
+            playerViewRef = null
+            try { exoPlayer.stop() } catch (_: Exception) {}
+            try { exoPlayer.clearVideoSurface() } catch (_: Exception) {}
+            try { exoPlayer.release() } catch (_: Exception) {}
         }
     }
 
@@ -666,11 +743,17 @@ fun IptvPlayerOverlay(
                     player = exoPlayer
                     this.resizeMode = resizeMode
                     setEnableComposeSurfaceSyncWorkaround(true)
+                    playerViewRef = this
                 }
             },
             update = { view ->
                 view.keepScreenOn = true
                 view.resizeMode = resizeMode
+                playerViewRef = view
+            },
+            onRelease = { view ->
+                view.player = null
+                if (playerViewRef === view) playerViewRef = null
             },
             modifier = Modifier.fillMaxSize()
         )

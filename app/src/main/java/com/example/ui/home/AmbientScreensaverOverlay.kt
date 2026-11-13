@@ -2,6 +2,9 @@ package com.example.ui.home
 
 import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -67,6 +70,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.annotation.SuppressLint
 import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.webkit.PermissionRequest
+import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.ui.viewinterop.AndroidView
@@ -88,7 +96,15 @@ import com.example.R
 import com.example.data.local.LauncherPreferences
 import com.example.ui.common.AuroraBackground
 import com.example.ui.common.AuroraColors
+import com.example.ui.common.BindWebViewLifecycle
+import com.example.ui.common.findActivityContext
+import com.example.ui.common.grantSafeWebPermissions
+import com.example.ui.common.hardenWebView
+import com.example.ui.common.injectWebViewStabilityShim
+import com.example.ui.common.isWebViewDestroyed
+import com.example.ui.common.postOnMain
 import com.example.ui.common.safeBlur
+import com.example.ui.common.safeDestroyWebView
 import com.example.ui.settings.onlineWallpaperCategories
 import com.example.ui.theme.CairoFontFamily
 import com.example.ui.theme.TvAccentGold
@@ -103,8 +119,6 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
-
-import android.webkit.CookieManager
 
 data class ScreensaverPresetVideo(
     val id: String,
@@ -303,6 +317,8 @@ private fun YouTubeWebScreensaver(
     videoId: String
 ) {
     var isVideoReady by remember(videoId) { mutableStateOf(false) }
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var crashCount by remember(videoId) { mutableStateOf(0) }
 
     LaunchedEffect(videoId) {
         isVideoReady = false
@@ -368,77 +384,111 @@ private fun YouTubeWebScreensaver(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    isVerticalScrollBarEnabled = false
-                    isHorizontalScrollBarEnabled = false
-                    isFocusable = false
-                    isFocusableInTouchMode = false
+        if (crashCount <= 1) {
+            androidx.compose.runtime.key(videoId, crashCount) {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx.findActivityContext()).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            setBackgroundColor(android.graphics.Color.BLACK)
+                            isVerticalScrollBarEnabled = false
+                            isHorizontalScrollBarEnabled = false
+                            isFocusable = false
+                            isFocusableInTouchMode = false
 
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        databaseEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        loadWithOverviewMode = true
-                        useWideViewPort = true
-                        userAgentString = STREAM_USER_AGENT
-                    }
-
-                    val webViewRef = this
-                    CookieManager.getInstance().apply {
-                        setAcceptCookie(true)
-                        setAcceptThirdPartyCookies(webViewRef, true)
-                    }
-
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageStarted(
-                            view: WebView?,
-                            url: String?,
-                            favicon: android.graphics.Bitmap?
-                        ) {
-                            super.onPageStarted(view, url, favicon)
-                            view?.evaluateJavascript(cleanFullscreenScript, null)
-                        }
-
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            view?.evaluateJavascript(cleanFullscreenScript, null)
-                            if (url != null && url.contains("/watch")) {
-                                isVideoReady = true
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                databaseEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                userAgentString = STREAM_USER_AGENT
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                    safeBrowsingEnabled = false
+                                }
                             }
-                        }
 
-                        override fun onRenderProcessGone(
-                            view: WebView?,
-                            detail: android.webkit.RenderProcessGoneDetail?
-                        ): Boolean {
-                            return true
-                        }
-                    }
+                            hardenWebView(this)
 
-                    loadUrl(playerUrl)
-                }
-            },
-            update = { webView ->
-                if (webView.url == null) {
-                    webView.loadUrl(playerUrl)
-                }
-            },
-            onRelease = { webView ->
-                try {
-                    webView.stopLoading()
-                    webView.destroy()
-                } catch (_: Exception) {}
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+                            val webViewInstance = this
+                            CookieManager.getInstance().apply {
+                                setAcceptCookie(true)
+                                setAcceptThirdPartyCookies(webViewInstance, true)
+                            }
+
+                            webChromeClient = object : WebChromeClient() {
+                                override fun onPermissionRequest(request: PermissionRequest?) {
+                                    grantSafeWebPermissions(request)
+                                }
+                            }
+
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageStarted(
+                                    view: WebView?,
+                                    url: String?,
+                                    favicon: android.graphics.Bitmap?
+                                ) {
+                                    super.onPageStarted(view, url, favicon)
+                                    if (!isWebViewDestroyed(view)) {
+                                        injectWebViewStabilityShim(view, disableWebGl = true)
+                                        view?.evaluateJavascript(cleanFullscreenScript, null)
+                                    }
+                                }
+
+                                override fun onPageCommitVisible(view: WebView?, url: String?) {
+                                    super.onPageCommitVisible(view, url)
+                                    if (!isWebViewDestroyed(view)) {
+                                        injectWebViewStabilityShim(view, disableWebGl = true)
+                                    }
+                                }
+
+                                override fun onPageFinished(view: WebView?, url: String?) {
+                                    super.onPageFinished(view, url)
+                                    if (!isWebViewDestroyed(view)) {
+                                        injectWebViewStabilityShim(view, disableWebGl = true)
+                                        view?.evaluateJavascript(cleanFullscreenScript, null)
+                                        if (url != null && url.contains("/watch")) {
+                                            isVideoReady = true
+                                        }
+                                    }
+                                }
+
+                                override fun onRenderProcessGone(
+                                    view: WebView?,
+                                    detail: RenderProcessGoneDetail?
+                                ): Boolean {
+                                    safeDestroyWebView(view, rendererGone = true)
+                                    if (webViewRef === view) webViewRef = null
+                                    postOnMain(300L) {
+                                        crashCount++
+                                    }
+                                    return true
+                                }
+                            }
+
+                            loadUrl(playerUrl)
+                            webViewRef = this
+                        }
+                    },
+                    update = { webView ->
+                        webViewRef = webView
+                        if (!isWebViewDestroyed(webView) && webView.url == null) {
+                            webView.loadUrl(playerUrl)
+                        }
+                    },
+                    onRelease = { webView ->
+                        if (webViewRef === webView) webViewRef = null
+                        safeDestroyWebView(webView)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
 
         if (!isVideoReady) {
             Box(
@@ -446,6 +496,15 @@ private fun YouTubeWebScreensaver(
                     .fillMaxSize()
                     .background(Color.Black)
             )
+        }
+    }
+
+    BindWebViewLifecycle(webViewRef)
+
+    DisposableEffect(Unit) {
+        onDispose {
+            safeDestroyWebView(webViewRef)
+            webViewRef = null
         }
     }
 }
@@ -457,6 +516,9 @@ private fun DirectStreamExoPlayerScreensaver(
     onStreamError: () -> Unit
 ) {
     val context = LocalContext.current
+    var stoppedByLifecycle by remember { mutableStateOf(false) }
+    var retryCount by remember(streamUrl) { mutableStateOf(0) }
+    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
 
     val exoPlayer: ExoPlayer = remember(streamUrl) {
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
@@ -496,16 +558,72 @@ private fun DirectStreamExoPlayerScreensaver(
             }
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    stoppedByLifecycle = true
+                    try {
+                        exoPlayer.playWhenReady = false
+                        exoPlayer.stop()
+                        exoPlayer.clearVideoSurface()
+                    } catch (_: Exception) {}
+                }
+                Lifecycle.Event.ON_START -> {
+                    if (stoppedByLifecycle) {
+                        stoppedByLifecycle = false
+                        try {
+                            playerViewRef?.let { pv -> exoPlayer.setVideoTextureView(pv.videoSurfaceView as? android.view.TextureView) }
+                        } catch (_: Exception) {}
+                        try {
+                            exoPlayer.prepare()
+                            exoPlayer.playWhenReady = true
+                        } catch (_: Exception) {}
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) {
+                    retryCount = 0
+                }
+            }
+
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                onStreamError()
+                if (!stoppedByLifecycle && retryCount < 2) {
+                    retryCount++
+                    postOnMain(350L) {
+                        if (!stoppedByLifecycle) {
+                            try {
+                                exoPlayer.stop()
+                                exoPlayer.prepare()
+                                exoPlayer.playWhenReady = true
+                            } catch (_: Exception) {}
+                        }
+                    }
+                } else {
+                    onStreamError()
+                }
             }
         }
         exoPlayer.addListener(listener)
         onDispose {
             exoPlayer.removeListener(listener)
-            exoPlayer.release()
+            playerViewRef?.player = null
+            playerViewRef = null
+            try { exoPlayer.stop() } catch (_: Exception) {}
+            try { exoPlayer.clearVideoSurface() } catch (_: Exception) {}
+            try { exoPlayer.release() } catch (_: Exception) {}
         }
     }
 
@@ -524,6 +642,7 @@ private fun DirectStreamExoPlayerScreensaver(
                 player = exoPlayer
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
                 setEnableComposeSurfaceSyncWorkaround(true)
+                playerViewRef = this
             }
         },
         update = { view ->
@@ -531,6 +650,11 @@ private fun DirectStreamExoPlayerScreensaver(
             view.useController = false
             view.player = exoPlayer
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+            playerViewRef = view
+        },
+        onRelease = { view ->
+            view.player = null
+            if (playerViewRef === view) playerViewRef = null
         }
     )
 }
