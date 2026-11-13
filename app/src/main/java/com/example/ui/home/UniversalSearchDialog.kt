@@ -101,6 +101,7 @@ import com.example.R
 import com.example.data.model.AppItem
 import com.example.data.model.IptvChannel
 import com.example.ui.common.TvFocusableCard
+import com.example.ui.common.TvTextField
 import com.example.ui.common.drawableToBitmapSafe
 import com.example.ui.theme.TvAccentBlue
 import com.example.ui.theme.TvAccentGold
@@ -432,38 +433,18 @@ fun UniversalSearchDialog(
                         onClick = { triggerVoiceSearch() }
                     )
 
-                    OutlinedTextField(
+                    TvTextField(
                         value = query,
                         onValueChange = {
                             query = it
                             if (isListening) stopVoiceRecognition()
                         },
-                        placeholder = {
-                            Text(
-                                text = if (isListening) {
-                                    stringResource(R.string.voice_search_speak_now)
-                                } else {
-                                    stringResource(R.string.universal_search_hint)
-                                },
-                                color = if (isListening) TvAccentGold else TvTextSecondary,
-                                fontSize = 14.sp
-                            )
+                        placeholder = if (isListening) {
+                            stringResource(R.string.voice_search_speak_now)
+                        } else {
+                            stringResource(R.string.universal_search_hint)
                         },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = if (isListening) TvAccentGold else TvAccentBlue
-                            )
-                        },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = TvAccentGold,
-                            unfocusedBorderColor = if (isListening) TvAccentGold.copy(alpha = 0.75f) else Color.White.copy(alpha = 0.2f),
-                            focusedTextColor = TvTextPrimary,
-                            unfocusedTextColor = TvTextPrimary
-                        ),
-                        shape = RoundedCornerShape(16.dp),
+                        leadingIcon = Icons.Default.Search,
                         modifier = Modifier
                             .weight(1f)
                             .height(54.dp)

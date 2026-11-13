@@ -49,6 +49,7 @@
         android:name=".AuraTvApp"
         android:allowBackup="true"
         android:hardwareAccelerated="true"
+        android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
         android:banner="@drawable/tv_banner"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -59,6 +60,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Launcher"
         android:usesCleartextTraffic="true">
+
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
 
         <activity
             android:name=".MainActivity"

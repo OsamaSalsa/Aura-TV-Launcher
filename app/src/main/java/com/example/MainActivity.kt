@@ -482,7 +482,17 @@ fun LauncherNavigation(
         AnimatedContent(
             targetState = currentScreen,
             transitionSpec = {
-                fadeIn() togetherWith fadeOut()
+                val exit = when (initialState) {
+                    LauncherScreen.YOUTUBE,
+                    LauncherScreen.CRAZYGAMES,
+                    LauncherScreen.POKI,
+                    LauncherScreen.PLAYHOP,
+                    LauncherScreen.EASYGAMES,
+                    LauncherScreen.AURA_STORE,
+                    LauncherScreen.MINI_DOWNLOADER -> androidx.compose.animation.ExitTransition.None
+                    else -> fadeOut()
+                }
+                fadeIn() togetherWith exit
             },
             label = "launcher_screen_transition"
         ) { screen ->
@@ -615,7 +625,7 @@ fun LauncherNavigation(
         androidx.compose.animation.AnimatedVisibility(
             visible = showGlobalAmbientMode && !isPlaybackActive,
             enter = fadeIn(),
-            exit = fadeOut(),
+            exit = if (screensaverMode == "video_stream") androidx.compose.animation.ExitTransition.None else fadeOut(),
             modifier = Modifier.fillMaxSize()
         ) {
             com.example.ui.home.AmbientScreensaverOverlay(

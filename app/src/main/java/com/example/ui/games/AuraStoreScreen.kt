@@ -63,7 +63,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import com.example.R
+import com.example.ui.common.BindWebViewLifecycle
 import com.example.ui.common.TvFocusableCard
+import com.example.ui.common.findActivityContext
+import com.example.ui.common.grantSafeWebPermissions
+import com.example.ui.common.hardenWebView
+import com.example.ui.common.injectWebViewStabilityShim
+import com.example.ui.common.isWebViewDestroyed
+import com.example.ui.common.postOnMain
+import com.example.ui.common.safeDestroyWebView
 import com.example.ui.downloader.VirtualMousePointer
 import com.example.ui.theme.TvAccentBlue
 import com.example.ui.theme.TvAccentGold
@@ -377,6 +385,7 @@ fun AuraStoreScreen(
 
     fun dispatchClickAtCursor() {
         val webView = webViewRef ?: return
+        if (isWebViewDestroyed(webView)) return
         isCursorClicking = true
         val downTime = SystemClock.uptimeMillis()
         val downEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, cursorX, cursorY, 0)
@@ -385,7 +394,7 @@ fun AuraStoreScreen(
         webView.dispatchTouchEvent(upEvent)
         downEvent.recycle()
         upEvent.recycle()
-        webView.postDelayed({ isCursorClicking = false }, 120)
+        postOnMain(120L) { isCursorClicking = false }
     }
 
     // Remote Back handling
@@ -476,7 +485,7 @@ fun AuraStoreScreen(
                     androidx.compose.runtime.key(crashCount) {
                         AndroidView(
                             factory = { ctx ->
-                                WebView(ctx).apply {
+                                WebView(ctx.findActivityContext()).apply {
                                     layoutParams = ViewGroup.LayoutParams(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                         ViewGroup.LayoutParams.MATCH_PARENT
@@ -512,17 +521,21 @@ fun AuraStoreScreen(
                                         } catch (_: Exception) {}
                                     }
 
-                                    setLayerType(View.LAYER_TYPE_NONE, null)
+                                    hardenWebView(this)
+
+                                    webChromeClient = object : WebChromeClient() {
+                                        override fun onPermissionRequest(request: PermissionRequest?) {
+                                            grantSafeWebPermissions(request)
+                                        }
+                                    }
 
                                     webViewClient = object : WebViewClient() {
                                         override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
-                                            (view?.parent as? ViewGroup)?.removeView(view)
-                                            try {
-                                                view?.destroy()
-                                            } catch (_: Exception) {}
-                                            postDelayed({
-                                                crashCount++
-                                            }, 300)
+                                            safeDestroyWebView(view, rendererGone = true)
+                                            if (webViewRef === view) webViewRef = null
+                                            postOnMain(300L) {
+                                                onBackToHome()
+                                            }
                                             return true
                                         }
 
@@ -566,11 +579,13 @@ fun AuraStoreScreen(
 
                                         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                             super.onPageStarted(view, url, favicon)
+                                            injectWebViewStabilityShim(view, disableWebGl = true)
                                             isLoading = true
                                         }
 
                                         override fun onPageFinished(view: WebView?, url: String?) {
                                             super.onPageFinished(view, url)
+                                            injectWebViewStabilityShim(view, disableWebGl = true)
                                             isLoading = false
                                             if (!isMouseModeEnabled) {
                                                 view?.post { view.requestFocus() }
@@ -592,6 +607,10 @@ fun AuraStoreScreen(
                                 webViewRef = webView
                                 webView.isFocusable = !isMouseModeEnabled
                                 webView.isFocusableInTouchMode = !isMouseModeEnabled
+                            },
+                            onRelease = { webView ->
+                                if (webViewRef === webView) webViewRef = null
+                                safeDestroyWebView(webView)
                             },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -979,15 +998,12 @@ fun AuraStoreScreen(
         else -> {}
     }
 
+    BindWebViewLifecycle(webViewRef)
+
     DisposableEffect(Unit) {
         onDispose {
-            try {
-                webViewRef?.stopLoading()
-                webViewRef?.destroy()
-                webViewRef = null
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            safeDestroyWebView(webViewRef)
+            webViewRef = null
         }
     }
 }

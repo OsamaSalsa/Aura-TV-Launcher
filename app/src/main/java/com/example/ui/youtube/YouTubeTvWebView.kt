@@ -34,6 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.ui.common.BindWebViewLifecycle
+import com.example.ui.common.findActivityContext
+import com.example.ui.common.grantSafeWebPermissions
+import com.example.ui.common.hardenWebView
+import com.example.ui.common.injectWebViewStabilityShim
+import com.example.ui.common.isWebViewDestroyed
+import com.example.ui.common.postOnMain
+import com.example.ui.common.safeDestroyWebView
 import com.example.ui.theme.TvAccentGold
 
 /**
@@ -45,7 +53,8 @@ const val YOUTUBE_TV_USER_AGENT = "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) Appl
 @SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
 class TvLeanbackWebView(
     context: Context,
-    var onBackAtRoot: (() -> Unit)? = null
+    var onBackAtRoot: (() -> Unit)? = null,
+    var onRendererCrashed: ((didCrash: Boolean) -> Unit)? = null
 ) : WebView(context) {
 
     var onLoadingStateChanged: ((Boolean) -> Unit)? = null
@@ -60,6 +69,7 @@ class TvLeanbackWebView(
             ViewGroup.LayoutParams.MATCH_PARENT
         )
 
+        setBackgroundColor(android.graphics.Color.BLACK)
         keepScreenOn = true
         isFocusable = true
         isFocusableInTouchMode = true
@@ -85,7 +95,7 @@ class TvLeanbackWebView(
             }
         }
 
-        setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        hardenWebView(this)
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
@@ -94,16 +104,20 @@ class TvLeanbackWebView(
 
         webViewClient = object : WebViewClient() {
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
-                (view?.parent as? ViewGroup)?.removeView(view)
-                try {
-                    view?.destroy()
-                } catch (_: Exception) {}
-                try {
-                    android.widget.Toast.makeText(context, context.getString(R.string.youtube_renderer_crash), android.widget.Toast.LENGTH_SHORT).show()
-                } catch (_: Exception) {}
-                postDelayed({
-                    onBackAtRoot?.invoke()
-                }, 300)
+                safeDestroyWebView(view, rendererGone = true)
+                val didCrash = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    detail?.didCrash() == true
+                } else false
+                postOnMain(250L) {
+                    if (onRendererCrashed != null) {
+                        onRendererCrashed?.invoke(didCrash)
+                    } else {
+                        try {
+                            android.widget.Toast.makeText(context, context.getString(R.string.youtube_renderer_crash), android.widget.Toast.LENGTH_SHORT).show()
+                        } catch (_: Exception) {}
+                        onBackAtRoot?.invoke()
+                    }
+                }
                 return true
             }
 
@@ -114,11 +128,18 @@ class TvLeanbackWebView(
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                injectWebViewStabilityShim(view, disableWebGl = true)
                 onLoadingStateChanged?.invoke(true)
+            }
+
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                injectWebViewStabilityShim(view, disableWebGl = true)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                injectWebViewStabilityShim(view, disableWebGl = true)
                 onLoadingStateChanged?.invoke(false)
                 view?.requestFocus()
             }
@@ -126,13 +147,7 @@ class TvLeanbackWebView(
 
         webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.let {
-                    try {
-                        it.grant(it.resources)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                grantSafeWebPermissions(request)
             }
 
             override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
@@ -153,7 +168,7 @@ class TvLeanbackWebView(
                     addView(view)
                 }
                 (parent as? ViewGroup)?.addView(fullscreenContainer)
-                visibility = View.GONE
+                visibility = View.INVISIBLE
             }
 
             override fun onHideCustomView() {
@@ -193,6 +208,17 @@ class TvLeanbackWebView(
         return super.dispatchKeyEvent(event)
     }
 
+    override fun onDetachedFromWindow() {
+        fullscreenContainer?.let { container ->
+            container.removeAllViews()
+            (container.parent as? ViewGroup)?.removeView(container)
+        }
+        fullscreenContainer = null
+        customView = null
+        customViewCallback = null
+        super.onDetachedFromWindow()
+    }
+
     fun loadTargetUrl(targetUrl: String) {
         loadUrl(targetUrl)
         requestFocus()
@@ -209,13 +235,21 @@ fun YouTubeTvWebView(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var webViewRef by remember { mutableStateOf<TvLeanbackWebView?>(null) }
+    var lastLoadedUrl by remember { mutableStateOf<String?>(null) }
+    var crashCount by remember { mutableStateOf(0) }
+    val ctxForToast = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(url) {
-        webViewRef?.loadTargetUrl(url)
+        val wv = webViewRef ?: return@LaunchedEffect
+        if (url != lastLoadedUrl) {
+            lastLoadedUrl = url
+            wv.loadTargetUrl(url)
+        }
     }
 
     LaunchedEffect(reloadTrigger) {
         if (reloadTrigger > 0) {
+            lastLoadedUrl = url
             webViewRef?.loadTargetUrl(url)
         }
     }
@@ -224,12 +258,15 @@ fun YouTubeTvWebView(
         val wv = webViewRef ?: return@LaunchedEffect
         while (true) {
             kotlinx.coroutines.delay(2500)
+            if (isWebViewDestroyed(wv)) break
             try {
-                wv.evaluateJavascript(
-                    "(function(){var v=document.querySelector('video');return !!(v && !v.paused && !v.ended && v.readyState>2);})();"
-                ) { result ->
-                    val playing = result?.trim() == "true"
-                    onVideoPlayingChanged?.invoke(playing)
+                if (wv.isAttachedToWindow && !isWebViewDestroyed(wv)) {
+                    wv.evaluateJavascript(
+                        "(function(){var v=document.querySelector('video');return !!(v && !v.paused && !v.ended && v.readyState>2);})();"
+                    ) { result ->
+                        val playing = result?.trim() == "true"
+                        onVideoPlayingChanged?.invoke(playing)
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -240,25 +277,48 @@ fun YouTubeTvWebView(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        AndroidView(
-            factory = { ctx ->
-                TvLeanbackWebView(ctx, onBackAtRoot = {
-                    onBackToCurated()
-                }).apply {
-                    onLoadingStateChanged = { loading ->
-                        isLoading = loading
+        androidx.compose.runtime.key(crashCount) {
+            AndroidView(
+                factory = { ctx ->
+                    TvLeanbackWebView(
+                        ctx.findActivityContext(),
+                        onBackAtRoot = { onBackToCurated() },
+                        onRendererCrashed = { _ ->
+                            try {
+                                android.widget.Toast.makeText(
+                                    ctxForToast,
+                                    ctxForToast.getString(R.string.youtube_renderer_crash),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            } catch (_: Exception) {}
+                            onBackToCurated()
+                        }
+                    ).apply {
+                        onLoadingStateChanged = { loading ->
+                            isLoading = loading
+                        }
+                        this.onVideoPlayingChanged = onVideoPlayingChanged
+                        if (crashCount > 0) {
+                            try { clearCache(false) } catch (_: Exception) {}
+                        }
+                        lastLoadedUrl = url
+                        loadTargetUrl(url)
+                        webViewRef = this
                     }
-                    this.onVideoPlayingChanged = onVideoPlayingChanged
-                    loadTargetUrl(url)
-                    webViewRef = this
-                }
-            },
-            update = { webView ->
-                webView.onVideoPlayingChanged = onVideoPlayingChanged
-                webViewRef = webView
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+                },
+                update = { webView ->
+                    webView.onVideoPlayingChanged = onVideoPlayingChanged
+                    webViewRef = webView
+                },
+                onRelease = { webView ->
+                    safeDestroyWebView(webView)
+                    if (webViewRef === webView) {
+                        webViewRef = null
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         if (isLoading) {
             CircularProgressIndicator(
@@ -271,16 +331,13 @@ fun YouTubeTvWebView(
         }
     }
 
+    BindWebViewLifecycle(webViewRef)
+
     DisposableEffect(Unit) {
         onDispose {
             onVideoPlayingChanged?.invoke(false)
-            try {
-                webViewRef?.stopLoading()
-                webViewRef?.destroy()
-                webViewRef = null
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            safeDestroyWebView(webViewRef)
+            webViewRef = null
         }
     }
 }

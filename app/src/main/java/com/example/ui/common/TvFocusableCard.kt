@@ -129,7 +129,7 @@ fun TvFocusableCard(
                 onLongClick = onLongClick
             )
             .then(
-                if (isFocused && elevation > 0.dp) {
+                if (isFocused && elevation > 0.dp && cardBackgroundColor != Color.Transparent) {
                     Modifier.shadow(
                         elevation = elevation,
                         shape = shape,

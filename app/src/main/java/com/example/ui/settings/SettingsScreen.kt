@@ -1,15 +1,18 @@
 package com.example.ui.settings
 
 import android.app.role.RoleManager
-import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,59 +21,51 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DisplaySettings
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartDisplay
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Bedtime
-import com.example.ui.home.AmbientScreensaverOverlay
-import com.example.ui.home.screensaverPresetVideos
-import com.example.ui.home.extractYouTubeVideoId
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import com.example.ui.common.AuroraColors
-import com.example.util.FilePermissionHelper
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -80,35 +75,53 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.window.Dialog
-import androidx.compose.material3.Surface
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import coil.compose.AsyncImage
 import com.example.R
+import com.example.ui.common.AuroraColors
 import com.example.ui.common.TvFocusableCard
+import com.example.ui.common.TvTextField
+import com.example.ui.home.AmbientScreensaverOverlay
+import com.example.ui.home.extractYouTubeVideoId
+import com.example.ui.home.screensaverPresetVideos
+import com.example.ui.theme.TvAccentBlue
 import com.example.ui.theme.TvAccentGold
+import com.example.ui.theme.TvAccentGoldRadiant
 import com.example.ui.theme.TvAccentRed
 import com.example.ui.theme.TvMidnightBackground
 import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
+import com.example.util.FilePermissionHelper
 import kotlinx.coroutines.delay
 
 enum class SettingsSection {
     SYSTEM, LAUNCHER, SCREENSAVER, IPTV
 }
+
+private data class SystemShortcutItem(
+    val icon: ImageVector,
+    val title: String,
+    val desc: String,
+    val onClick: () -> Unit
+)
 
 @Composable
 fun SettingsScreen(
@@ -117,6 +130,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var currentSection by remember { mutableStateOf(SettingsSection.SYSTEM) }
+    val initialSidebarFocus = remember { androidx.compose.ui.focus.FocusRequester() }
 
     val isDynamicBg by viewModel.isDynamicBgEnabled.collectAsState()
     val wallpaperMode by viewModel.wallpaperMode.collectAsState()
@@ -130,11 +144,14 @@ fun SettingsScreen(
     var customGreetingInput by remember(customGreetingText) { mutableStateOf(customGreetingText) }
     val appsPerRow by viewModel.appsPerRow.collectAsState()
     val appsTopOffset by viewModel.appsTopOffset.collectAsState()
+    @Suppress("UNUSED_VARIABLE")
     val iptvUrl by viewModel.iptvUrl.collectAsState()
     val iptvPlaylists by viewModel.iptvPlaylists.collectAsState()
     val activeIptvPlaylist by viewModel.activeIptvPlaylist.collectAsState()
     val allApps by viewModel.allApps.collectAsState()
     val dnsBlockerMode by viewModel.dnsBlockerMode.collectAsState()
+    val appLockPin by viewModel.appLockPin.collectAsState()
+    var pinInput by remember(appLockPin) { mutableStateOf(appLockPin) }
     val glassOpacity by viewModel.glassOpacity.collectAsState()
     val showOnlyTvApps by viewModel.showOnlyTvApps.collectAsState()
     val appLanguage by viewModel.language.collectAsState()
@@ -149,6 +166,7 @@ fun SettingsScreen(
 
     var newPlaylistName by remember { mutableStateOf("") }
     var newPlaylistUrl by remember { mutableStateOf("") }
+    @Suppress("UNUSED_VARIABLE")
     var customWallpaperInput by remember(customWallpaperUrl) { mutableStateOf(customWallpaperUrl) }
     var customVideoInput by remember { mutableStateOf("") }
 
@@ -169,6 +187,12 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        try {
+            initialSidebarFocus.requestFocus()
+        } catch (_: Exception) {}
+    }
+
     val roleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { _ ->
@@ -178,7 +202,6 @@ fun SettingsScreen(
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { _ ->
-        // Try enabling again after permission request
         viewModel.setDnsBlockerMode("ads", context)
     }
 
@@ -205,7 +228,6 @@ fun SettingsScreen(
                 return
             }
         }
-        // Fallback to settings
         viewModel.promptSetDefaultLauncher(context)
     }
 
@@ -220,37 +242,93 @@ fun SettingsScreen(
         }
     }
 
+    val navItems = listOf(
+        Triple(SettingsSection.SYSTEM, stringResource(R.string.settings_category_system), Icons.Default.Settings),
+        Triple(SettingsSection.LAUNCHER, stringResource(R.string.settings_category_launcher), Icons.Default.ColorLens),
+        Triple(SettingsSection.SCREENSAVER, stringResource(R.string.settings_category_screensaver), Icons.Default.Bedtime),
+        Triple(SettingsSection.IPTV, stringResource(R.string.settings_category_iptv), Icons.Default.LiveTv)
+    )
+
+    val activeNav = navItems.first { it.first == currentSection }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TvMidnightBackground)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF060A14),
+                        TvMidnightBackground,
+                        Color(0xFF04070E)
+                    )
+                )
+            )
+            .drawBehind {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(TvAccentGold.copy(alpha = 0.08f), Color.Transparent),
+                        center = Offset(size.width * 0.14f, size.height * 0.14f),
+                        radius = size.width * 0.42f
+                    ),
+                    center = Offset(size.width * 0.14f, size.height * 0.14f),
+                    radius = size.width * 0.42f
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(TvAccentBlue.copy(alpha = 0.08f), Color.Transparent),
+                        center = Offset(size.width * 0.88f, size.height * 0.85f),
+                        radius = size.width * 0.48f
+                    ),
+                    center = Offset(size.width * 0.88f, size.height * 0.85f),
+                    radius = size.width * 0.48f
+                )
+            }
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
-            // Left Category Navigation Drawer
+            // Left Category Navigation Drawer (Dark Glass Sidebar)
             Column(
                 modifier = Modifier
-                    .width(300.dp)
-                    .fillMaxSize()
-                    .background(TvMidnightBackground.copy(alpha = 0.95f))
+                    .width(292.dp)
+                    .fillMaxHeight()
+                    .background(Color(0xFF0A0F1E).copy(alpha = 0.90f))
                     .padding(vertical = 24.dp)
             ) {
-                // Header
+                // Header with Sleek Back Pill & Title
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TvFocusableCard(
                         onClick = onBackToHome,
-                        modifier = Modifier.size(40.dp)
+                        scaleUpRatio = 1.08f,
+                        shape = RoundedCornerShape(12.dp),
+                        useDefaultBorder = false,
+                        modifier = Modifier.size(44.dp)
                     ) { isFocused ->
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = if (isFocused) TvAccentGold else TvTextPrimary,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isFocused) TvAccentGold
+                                    else Color(0xFF151F35)
+                                )
+                                .border(
+                                    width = if (isFocused) 2.dp else 1.dp,
+                                    color = if (isFocused) Color.White else Color.White.copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = if (isFocused) Color.Black else TvTextPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(14.dp))
@@ -259,57 +337,136 @@ fun SettingsScreen(
                         text = stringResource(R.string.settings_title),
                         color = TvTextPrimary,
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Navigation Items
-                val navItems = listOf(
-                    SettingsSection.SYSTEM to (stringResource(R.string.settings_category_system) to Icons.Default.Settings),
-                    SettingsSection.LAUNCHER to (stringResource(R.string.settings_category_launcher) to Icons.Default.ColorLens),
-                    SettingsSection.SCREENSAVER to (stringResource(R.string.settings_category_screensaver) to Icons.Default.Bedtime),
-                    SettingsSection.IPTV to (stringResource(R.string.settings_category_iptv) to Icons.Default.LiveTv)
+                // Subtle separator below sidebar header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(1.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(TvAccentGold.copy(alpha = 0.35f), Color.Transparent)
+                            )
+                        )
                 )
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Navigation Items
                 Column(
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    navItems.forEach { (section, pair) ->
-                        val (title, icon) = pair
+                    navItems.forEachIndexed { index, (section, title, icon) ->
                         val isSelected = (section == currentSection)
 
                         TvFocusableCard(
                             onClick = { currentSection = section },
                             onFocused = { currentSection = section },
+                            focusRequester = if (index == 0) initialSidebarFocus else remember { androidx.compose.ui.focus.FocusRequester() },
                             scaleUpRatio = 1.03f,
+                            shape = RoundedCornerShape(14.dp),
+                            useDefaultBorder = false,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .height(56.dp)
                         ) { isFocused ->
+                            val rowBg by animateColorAsState(
+                                targetValue = when {
+                                    isFocused -> TvAccentGold
+                                    isSelected -> TvAccentGold.copy(alpha = 0.16f)
+                                    else -> Color(0xFF121B2F).copy(alpha = 0.55f)
+                                },
+                                animationSpec = tween(150),
+                                label = "sidebar_bg"
+                            )
+                            val rowBorder by animateColorAsState(
+                                targetValue = when {
+                                    isFocused -> Color.White.copy(alpha = 0.95f)
+                                    isSelected -> TvAccentGold.copy(alpha = 0.48f)
+                                    else -> Color.White.copy(alpha = 0.06f)
+                                },
+                                animationSpec = tween(150),
+                                label = "sidebar_border"
+                            )
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(
-                                        if (isSelected) TvAccentGold.copy(alpha = 0.35f) else Color.Transparent
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(rowBg)
+                                    .border(
+                                        width = if (isFocused) 2.dp else 1.dp,
+                                        color = rowBorder,
+                                        shape = RoundedCornerShape(14.dp)
                                     )
-                                    .padding(horizontal = 16.dp),
+                                    .padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = null,
-                                    tint = if (isSelected || isFocused) TvAccentGold else TvTextSecondary,
-                                    modifier = Modifier.size(20.dp)
+                                // Active left pill indicator
+                                Box(
+                                    modifier = Modifier
+                                        .width(4.dp)
+                                        .height(24.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(
+                                            when {
+                                                isFocused -> Color.Black
+                                                isSelected -> TvAccentGoldRadiant
+                                                else -> Color.Transparent
+                                            }
+                                        )
                                 )
-                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            when {
+                                                isFocused -> Color.Black.copy(alpha = 0.14f)
+                                                isSelected -> TvAccentGold.copy(alpha = 0.20f)
+                                                else -> Color.White.copy(alpha = 0.05f)
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = when {
+                                            isFocused -> Color.Black
+                                            isSelected -> TvAccentGoldRadiant
+                                            else -> TvTextSecondary
+                                        },
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
                                 Text(
                                     text = title,
-                                    color = if (isSelected || isFocused) TvTextPrimary else TvTextSecondary,
+                                    color = when {
+                                        isFocused -> Color.Black
+                                        isSelected -> TvTextPrimary
+                                        else -> TvTextSecondary
+                                    },
                                     fontSize = 14.sp,
-                                    fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium
+                                    fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
@@ -321,14 +478,31 @@ fun SettingsScreen(
                 Text(
                     text = "© Osama Salsa",
                     color = TvAccentGold,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp)
+                        .padding(bottom = 16.dp)
                 )
             }
+
+            // Sleek Vertical Glass Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .fillMaxHeight()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.12f),
+                                TvAccentGold.copy(alpha = 0.18f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
 
             // Right Panel: Section Content
             Column(
@@ -337,70 +511,156 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .padding(horizontal = 36.dp, vertical = 24.dp)
             ) {
-                // Section Title & Status Toast
+                // Section Title & Animated Status Toast
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = when (currentSection) {
-                            SettingsSection.SYSTEM -> stringResource(R.string.settings_category_system)
-                            SettingsSection.LAUNCHER -> stringResource(R.string.settings_category_launcher)
-                            SettingsSection.SCREENSAVER -> stringResource(R.string.settings_category_screensaver)
-                            SettingsSection.IPTV -> stringResource(R.string.settings_category_iptv)
-                        },
-                        color = TvTextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    statusMessage?.let { msg ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(TvAccentGold.copy(alpha = 0.2f))
-                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(TvAccentGold.copy(alpha = 0.15f))
+                                .border(
+                                    width = 1.dp,
+                                    color = TvAccentGold.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = msg.asString(context),
-                                color = TvAccentGold,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                            Icon(
+                                imageVector = activeNav.third,
+                                contentDescription = null,
+                                tint = TvAccentGoldRadiant,
+                                modifier = Modifier.size(21.dp)
                             )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = activeNav.second,
+                            color = TvTextPrimary,
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = statusMessage != null,
+                        enter = fadeIn(tween(200)),
+                        exit = fadeOut(tween(250))
+                    ) {
+                        statusMessage?.let { msg ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(TvAccentGold.copy(alpha = 0.16f))
+                                    .border(
+                                        width = 1.dp,
+                                        color = TvAccentGold.copy(alpha = 0.45f),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = TvAccentGoldRadiant,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = msg.asString(context),
+                                        color = TvAccentGoldRadiant,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    TvAccentGold.copy(alpha = 0.40f),
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Detail View
                 when (currentSection) {
                     SettingsSection.SYSTEM -> {
+                        val systemShortcuts = listOf(
+                            SystemShortcutItem(
+                                icon = Icons.Default.Wifi,
+                                title = stringResource(R.string.settings_open_wifi),
+                                desc = stringResource(R.string.settings_category_network),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_WIFI_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.Settings,
+                                title = stringResource(R.string.settings_open_ethernet),
+                                desc = stringResource(R.string.settings_category_network),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_WIRELESS_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.DisplaySettings,
+                                title = stringResource(R.string.settings_open_display),
+                                desc = stringResource(R.string.settings_open_display),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_DISPLAY_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.VolumeUp,
+                                title = stringResource(R.string.settings_open_sound),
+                                desc = stringResource(R.string.settings_open_sound),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_SOUND_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.Schedule,
+                                title = stringResource(R.string.settings_open_datetime),
+                                desc = stringResource(R.string.settings_open_datetime),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_DATE_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.Settings,
+                                title = stringResource(R.string.settings_open_all_settings),
+                                desc = stringResource(R.string.settings_open_all_settings),
+                                onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_SETTINGS) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.Info,
+                                title = stringResource(R.string.settings_open_app_info),
+                                desc = stringResource(R.string.settings_open_app_info_desc),
+                                onClick = { viewModel.openAppInfo(context) }
+                            )
+                        )
+
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
                             contentPadding = PaddingValues(bottom = 32.dp)
                         ) {
                             // Language Selection Card
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_language),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Select application interface language / اختر لغة التطبيق",
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Language,
+                                        title = stringResource(R.string.settings_language),
+                                        subtitle = "Select application interface language / اختر لغة التطبيق"
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -421,94 +681,54 @@ fun SettingsScreen(
                                 }
                             }
 
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.Wifi,
-                                    title = stringResource(R.string.settings_open_wifi),
-                                    desc = stringResource(R.string.settings_category_network),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_WIFI_SETTINGS) }
-                                )
-                            }
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.Settings,
-                                    title = stringResource(R.string.settings_open_ethernet),
-                                    desc = stringResource(R.string.settings_category_network),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_WIRELESS_SETTINGS) }
-                                )
-                            }
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.DisplaySettings,
-                                    title = stringResource(R.string.settings_open_display),
-                                    desc = stringResource(R.string.settings_open_display),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_DISPLAY_SETTINGS) }
-                                )
-                            }
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.VolumeUp,
-                                    title = stringResource(R.string.settings_open_sound),
-                                    desc = stringResource(R.string.settings_open_sound),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_SOUND_SETTINGS) }
-                                )
-                            }
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.Schedule,
-                                    title = stringResource(R.string.settings_open_datetime),
-                                    desc = stringResource(R.string.settings_open_datetime),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_DATE_SETTINGS) }
-                                )
-                            }
-                            item {
-                                    SettingActionTile(
-                                    icon = Icons.Default.Settings,
-                                    title = stringResource(R.string.settings_open_all_settings),
-                                    desc = stringResource(R.string.settings_open_all_settings),
-                                    onClick = { viewModel.launchSystemSetting(context, Settings.ACTION_SETTINGS) }
-                                )
-                            }
-                            item {
-                                SettingActionTile(
-                                    icon = Icons.Default.Info,
-                                    title = stringResource(R.string.settings_open_app_info),
-                                    desc = stringResource(R.string.settings_open_app_info_desc),
-                                    onClick = { viewModel.openAppInfo(context) }
-                                )
-                            }
-                            item {
-                                DefaultLauncherManagementCard(
-                                    isDefault = isDefaultLauncher,
-                                    onEnable = { requestDefaultLauncher() },
-                                    onReset = { viewModel.resetAndPromptDefaultLauncher(context) }
-                                )
-                            }
-                            item {
-                                FilePermissionManagementCard(
-                                    hasPermission = hasFilePermission,
-                                    onGrant = { FilePermissionHelper.requestStoragePermission(context) }
-                                )
-                            }
-                            item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
+                            // System Shortcuts in compact 2-column grid for quick TV D-Pad navigation
+                            items(systemShortcuts.chunked(2)) { rowShortcuts ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_privacy_title),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
+                                    rowShortcuts.forEach { shortcut ->
+                                        SettingActionTile(
+                                            icon = shortcut.icon,
+                                            title = shortcut.title,
+                                            desc = shortcut.desc,
+                                            onClick = shortcut.onClick,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    if (rowShortcuts.size == 1) {
+                                        // Balance last odd item nicely without empty void or awkward alignment
+                                        // Since weight(1f) isn't needed if it spans or we balance cleanly:
+                                        // Actually using a Spacer(weight(1f)) keeps consistent 2-column grid alignment!
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+
+                            if (!isDefaultLauncher) {
+                                item {
+                                    DefaultLauncherManagementCard(
+                                        isDefault = isDefaultLauncher,
+                                        onEnable = { requestDefaultLauncher() }
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_privacy_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                }
+                            }
+
+                            if (!hasFilePermission) {
+                                item {
+                                    FilePermissionManagementCard(
+                                        hasPermission = hasFilePermission,
+                                        onGrant = { FilePermissionHelper.requestStoragePermission(context) }
+                                    )
+                                }
+                            }
+
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Security,
+                                        title = stringResource(R.string.settings_privacy_title),
+                                        subtitle = stringResource(R.string.settings_privacy_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -523,7 +743,7 @@ fun SettingsScreen(
                                             if (mode == "off") {
                                                 viewModel.setDnsBlockerMode("off", context)
                                             } else {
-                                                val vpnIntent = android.net.VpnService.prepare(context)
+                                                val vpnIntent = VpnService.prepare(context)
                                                 if (vpnIntent != null) {
                                                     vpnLauncher.launch(vpnIntent)
                                                 } else {
@@ -534,6 +754,44 @@ fun SettingsScreen(
                                     )
                                 }
                             }
+
+                            // App Lock PIN Customization Card
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Lock,
+                                        title = stringResource(R.string.settings_app_lock_pin_title),
+                                        subtitle = stringResource(R.string.settings_app_lock_pin_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TvTextField(
+                                            value = pinInput,
+                                            onValueChange = { next ->
+                                                val digitsOnly = next.filter { it.isDigit() }.take(4)
+                                                pinInput = digitsOnly
+                                            },
+                                            placeholder = stringResource(R.string.settings_app_lock_pin_placeholder),
+                                            leadingIcon = Icons.Default.Lock,
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        TvActionButton(
+                                            text = stringResource(R.string.action_save),
+                                            icon = Icons.Default.Check,
+                                            onClick = { viewModel.setAppLockPin(pinInput) },
+                                            baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                            focusedColor = TvAccentGold,
+                                            fillWidth = false,
+                                            modifier = Modifier.height(52.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -542,41 +800,14 @@ fun SettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                             contentPadding = PaddingValues(bottom = 32.dp)
                         ) {
-                            // Set as Default TV Launcher
-                            item {
-                                DefaultLauncherManagementCard(
-                                    isDefault = isDefaultLauncher,
-                                    onEnable = { requestDefaultLauncher() },
-                                    onReset = { viewModel.resetAndPromptDefaultLauncher(context) }
-                                )
-                            }
-                            item {
-                                FilePermissionManagementCard(
-                                    hasPermission = hasFilePermission,
-                                    onGrant = { FilePermissionHelper.requestStoragePermission(context) }
-                                )
-                            }
 
                             // Wallpaper Style & Background Selector Card
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_wallpaper_style),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_wallpaper_style_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Wallpaper,
+                                        title = stringResource(R.string.settings_wallpaper_style),
+                                        subtitle = stringResource(R.string.settings_wallpaper_style_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -606,7 +837,7 @@ fun SettingsScreen(
                                     )
 
                                     if (wallpaperMode == "custom") {
-                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Spacer(modifier = Modifier.height(14.dp))
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             verticalAlignment = Alignment.CenterVertically,
@@ -618,37 +849,16 @@ fun SettingsScreen(
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
-
-                                            TvFocusableCard(
+                                            TvActionButton(
+                                                text = stringResource(R.string.settings_wallpaper_pick_device),
+                                                icon = Icons.Default.Image,
                                                 onClick = { imagePickerLauncher.launch("image/*") },
-                                                scaleUpRatio = 1.04f,
-                                                shape = RoundedCornerShape(10.dp)
-                                            ) { isFocused ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .background(if (isFocused) TvAccentGold else Color(0xFF334155), RoundedCornerShape(10.dp))
-                                                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                                                ) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Image,
-                                                            contentDescription = null,
-                                                            tint = if (isFocused) Color.Black else Color.White,
-                                                            modifier = Modifier.size(18.dp)
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(
-                                                            text = stringResource(R.string.settings_wallpaper_pick_device),
-                                                            color = if (isFocused) Color.Black else Color.White,
-                                                            fontSize = 13.sp,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                                baseColor = Color(0xFF23304A),
+                                                focusedColor = TvAccentGold
+                                            )
                                         }
                                     } else if (wallpaperMode == "preset") {
-                                        Spacer(modifier = Modifier.height(18.dp))
+                                        Spacer(modifier = Modifier.height(16.dp))
                                         OnlineWallpaperSelectionGrid(
                                             selectedWallpaperUrl = customWallpaperUrl,
                                             onWallpaperSelected = { fullUrl ->
@@ -662,24 +872,11 @@ fun SettingsScreen(
 
                             // Clock Display Settings
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_clock_settings),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_clock_settings_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Schedule,
+                                        title = stringResource(R.string.settings_clock_settings),
+                                        subtitle = stringResource(R.string.settings_clock_settings_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -691,7 +888,7 @@ fun SettingsScreen(
                                         selectedOption = isClock24h,
                                         onOptionSelected = { viewModel.setClock24h(it) }
                                     )
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     TvSelectField(
                                         label = stringResource(R.string.settings_clock_seconds),
                                         options = listOf(
@@ -701,7 +898,7 @@ fun SettingsScreen(
                                         selectedOption = isClockSecondsEnabled,
                                         onOptionSelected = { viewModel.setClockSecondsEnabled(it) }
                                     )
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     TvSelectField(
                                         label = stringResource(R.string.settings_clock_size),
                                         options = listOf(
@@ -717,24 +914,11 @@ fun SettingsScreen(
 
                             // Date Display Settings
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_date_settings),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_date_settings_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.CalendarMonth,
+                                        title = stringResource(R.string.settings_date_settings),
+                                        subtitle = stringResource(R.string.settings_date_settings_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -753,24 +937,11 @@ fun SettingsScreen(
 
                             // Greeting Sentence Settings
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_greeting_settings),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_greeting_settings_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.AutoAwesome,
+                                        title = stringResource(R.string.settings_greeting_settings),
+                                        subtitle = stringResource(R.string.settings_greeting_settings_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -789,15 +960,15 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(14.dp))
                                         Text(
                                             text = stringResource(R.string.settings_custom_greeting_title),
-                                            color = TvAccentGold,
+                                            color = TvAccentGoldRadiant,
                                             fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold
+                                            fontWeight = FontWeight.Bold
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Spacer(modifier = Modifier.height(3.dp))
                                         Text(
                                             text = stringResource(R.string.settings_custom_greeting_desc),
                                             color = TvTextSecondary,
-                                            fontSize = 11.sp
+                                            fontSize = 12.sp
                                         )
                                         Spacer(modifier = Modifier.height(10.dp))
                                         Row(
@@ -805,45 +976,24 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            OutlinedTextField(
+                                            TvTextField(
                                                 value = customGreetingInput,
                                                 onValueChange = { customGreetingInput = it },
-                                                placeholder = {
-                                                    Text(
-                                                        stringResource(R.string.settings_custom_greeting_hint),
-                                                        color = TvTextSecondary,
-                                                        fontSize = 12.sp
-                                                    )
-                                                },
-                                                singleLine = true,
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    focusedBorderColor = TvAccentGold,
-                                                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                                    focusedTextColor = TvTextPrimary,
-                                                    unfocusedTextColor = TvTextPrimary
-                                                ),
-                                                shape = RoundedCornerShape(10.dp),
+                                                placeholder = stringResource(R.string.settings_custom_greeting_hint),
                                                 modifier = Modifier.weight(1f)
                                             )
 
-                                            Button(
+                                            TvActionButton(
+                                                text = stringResource(R.string.settings_custom_greeting_save),
+                                                icon = Icons.Default.Check,
                                                 onClick = {
                                                     viewModel.setCustomGreetingText(customGreetingInput.trim())
                                                     viewModel.setGreetingMode("custom")
                                                 },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = TvAccentGold,
-                                                    contentColor = Color.Black
-                                                ),
-                                                shape = RoundedCornerShape(10.dp),
+                                                baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                                focusedColor = TvAccentGold,
                                                 modifier = Modifier.height(52.dp)
-                                            ) {
-                                                Text(
-                                                    text = stringResource(R.string.settings_custom_greeting_save),
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp
-                                                )
-                                            }
+                                            )
                                         }
                                     }
                                 }
@@ -851,24 +1001,11 @@ fun SettingsScreen(
 
                             // Apps per Row Selector
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_apps_per_row),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_apps_per_row_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.GridView,
+                                        title = stringResource(R.string.settings_apps_per_row),
+                                        subtitle = stringResource(R.string.settings_apps_per_row_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -882,24 +1019,11 @@ fun SettingsScreen(
 
                             // Channels Glass Opacity Selector
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_glass_opacity),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_glass_opacity_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Opacity,
+                                        title = stringResource(R.string.settings_glass_opacity),
+                                        subtitle = stringResource(R.string.settings_glass_opacity_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -913,24 +1037,11 @@ fun SettingsScreen(
 
                             // Apps Start Position / Wallpaper View Selector
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_apps_top_position),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_apps_top_position_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.VerticalAlignBottom,
+                                        title = stringResource(R.string.settings_apps_top_position),
+                                        subtitle = stringResource(R.string.settings_apps_top_position_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -949,24 +1060,11 @@ fun SettingsScreen(
 
                             // Displayed Apps Filter (All vs TV Only)
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_show_only_tv_apps),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_show_only_tv_apps_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Apps,
+                                        title = stringResource(R.string.settings_show_only_tv_apps),
+                                        subtitle = stringResource(R.string.settings_show_only_tv_apps_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -981,8 +1079,6 @@ fun SettingsScreen(
                                 }
                             }
 
-
-
                             // Reset App Order
                             item {
                                 SettingActionTile(
@@ -995,71 +1091,69 @@ fun SettingsScreen(
 
                             // Hidden Apps Section
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
+                                val hiddenList = allApps.filter { it.isHidden }
+                                SettingsGlassCard {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = stringResource(R.string.settings_hidden_apps),
-                                            color = TvTextPrimary,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            SettingsCardHeader(
+                                                icon = Icons.Default.VisibilityOff,
+                                                title = stringResource(R.string.settings_hidden_apps),
+                                                subtitle = if (hiddenList.isEmpty()) stringResource(R.string.settings_no_hidden_apps) else null
+                                            )
+                                        }
 
-                                        val hiddenApps = allApps.filter { it.isHidden }
-                                        if (hiddenApps.isNotEmpty()) {
+                                        if (hiddenList.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.width(12.dp))
                                             TvActionButton(
                                                 text = stringResource(R.string.action_unhide),
+                                                icon = Icons.Default.Visibility,
                                                 onClick = { viewModel.unhideAllApps() },
-                                                baseColor = TvAccentGold.copy(alpha = 0.85f),
+                                                baseColor = TvAccentGold.copy(alpha = 0.88f),
                                                 focusedColor = TvAccentGold
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    val hiddenList = allApps.filter { it.isHidden }
-                                    if (hiddenList.isEmpty()) {
-                                        Text(
-                                            text = stringResource(R.string.settings_no_hidden_apps),
-                                            color = TvTextSecondary,
-                                            fontSize = 13.sp
-                                        )
-                                    } else {
-                                        hiddenList.forEach { app ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 6.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(app.label, color = TvTextPrimary, fontSize = 14.sp)
-                                                TvFocusableCard(
-                                                    onClick = { viewModel.unhideApp(app.packageName) },
+                                    if (hiddenList.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            hiddenList.forEach { app ->
+                                                Row(
                                                     modifier = Modifier
-                                                        .height(34.dp)
-                                                        .padding(horizontal = 4.dp)
-                                                ) { isFocused ->
-                                                    Row(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .padding(horizontal = 12.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Icon(Icons.Default.Visibility, contentDescription = null, tint = TvAccentGold, modifier = Modifier.size(16.dp))
-                                                        Spacer(Modifier.width(6.dp))
-                                                        Text(stringResource(R.string.action_unhide), color = TvTextPrimary, fontSize = 12.sp)
-                                                    }
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Color(0xFF0A101F).copy(alpha = 0.7f))
+                                                        .border(
+                                                            width = 1.dp,
+                                                            color = Color.White.copy(alpha = 0.06f),
+                                                            shape = RoundedCornerShape(12.dp)
+                                                        )
+                                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = app.label,
+                                                        color = TvTextPrimary,
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.weight(1f),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                    TvActionButton(
+                                                        text = stringResource(R.string.action_unhide),
+                                                        icon = Icons.Default.Visibility,
+                                                        onClick = { viewModel.unhideApp(app.packageName) },
+                                                        baseColor = Color(0xFF23304A),
+                                                        focusedColor = TvAccentGold,
+                                                        modifier = Modifier.height(38.dp)
+                                                    )
                                                 }
                                             }
                                         }
@@ -1076,24 +1170,11 @@ fun SettingsScreen(
                         ) {
                             // Inactivity Sleep Timer Card
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_screensaver_timeout),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_screensaver_timeout_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Timer,
+                                        title = stringResource(R.string.settings_screensaver_timeout),
+                                        subtitle = stringResource(R.string.settings_screensaver_timeout_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -1112,26 +1193,13 @@ fun SettingsScreen(
                                 }
                             }
 
-                            // Screensaver Mode Selector Card (3 Options)
+                            // Screensaver Mode Selector Card
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_screensaver_mode),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.settings_screensaver_mode_desc),
-                                        color = TvTextSecondary,
-                                        fontSize = 13.sp
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Bedtime,
+                                        title = stringResource(R.string.settings_screensaver_mode),
+                                        subtitle = stringResource(R.string.settings_screensaver_mode_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     TvSelectField(
@@ -1144,26 +1212,46 @@ fun SettingsScreen(
                                         selectedOption = screensaverMode,
                                         onOptionSelected = { viewModel.setScreensaverMode(it) }
                                     )
+                                }
+                            }
 
-                                    if (screensaverMode == "video_stream") {
-                                        Spacer(modifier = Modifier.height(18.dp))
+                            if (screensaverMode == "video_stream") {
+                                val activeVideoId = extractYouTubeVideoId(screensaverVideo)
+                                val visiblePresets = screensaverPresetVideos.filterNot {
+                                    deletedScreensaverPresets.contains(it.id)
+                                }
+                                val presetIds = screensaverPresetVideos.map { it.id }.toSet()
+                                val customVideoEntries = buildList {
+                                    customScreensaverVideos.forEach { raw ->
+                                        val id = raw.substringBefore("|").trim()
+                                        val customTitle = raw.substringAfter("|", "").trim()
+                                        if (id.isNotBlank() && !presetIds.contains(id)) {
+                                            add(id to customTitle)
+                                        }
+                                    }
+                                    if (
+                                        activeVideoId.isNotBlank() &&
+                                        !presetIds.contains(activeVideoId) &&
+                                        !deletedScreensaverPresets.contains(activeVideoId) &&
+                                        none { it.first == activeVideoId }
+                                    ) {
+                                        add(activeVideoId to "")
+                                    }
+                                }
+
+                                // Ambient Video Selection Card (compact merged custom video input preserved)
+                                item {
+                                    SettingsGlassCard {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = stringResource(R.string.screensaver_video_choice),
-                                                    color = TvAccentGold,
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = stringResource(R.string.screensaver_video_choice_desc),
-                                                    color = TvTextSecondary,
-                                                    fontSize = 12.sp
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                SettingsCardHeader(
+                                                    icon = Icons.Default.SmartDisplay,
+                                                    title = stringResource(R.string.screensaver_video_choice),
+                                                    subtitle = stringResource(R.string.screensaver_video_choice_desc)
                                                 )
                                             }
                                             if (deletedScreensaverPresets.isNotEmpty()) {
@@ -1172,44 +1260,21 @@ fun SettingsScreen(
                                                     text = stringResource(R.string.screensaver_video_restore_defaults),
                                                     icon = Icons.Default.Refresh,
                                                     onClick = { viewModel.restoreDefaultScreensaverVideos() },
-                                                    baseColor = Color(0xFF334155),
+                                                    baseColor = Color(0xFF23304A),
                                                     focusedColor = TvAccentGold
                                                 )
                                             }
                                         }
+
                                         Spacer(modifier = Modifier.height(14.dp))
 
-                                        val activeVideoId = extractYouTubeVideoId(screensaverVideo)
-                                        val visiblePresets = screensaverPresetVideos.filterNot {
-                                            deletedScreensaverPresets.contains(it.id)
-                                        }
-                                        val presetIds = screensaverPresetVideos.map { it.id }.toSet()
-                                        val customVideoEntries = buildList {
-                                            customScreensaverVideos.forEach { raw ->
-                                                val id = raw.substringBefore("|").trim()
-                                                val customTitle = raw.substringAfter("|", "").trim()
-                                                if (id.isNotBlank() && !presetIds.contains(id)) {
-                                                    add(id to customTitle)
-                                                }
-                                            }
-                                            if (
-                                                activeVideoId.isNotBlank() &&
-                                                !presetIds.contains(activeVideoId) &&
-                                                !deletedScreensaverPresets.contains(activeVideoId) &&
-                                                none { it.first == activeVideoId }
-                                            ) {
-                                                add(activeVideoId to "")
-                                            }
-                                        }
-
-                                        // Saved & Preset Relaxing Videos with Delete Button on Each Item
                                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                             if (visiblePresets.isEmpty() && customVideoEntries.isEmpty()) {
                                                 Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .clip(RoundedCornerShape(12.dp))
-                                                        .background(Color(0xFF0F172A))
+                                                        .background(Color(0xFF0A101F))
                                                         .padding(18.dp),
                                                     contentAlignment = Alignment.Center
                                                 ) {
@@ -1230,11 +1295,10 @@ fun SettingsScreen(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     TvFocusableCard(
-                                                        onClick = {
-                                                            viewModel.setScreensaverVideo(presetVideo.id)
-                                                        },
+                                                        onClick = { viewModel.setScreensaverVideo(presetVideo.id) },
                                                         scaleUpRatio = 1.02f,
                                                         shape = RoundedCornerShape(12.dp),
+                                                        useDefaultBorder = false,
                                                         modifier = Modifier
                                                             .weight(1f)
                                                             .height(72.dp)
@@ -1242,14 +1306,21 @@ fun SettingsScreen(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxSize()
+                                                                .clip(RoundedCornerShape(12.dp))
                                                                 .background(
-                                                                    if (isSelected) TvAccentGold.copy(alpha = 0.2f)
-                                                                    else if (isFocused) Color(0xFF334155)
-                                                                    else Color(0xFF0F172A)
+                                                                    when {
+                                                                        isFocused -> TvAccentGold.copy(alpha = 0.22f)
+                                                                        isSelected -> TvAccentGold.copy(alpha = 0.16f)
+                                                                        else -> Color(0xFF0A101F).copy(alpha = 0.85f)
+                                                                    }
                                                                 )
                                                                 .border(
-                                                                    width = if (isSelected) 1.5.dp else if (isFocused) 1.dp else 0.5.dp,
-                                                                    color = if (isSelected) TvAccentGold else if (isFocused) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                                                                    width = if (isFocused) 2.dp else if (isSelected) 1.5.dp else 1.dp,
+                                                                    color = when {
+                                                                        isFocused -> TvAccentGoldRadiant
+                                                                        isSelected -> TvAccentGold.copy(alpha = 0.7f)
+                                                                        else -> Color.White.copy(alpha = 0.08f)
+                                                                    },
                                                                     shape = RoundedCornerShape(12.dp)
                                                                 )
                                                                 .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -1329,6 +1400,7 @@ fun SettingsScreen(
                                                         onClick = { viewModel.deleteScreensaverVideo(presetVideo.id) },
                                                         scaleUpRatio = 1.06f,
                                                         shape = RoundedCornerShape(12.dp),
+                                                        useDefaultBorder = false,
                                                         modifier = Modifier
                                                             .width(56.dp)
                                                             .height(72.dp)
@@ -1336,12 +1408,13 @@ fun SettingsScreen(
                                                         Box(
                                                             modifier = Modifier
                                                                 .fillMaxSize()
+                                                                .clip(RoundedCornerShape(12.dp))
                                                                 .background(
                                                                     if (isDelFocused) TvAccentRed
-                                                                    else TvAccentRed.copy(alpha = 0.18f)
+                                                                    else TvAccentRed.copy(alpha = 0.16f)
                                                                 )
                                                                 .border(
-                                                                    width = 1.dp,
+                                                                    width = if (isDelFocused) 2.dp else 1.dp,
                                                                     color = if (isDelFocused) Color.White else TvAccentRed.copy(alpha = 0.4f),
                                                                     shape = RoundedCornerShape(12.dp)
                                                                 ),
@@ -1373,11 +1446,10 @@ fun SettingsScreen(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     TvFocusableCard(
-                                                        onClick = {
-                                                            viewModel.setScreensaverVideo(customId)
-                                                        },
+                                                        onClick = { viewModel.setScreensaverVideo(customId) },
                                                         scaleUpRatio = 1.02f,
                                                         shape = RoundedCornerShape(12.dp),
+                                                        useDefaultBorder = false,
                                                         modifier = Modifier
                                                             .weight(1f)
                                                             .height(72.dp)
@@ -1385,14 +1457,21 @@ fun SettingsScreen(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxSize()
+                                                                .clip(RoundedCornerShape(12.dp))
                                                                 .background(
-                                                                    if (isSelected) TvAccentGold.copy(alpha = 0.2f)
-                                                                    else if (isFocused) Color(0xFF334155)
-                                                                    else Color(0xFF0F172A)
+                                                                    when {
+                                                                        isFocused -> TvAccentGold.copy(alpha = 0.22f)
+                                                                        isSelected -> TvAccentGold.copy(alpha = 0.16f)
+                                                                        else -> Color(0xFF0A101F).copy(alpha = 0.85f)
+                                                                    }
                                                                 )
                                                                 .border(
-                                                                    width = if (isSelected) 1.5.dp else if (isFocused) 1.dp else 0.5.dp,
-                                                                    color = if (isSelected) TvAccentGold else if (isFocused) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                                                                    width = if (isFocused) 2.dp else if (isSelected) 1.5.dp else 1.dp,
+                                                                    color = when {
+                                                                        isFocused -> TvAccentGoldRadiant
+                                                                        isSelected -> TvAccentGold.copy(alpha = 0.7f)
+                                                                        else -> Color.White.copy(alpha = 0.08f)
+                                                                    },
                                                                     shape = RoundedCornerShape(12.dp)
                                                                 )
                                                                 .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -1472,6 +1551,7 @@ fun SettingsScreen(
                                                         onClick = { viewModel.deleteScreensaverVideo(customId) },
                                                         scaleUpRatio = 1.06f,
                                                         shape = RoundedCornerShape(12.dp),
+                                                        useDefaultBorder = false,
                                                         modifier = Modifier
                                                             .width(56.dp)
                                                             .height(72.dp)
@@ -1479,12 +1559,13 @@ fun SettingsScreen(
                                                         Box(
                                                             modifier = Modifier
                                                                 .fillMaxSize()
+                                                                .clip(RoundedCornerShape(12.dp))
                                                                 .background(
                                                                     if (isDelFocused) TvAccentRed
-                                                                    else TvAccentRed.copy(alpha = 0.18f)
+                                                                    else TvAccentRed.copy(alpha = 0.16f)
                                                                 )
                                                                 .border(
-                                                                    width = 1.dp,
+                                                                    width = if (isDelFocused) 2.dp else 1.dp,
                                                                     color = if (isDelFocused) Color.White else TvAccentRed.copy(alpha = 0.4f),
                                                                     shape = RoundedCornerShape(12.dp)
                                                                 ),
@@ -1500,53 +1581,37 @@ fun SettingsScreen(
                                                     }
                                                 }
                                             }
-                                        }
 
-                                        Spacer(modifier = Modifier.height(16.dp))
+                                            // Compact integrated custom video input section
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(1.dp)
+                                                    .background(Color.White.copy(alpha = 0.08f))
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
 
-                                        // Custom YouTube URL/ID Input
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(Color(0xFF0F172A))
-                                                .padding(14.dp)
-                                        ) {
                                             Text(
                                                 text = stringResource(R.string.screensaver_video_custom_title),
                                                 color = TvTextPrimary,
-                                                fontSize = 13.sp,
+                                                fontSize = 14.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
                                                 text = stringResource(R.string.screensaver_video_custom_desc),
                                                 color = TvTextSecondary,
-                                                fontSize = 11.sp
+                                                fontSize = 12.sp
                                             )
-                                            Spacer(modifier = Modifier.height(10.dp))
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                OutlinedTextField(
+                                                TvTextField(
                                                     value = customVideoInput,
                                                     onValueChange = { customVideoInput = it },
-                                                    placeholder = {
-                                                        Text(
-                                                            stringResource(R.string.screensaver_video_custom_hint),
-                                                            color = TvTextSecondary,
-                                                            fontSize = 12.sp
-                                                        )
-                                                    },
-                                                    singleLine = true,
-                                                    colors = OutlinedTextFieldDefaults.colors(
-                                                        focusedBorderColor = TvAccentGold,
-                                                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                                        focusedTextColor = TvTextPrimary,
-                                                        unfocusedTextColor = TvTextPrimary
-                                                    ),
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    placeholder = stringResource(R.string.screensaver_video_custom_hint),
                                                     modifier = Modifier.weight(1f)
                                                 )
 
@@ -1559,7 +1624,7 @@ fun SettingsScreen(
                                                             customVideoInput = ""
                                                         }
                                                     },
-                                                    baseColor = TvAccentGold,
+                                                    baseColor = TvAccentGold.copy(alpha = 0.88f),
                                                     focusedColor = TvAccentGold,
                                                     modifier = Modifier.height(52.dp)
                                                 )
@@ -1588,52 +1653,28 @@ fun SettingsScreen(
                         ) {
                             // Add New IPTV Playlist Card
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF1E293B).copy(alpha = 0.5f))
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_iptv_add_new),
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.LiveTv,
+                                        title = stringResource(R.string.settings_iptv_add_new)
                                     )
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(14.dp))
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        OutlinedTextField(
+                                        TvTextField(
                                             value = newPlaylistName,
                                             onValueChange = { newPlaylistName = it },
-                                            placeholder = { Text(stringResource(R.string.settings_iptv_name_placeholder), color = TvTextSecondary) },
-                                            singleLine = true,
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = TvAccentGold,
-                                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                                focusedTextColor = TvTextPrimary,
-                                                unfocusedTextColor = TvTextPrimary
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
+                                            placeholder = stringResource(R.string.settings_iptv_name_placeholder),
                                             modifier = Modifier.weight(1f)
                                         )
 
-                                        OutlinedTextField(
+                                        TvTextField(
                                             value = newPlaylistUrl,
                                             onValueChange = { newPlaylistUrl = it },
-                                            placeholder = { Text(stringResource(R.string.settings_iptv_url_placeholder), color = TvTextSecondary) },
-                                            singleLine = true,
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = TvAccentGold,
-                                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                                focusedTextColor = TvTextPrimary,
-                                                unfocusedTextColor = TvTextPrimary
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
+                                            placeholder = stringResource(R.string.settings_iptv_url_placeholder),
                                             modifier = Modifier.weight(1.8f)
                                         )
                                     }
@@ -1651,14 +1692,14 @@ fun SettingsScreen(
                                                     newPlaylistUrl = ""
                                                 }
                                             },
-                                            baseColor = TvAccentGold.copy(alpha = 0.85f),
+                                            baseColor = TvAccentGold.copy(alpha = 0.88f),
                                             focusedColor = TvAccentGold
                                         )
 
                                         TvActionButton(
                                             text = stringResource(R.string.settings_iptv_load_presets),
                                             onClick = { viewModel.loadPresetPlaylists() },
-                                            baseColor = TvAccentGold,
+                                            baseColor = Color(0xFF23304A),
                                             focusedColor = TvAccentGold
                                         )
                                     }
@@ -1692,19 +1733,17 @@ fun SettingsScreen(
 
                             if (iptvPlaylists.isEmpty()) {
                                 item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF1E293B).copy(alpha = 0.4f))
-                                            .padding(20.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.settings_iptv_no_saved),
-                                            color = TvTextSecondary,
-                                            fontSize = 14.sp
-                                        )
+                                    SettingsGlassCard {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.settings_iptv_no_saved),
+                                                color = TvTextSecondary,
+                                                fontSize = 14.sp
+                                            )
+                                        }
                                     }
                                 }
                             } else {
@@ -1717,38 +1756,29 @@ fun SettingsScreen(
                                         chunk.forEach { playlist ->
                                             val isActive = (playlist.id == activeIptvPlaylist?.id)
                                             Box(modifier = Modifier.weight(1f)) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(14.dp))
-                                                        .background(
-                                                            if (isActive) TvAccentGold.copy(alpha = 0.2f)
-                                                            else Color(0xFF1E293B).copy(alpha = 0.55f)
-                                                        )
-                                                        .border(
-                                                            width = if (isActive) 1.5.dp else 1.dp,
-                                                            color = if (isActive) TvAccentGold else Color.White.copy(alpha = 0.08f),
-                                                            shape = RoundedCornerShape(14.dp)
-                                                        )
-                                                        .padding(16.dp)
+                                                SettingsGlassCard(
+                                                    highlightColor = TvAccentGold,
+                                                    highlightActive = isActive
                                                 ) {
-                                                    // Top Header with Icon, Name, and Active Tag
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(34.dp)
-                                                                .clip(CircleShape)
-                                                                .background(if (isActive) TvAccentGold.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.1f)),
+                                                                .size(36.dp)
+                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .background(
+                                                                    if (isActive) TvAccentGold.copy(alpha = 0.18f)
+                                                                    else Color.White.copy(alpha = 0.08f)
+                                                                ),
                                                             contentAlignment = Alignment.Center
                                                         ) {
                                                             Icon(
                                                                 imageVector = Icons.Default.LiveTv,
                                                                 contentDescription = null,
-                                                                tint = if (isActive) TvAccentGold else TvTextPrimary,
-                                                                modifier = Modifier.size(18.dp)
+                                                                tint = if (isActive) TvAccentGoldRadiant else TvTextPrimary,
+                                                                modifier = Modifier.size(19.dp)
                                                             )
                                                         }
                                                         Spacer(modifier = Modifier.width(10.dp))
@@ -1763,7 +1793,7 @@ fun SettingsScreen(
                                                             )
                                                             Text(
                                                                 text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
-                                                                color = if (isActive) TvAccentGold else TvTextSecondary,
+                                                                color = if (isActive) TvAccentGoldRadiant else TvTextSecondary,
                                                                 fontSize = 12.sp
                                                             )
                                                         }
@@ -1771,15 +1801,15 @@ fun SettingsScreen(
                                                             Spacer(modifier = Modifier.width(6.dp))
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .clip(RoundedCornerShape(6.dp))
+                                                                    .clip(RoundedCornerShape(8.dp))
                                                                     .background(TvAccentGold)
-                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
                                                             ) {
                                                                 Text(
                                                                     text = stringResource(R.string.settings_iptv_active_tag),
                                                                     color = Color.Black,
                                                                     fontSize = 10.sp,
-                                                                    fontWeight = FontWeight.Bold
+                                                                    fontWeight = FontWeight.ExtraBold
                                                                 )
                                                             }
                                                         }
@@ -1789,15 +1819,14 @@ fun SettingsScreen(
 
                                                     Text(
                                                         text = playlist.url,
-                                                        color = TvTextSecondary.copy(alpha = 0.7f),
-                                                        fontSize = 11.sp,
+                                                        color = TvTextSecondary.copy(alpha = 0.72f),
+                                                        fontSize = 11.5.sp,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
 
                                                     Spacer(modifier = Modifier.height(14.dp))
 
-                                                    // Action Row: Activate/Sync + Delete Button (Non-nested for smooth TV D-Pad focus)
                                                     Row(
                                                         modifier = Modifier.fillMaxWidth(),
                                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1809,6 +1838,7 @@ fun SettingsScreen(
                                                                 onClick = { viewModel.switchIptvPlaylist(playlist.id) },
                                                                 baseColor = TvAccentGold,
                                                                 focusedColor = TvAccentGold,
+                                                                fillWidth = true,
                                                                 modifier = Modifier.weight(1f)
                                                             )
                                                         } else {
@@ -1816,8 +1846,9 @@ fun SettingsScreen(
                                                                 text = stringResource(R.string.settings_iptv_sync_button),
                                                                 icon = Icons.Default.Refresh,
                                                                 onClick = { viewModel.refreshIptvPlaylist() },
-                                                                baseColor = TvAccentGold.copy(alpha = 0.8f),
+                                                                baseColor = TvAccentGold.copy(alpha = 0.85f),
                                                                 focusedColor = TvAccentGold,
+                                                                fillWidth = true,
                                                                 modifier = Modifier.weight(1f)
                                                             )
                                                         }
@@ -1859,538 +1890,3 @@ fun SettingsScreen(
         }
     }
 }
-
-@Composable
-private fun SettingActionTile(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    desc: String,
-    onClick: () -> Unit
-) {
-    TvFocusableCard(
-        onClick = onClick,
-        scaleUpRatio = 1.02f,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-    ) { isFocused ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isFocused) TvAccentGold else TvAccentGold,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(18.dp))
-            Column {
-                Text(
-                    text = title,
-                    color = if (isFocused) TvTextPrimary else TvTextPrimary.copy(alpha = 0.9f),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = desc,
-                    color = TvTextSecondary,
-                    fontSize = 12.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingToggleTile(
-    title: String,
-    desc: String,
-    isChecked: Boolean,
-    onToggle: () -> Unit
-) {
-    TvFocusableCard(
-        onClick = onToggle,
-        scaleUpRatio = 1.02f,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(76.dp)
-    ) { isFocused ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    color = if (isFocused) TvTextPrimary else TvTextPrimary.copy(alpha = 0.9f),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = desc,
-                    color = TvTextSecondary,
-                    fontSize = 12.sp
-                )
-            }
-
-            Switch(
-                checked = isChecked,
-                onCheckedChange = { onToggle() },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = TvAccentGold,
-                    uncheckedThumbColor = TvTextSecondary,
-                    uncheckedTrackColor = Color(0xFF1E293B)
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun DefaultLauncherManagementCard(
-    isDefault: Boolean,
-    onEnable: () -> Unit,
-    onReset: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF1E293B).copy(alpha = 0.6f))
-            .border(
-                width = 1.dp,
-                color = if (isDefault) TvAccentGold.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.08f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(20.dp)
-    ) {
-        // Top Header with Title and Live Status Badge
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(if (isDefault) TvAccentGold.copy(alpha = 0.15f) else Color(0xFF334155).copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Home,
-                        contentDescription = null,
-                        tint = if (isDefault) TvAccentGold else TvTextSecondary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.settings_default_launcher_card_title),
-                        color = TvTextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.settings_default_launcher_status_desc),
-                        color = TvTextSecondary,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Status Badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        if (isDefault) Color(0xFF065F46).copy(alpha = 0.75f)
-                        else Color(0xFF475569).copy(alpha = 0.5f)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (isDefault) Color(0xFF34D399) else Color(0xFF94A3B8).copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (isDefault) Color(0xFF34D399) else Color(0xFF94A3B8))
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isDefault) stringResource(R.string.settings_default_launcher_active)
-                        else stringResource(R.string.settings_default_launcher_not_active),
-                        color = if (isDefault) Color(0xFFD1FAE5) else TvTextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Dual Actions: Set as Default TV Launcher & Reset Default Launcher (Launcher Manager)
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                TvActionButton(
-                    text = stringResource(R.string.settings_set_default_launcher),
-                    onClick = onEnable,
-                    icon = Icons.Default.CheckCircle,
-                    baseColor = if (isDefault) Color(0xFF0F766E).copy(alpha = 0.6f) else TvAccentGold,
-                    focusedColor = TvAccentGold,
-                    modifier = Modifier.weight(1f)
-                )
-
-                TvActionButton(
-                    text = stringResource(R.string.settings_reset_default_launcher),
-                    onClick = onReset,
-                    icon = Icons.Default.Refresh,
-                    baseColor = Color(0xFF334155),
-                    focusedColor = TvAccentGold,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.settings_set_default_launcher_desc),
-                color = TvTextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 16.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun FilePermissionManagementCard(
-    hasPermission: Boolean,
-    onGrant: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF1E293B).copy(alpha = 0.6f))
-            .border(
-                width = 1.dp,
-                color = if (hasPermission) Color(0xFF10B981).copy(alpha = 0.35f) else TvAccentGold.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(20.dp)
-    ) {
-        // Top Header with Title and Live Status Badge
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (hasPermission) Color(0xFF10B981).copy(alpha = 0.15f)
-                            else TvAccentGold.copy(alpha = 0.18f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = if (hasPermission) Color(0xFF10B981) else TvAccentGold,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.settings_file_access_title),
-                        color = TvTextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.settings_file_access_desc),
-                        color = TvTextSecondary,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-
-            // Status Badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (hasPermission) Color(0xFF10B981).copy(alpha = 0.2f)
-                        else TvAccentGold.copy(alpha = 0.2f)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = if (hasPermission) stringResource(R.string.settings_file_access_granted)
-                           else stringResource(R.string.settings_file_access_not_granted),
-                    color = if (hasPermission) Color(0xFF10B981) else TvAccentGold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        if (!hasPermission) {
-            Spacer(modifier = Modifier.height(16.dp))
-            TvActionButton(
-                text = stringResource(R.string.settings_file_access_btn),
-                onClick = onGrant,
-                icon = Icons.Default.Folder,
-                modifier = Modifier.fillMaxWidth(),
-                focusedColor = TvAccentGold
-            )
-        }
-    }
-}
-
-@Composable
-fun <T> TvSelectField(
-    label: String,
-    options: List<Pair<T, String>>,
-    selectedOption: T,
-    onOptionSelected: (T) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var showDialog by remember { mutableStateOf(false) }
-    val currentLabel = options.find { it.first == selectedOption }?.second ?: ""
-
-    TvFocusableCard(
-        onClick = { showDialog = true },
-        scaleUpRatio = 1.03f,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp)
-    ) { isFocused ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (isFocused) Color.White else Color(0xFF1E293B).copy(alpha = 0.4f))
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = label,
-                color = if (isFocused) Color.Black else TvTextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = currentLabel,
-                    color = if (isFocused) Color(0xFF0369A1) else TvAccentGold,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = if (isFocused) Color.Black else TvTextSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-
-    if (showDialog) {
-        Dialog(onDismissRequest = { showDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = TvMidnightBackground,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                modifier = Modifier
-                    .width(320.dp)
-                    .padding(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = label,
-                        color = TvTextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 400.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(options) { (value, label) ->
-                            val isSelected = (value == selectedOption)
-                            TvFocusableCard(
-                                onClick = {
-                                    onOptionSelected(value)
-                                    showDialog = false
-                                },
-                                scaleUpRatio = 1.05f,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                            ) { itemFocused ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            when {
-                                                itemFocused -> TvAccentGold
-                                                isSelected -> TvAccentGold.copy(alpha = 0.15f)
-                                                else -> Color.Transparent
-                                            }
-                                        )
-                                        .padding(horizontal = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = label,
-                                        color = if (itemFocused) Color.Black else if (isSelected) TvAccentGold else TvTextPrimary,
-                                        fontSize = 14.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = if (itemFocused) Color.Black else TvAccentGold,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun TvModeButton(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    TvFocusableCard(
-        onClick = onClick,
-        scaleUpRatio = 1.06f,
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier.height(48.dp)
-    ) { isFocused ->
-        val bgColor = when {
-            isFocused && isSelected -> TvAccentGold
-            isFocused -> TvAccentGold
-            isSelected -> TvAccentGold.copy(alpha = 0.85f)
-            else -> Color(0xFF334155)
-        }
-        val textColor = when {
-            isFocused && isSelected -> Color.Black
-            isFocused -> Color.White
-            isSelected -> Color.Black
-            else -> TvTextPrimary
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bgColor)
-                .padding(horizontal = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = text,
-                color = textColor,
-                fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-fun TvActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    baseColor: Color = Color(0xFF334155),
-    focusedColor: Color = TvAccentGold
-) {
-    TvFocusableCard(
-        onClick = onClick,
-        scaleUpRatio = 1.05f,
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier.height(44.dp)
-    ) { isFocused ->
-        val bgColor = if (isFocused) focusedColor else baseColor
-        val contentColor = if (isFocused && focusedColor == TvAccentGold) Color.Black else Color.White
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bgColor)
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (icon != null) {
-                Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                text = text,
-                color = contentColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-
-

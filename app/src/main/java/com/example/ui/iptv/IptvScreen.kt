@@ -23,15 +23,14 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,12 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.ui.common.TvTextField
 import com.example.data.model.IptvChannel
 import com.example.ui.common.TvFocusableCard
 import com.example.ui.common.GlassSheenOverlay
-import androidx.compose.ui.graphics.Brush
-import com.example.ui.theme.TvAccentGold
-import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvMidnightBackground
 import com.example.ui.theme.TvTextPrimary
@@ -92,7 +89,7 @@ fun IptvScreen(
                     .background(TvMidnightBackground.copy(alpha = 0.95f))
                     .padding(vertical = 24.dp)
             ) {
-                // Header with Back button
+                // Header with Back button and IPTV Settings shortcut
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -104,21 +101,36 @@ fun IptvScreen(
                         modifier = Modifier.size(40.dp)
                     ) { isFocused ->
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back to Home",
                             tint = if (isFocused) TvAccentGold else TvTextPrimary,
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
                         text = stringResource(R.string.iptv_title),
                         color = TvTextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+
+                    TvFocusableCard(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.size(40.dp)
+                    ) { isFocused ->
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_open_iptv_settings),
+                            tint = if (isFocused) TvAccentGold else TvTextSecondary,
+                            modifier = Modifier.align(Alignment.Center).size(20.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -243,26 +255,12 @@ fun IptvScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    OutlinedTextField(
+                    TvTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.onSearchQueryChanged(it) },
-                        placeholder = {
-                            Text(stringResource(R.string.iptv_search_hint), color = TvTextSecondary)
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = TvAccentGold)
-                        },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = TvAccentGold,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                            focusedTextColor = TvTextPrimary,
-                            unfocusedTextColor = TvTextPrimary
-                        ),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .width(360.dp)
-                            .height(52.dp)
+                        placeholder = stringResource(R.string.iptv_search_hint),
+                        leadingIcon = Icons.Default.Search,
+                        modifier = Modifier.width(360.dp)
                     )
 
                     Text(
@@ -377,6 +375,7 @@ private fun ChannelGridCard(
         onClick = onClick,
         onLongClick = onToggleFavorite,
         scaleUpRatio = 1.06f,
+        elevation = 0.dp,
         cardBackgroundColor = Color.Transparent,
         useDefaultBorder = false,
         modifier = Modifier

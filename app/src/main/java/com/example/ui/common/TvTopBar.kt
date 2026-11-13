@@ -400,18 +400,6 @@ fun TvTopBar(
                 )
             }
 
-            if (onOpenControlCenter != null) {
-                TvActionButton(
-                    icon = Icons.Default.RocketLaunch,
-                    text = "",
-                    onClick = onOpenControlCenter,
-                    onFocused = onNonAppFocused,
-                    onRequestFocusDown = onRequestFocusDown,
-                    glassOpacity = glassOpacity,
-                    showText = false
-                )
-            }
-
             val netInfo = when (networkType) {
                 NetworkType.WIFI -> Icons.Default.Wifi to stringResource(R.string.network_connected_wifi)
                 NetworkType.WIFI_NO_INTERNET -> Icons.Default.WifiOff to stringResource(R.string.network_disconnected)
@@ -459,7 +447,8 @@ fun TvTopBar(
             TvActionButton(
                 icon = Icons.Default.Settings, 
                 text = "", 
-                onClick = onOpenSettings, 
+                onClick = onOpenControlCenter ?: onOpenSettings, 
+                onLongClick = onOpenSettings,
                 onFocused = onNonAppFocused,
                 onRequestFocusDown = onRequestFocusDown,
                 focusRequester = focusRequester,

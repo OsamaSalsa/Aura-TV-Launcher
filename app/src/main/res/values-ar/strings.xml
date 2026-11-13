@@ -299,8 +299,8 @@
     <string name="iptv_quick_channels_hint">استخدم يمين / يسار للتصفح • اضغط OK للتبديل</string>
 
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
-    <string name="control_center_title">مركز التحكم ومراقب النظام</string>
-    <string name="control_center_subtitle">حالة الذاكرة والتخزين والاختصارات السريعة للتلفاز</string>
+    <string name="control_center_title">مركز تحكم اللانشر</string>
+    <string name="control_center_subtitle">تحكم سريع ومباشر بإعدادات المظهر، الساعة، التخطيط، وشاشة التوقف</string>
     <string name="control_center_ram">الذاكرة العشوائية (RAM)</string>
     <string name="control_center_storage">مساحة التخزين</string>
     <string name="control_center_boost_btn">تسريع وتنظيف الذاكرة</string>
@@ -315,7 +315,10 @@
     <string name="control_center_display_sub">الشاشة والعرض</string>
     <string name="control_center_audio_sub">الصوت والمكبرات</string>
     <string name="control_center_ip_tag">عنوان IP: %s</string>
-    <string name="control_center_gb_format">%.1f / %.1f ج.ب</string>
+    <string name="control_center_gb_format">%1$.1f / %2$.1f ج.ب</string>
+    <string name="control_center_section_layout">المظهر وتخطيط الشاشة الرئيسية</string>
+    <string name="control_center_section_clock">الساعة والتاريخ والعرض</string>
+    <string name="control_center_section_experience">الترحيب، شاشة التوقف والتطبيقات</string>
 
     <string name="universal_search_hint">ابحث في التطبيقات، الألعاب، وقنوات البث المباشر…</string>
     <string name="universal_search_all">الكل</string>
@@ -420,4 +423,9 @@
     <string name="status_screensaver_video_removed">تم حذف الفيديو من شاشة التوقف</string>
     <string name="status_screensaver_videos_restored">تمت استعادة الفيديوهات الافتراضية لشاشة التوقف</string>
     <string name="screensaver_no_videos">لا توجد فيديوهات حالياً. أضف رابط يوتيوب بالأسفل أو استعد الفيديوهات الافتراضية.</string>
+    <string name="settings_app_lock_pin_title">رمز قفل التطبيقات (PIN)</string>
+    <string name="settings_app_lock_pin_desc">تخصيص الرمز السري المكون من 4 أرقام لقفل وفتح التطبيقات المحمية (الافتراضي: 1234)</string>
+    <string name="settings_app_lock_pin_placeholder">أدخل 4 أرقام (مثال: 1234)</string>
+    <string name="status_app_lock_pin_saved">تم حفظ رمز قفل التطبيقات بنجاح</string>
+    <string name="status_app_lock_pin_invalid">يجب أن يتكون الرمز من 4 أرقام بالضبط</string>
 </resources>

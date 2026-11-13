@@ -299,8 +299,8 @@
     <string name="action_grant_permission">Grant Permission</string>
 
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
-    <string name="control_center_title">Control Center &amp; System Monitor</string>
-    <string name="control_center_subtitle">Live Hardware Telemetry &amp; Quick TV Controls</string>
+    <string name="control_center_title">Launcher Control Center</string>
+    <string name="control_center_subtitle">Quick access to all launcher layout, clock, wallpaper &amp; screensaver settings</string>
     <string name="control_center_ram">RAM Memory</string>
     <string name="control_center_storage">Internal Storage</string>
     <string name="control_center_boost_btn">Boost &amp; Clean Cache</string>
@@ -315,7 +315,10 @@
     <string name="control_center_display_sub">HDMI / Resolution</string>
     <string name="control_center_audio_sub">Audio / Output</string>
     <string name="control_center_ip_tag">IP: %s</string>
-    <string name="control_center_gb_format">%.1f / %.1f GB</string>
+    <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
+    <string name="control_center_section_layout">Appearance &amp; Home Layout</string>
+    <string name="control_center_section_clock">Clock, Date &amp; Display</string>
+    <string name="control_center_section_experience">Greeting, Screensaver &amp; Apps</string>
 
     <string name="universal_search_hint">Search apps, games, and live TV channels…</string>
     <string name="universal_search_all">All</string>
@@ -420,4 +423,9 @@
     <string name="status_screensaver_video_removed">Video removed from screensaver</string>
     <string name="status_screensaver_videos_restored">Default screensaver videos restored</string>
     <string name="screensaver_no_videos">No videos in list. Add a custom YouTube link below or restore defaults.</string>
+    <string name="settings_app_lock_pin_title">App Lock PIN Code</string>
+    <string name="settings_app_lock_pin_desc">Customize the 4-digit PIN code used to lock and unlock protected apps (Default: 1234)</string>
+    <string name="settings_app_lock_pin_placeholder">Enter 4-digit PIN (e.g. 1234)</string>
+    <string name="status_app_lock_pin_saved">App Lock PIN updated successfully</string>
+    <string name="status_app_lock_pin_invalid">PIN must be exactly 4 digits</string>
 </resources>

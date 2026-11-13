@@ -319,6 +319,9 @@
     <string name="control_center_audio_sub">Audio e uscita sonora</string>
     <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%.1f / %.1f GB</string>
+    <string name="control_center_section_layout">Aspetto e layout</string>
+    <string name="control_center_section_clock">Orologio, data e schermo</string>
+    <string name="control_center_section_experience">Saluto, salvaschermo e app</string>
 
     <string name="universal_search_hint">Cerca app, giochi e canali TV in diretta…</string>
     <string name="universal_search_all">Tutto</string>

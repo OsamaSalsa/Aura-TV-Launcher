@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -57,6 +59,13 @@ fun AppLockPinDialog(
 ) {
     var enteredPin by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
+    val centerKeyFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        try {
+            centerKeyFocusRequester.requestFocus()
+        } catch (_: Exception) {}
+    }
 
     fun appendDigit(digit: String) {
         if (enteredPin.length < 4) {
@@ -225,6 +234,7 @@ fun AppLockPinDialog(
                                             else -> appendDigit(key)
                                         }
                                     },
+                                    focusRequester = if (key == "5") centerKeyFocusRequester else remember { FocusRequester() },
                                     scaleUpRatio = 1.06f,
                                     modifier = Modifier
                                         .weight(1f)

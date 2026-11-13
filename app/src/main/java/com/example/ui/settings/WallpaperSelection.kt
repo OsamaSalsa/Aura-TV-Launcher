@@ -1,6 +1,7 @@
 package com.example.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -87,24 +88,31 @@ fun OnlineWallpaperSelectionGrid(
                     },
                     scaleUpRatio = 1.04f,
                     shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.height(38.dp)
+                    useDefaultBorder = false,
+                    modifier = Modifier.height(40.dp)
                 ) { isFocused ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .clip(RoundedCornerShape(10.dp))
                             .background(
                                 when {
-                                    isSelected -> TvAccentGold
-                                    isFocused -> TvAccentGold.copy(alpha = 0.6f)
-                                    else -> Color(0xFF1E293B)
+                                    isFocused -> TvAccentGold
+                                    isSelected -> TvAccentGold.copy(alpha = 0.88f)
+                                    else -> Color(0xFF131D33)
                                 }
+                            )
+                            .border(
+                                width = if (isFocused) 2.dp else 1.dp,
+                                color = if (isFocused) Color.White else if (isSelected) TvAccentGold else Color.White.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(10.dp)
                             )
                             .padding(horizontal = 14.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = cat.titleEn,
-                            color = if (isSelected) Color.Black else TvTextPrimary,
+                            color = if (isSelected || isFocused) Color.Black else TvTextPrimary,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium
                         )

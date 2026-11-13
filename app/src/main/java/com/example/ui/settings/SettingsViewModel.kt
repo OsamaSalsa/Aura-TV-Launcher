@@ -122,6 +122,21 @@ class SettingsViewModel(
     val dnsBlockerMode: StateFlow<String> = preferences.dnsBlockerModeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "off")
 
+    val appLockPin: StateFlow<String> = preferences.appLockPinFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "1234")
+
+    fun setAppLockPin(pin: String) {
+        val clean = pin.trim()
+        if (clean.length == 4 && clean.all { it.isDigit() }) {
+            viewModelScope.launch {
+                preferences.setAppLockPin(clean)
+                _statusMessage.value = StatusUiText.Resource(R.string.status_app_lock_pin_saved)
+            }
+        } else {
+            _statusMessage.value = StatusUiText.Resource(R.string.status_app_lock_pin_invalid)
+        }
+    }
+
     val glassOpacity: StateFlow<Int> = preferences.glassOpacityFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 75)
 

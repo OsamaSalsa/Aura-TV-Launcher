@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.Settings
 import android.graphics.drawable.Drawable
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -509,8 +510,8 @@ fun HomeScreen(
                 .onKeyEvent { keyEvent ->
                     val native = keyEvent.nativeKeyEvent
                     if (native.action == android.view.KeyEvent.ACTION_DOWN) {
-                        if (native.keyCode == android.view.KeyEvent.KEYCODE_MENU || native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS) {
-                            onOpenSettings()
+                        if (native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS) {
+                            showControlCenter = true
                             true
                         } else if (native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH) {
                             showUniversalSearch = true
@@ -809,6 +810,10 @@ fun HomeScreen(
                     app = app,
                     isReordering = reorderState != null,
                     onDismiss = { viewModel.dismissAppMenu() },
+                    onOpen = {
+                        viewModel.dismissAppMenu()
+                        handleAppLaunchRequest(app)
+                    },
                     onMove = { viewModel.startReorder(app) },
                     onConfirmMove = { viewModel.confirmReorder() },
                     onToggleGameCategory = { viewModel.toggleAppGameCategory(app) },
@@ -827,6 +832,10 @@ fun HomeScreen(
                     channel = channel,
                     isReordering = channelReorderState != null,
                     onDismiss = { viewModel.dismissChannelMenu() },
+                    onPlay = {
+                        viewModel.dismissChannelMenu()
+                        onOpenIptv(channel.id)
+                    },
                     onMove = { viewModel.startChannelReorder(channel) },
                     onConfirmMove = { viewModel.confirmChannelReorder() },
                     onRemoveFavorite = { viewModel.toggleFavorite(channel) }
@@ -895,6 +904,11 @@ fun HomeScreen(
 
             // Top Bar Overlay
             val isCurrentlyEditing = editingMode != EditingMode.NONE || reorderState != null || channelReorderState != null
+            BackHandler(enabled = isCurrentlyEditing) {
+                if (reorderState != null) viewModel.confirmReorder()
+                if (channelReorderState != null) viewModel.confirmChannelReorder()
+                viewModel.setEditingMode(EditingMode.NONE)
+            }
             TvTopBar(
                 is24hFormat = isClock24h,
                 showSeconds = isClockSecondsEnabled,
@@ -931,10 +945,47 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.TopCenter)
             )
 
+            // Bottom Floating Edit / Reorder Mode Banner
+            AnimatedVisibility(
+                visible = isCurrentlyEditing,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 18.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF0A0F1E).copy(alpha = 0.90f))
+                        .border(1.5.dp, TvAccentGold.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.OpenWith,
+                        contentDescription = null,
+                        tint = TvAccentGold,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = if (reorderState != null || channelReorderState != null) {
+                            stringResource(R.string.reorder_mode_hint)
+                        } else {
+                            stringResource(R.string.edit_mode_move_hint)
+                        },
+                        color = TvTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             AnimatedVisibility(
                 visible = showAmbientMode,
                 enter = fadeIn(),
-                exit = fadeOut(),
+                exit = if (screensaverMode == "video_stream") androidx.compose.animation.ExitTransition.None else fadeOut(),
                 modifier = Modifier.fillMaxSize()
             ) {
                 AmbientScreensaverOverlay(
@@ -1176,7 +1227,7 @@ fun FavoriteChannelCard(
         onFocused = onFocused,
         focusRequester = focusRequester,
         scaleUpRatio = if (isHighlighted) 1.10f else 1.08f,
-        elevation = 8.dp,
+        elevation = 0.dp,
         cardBackgroundColor = Color.Transparent,
         useDefaultBorder = false,
         modifier = modifier

@@ -369,6 +369,12 @@ fun IptvPlayerOverlay(
 
         // Playback Error Overlay
         if (playbackError != null) {
+            val retryFocusRequester = remember { FocusRequester() }
+            LaunchedEffect(playbackError) {
+                try {
+                    retryFocusRequester.requestFocus()
+                } catch (_: Exception) {}
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -398,8 +404,72 @@ fun IptvPlayerOverlay(
                         color = TvTextSecondary,
                         fontSize = 13.sp
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Spacer(modifier = Modifier.height(22.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        // Retry Button (Auto-focused)
+                        TvFocusableCard(
+                            onClick = onRetry,
+                            focusRequester = retryFocusRequester,
+                            modifier = Modifier
+                                .height(46.dp)
+                                .width(155.dp)
+                        ) { isFocused ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        if (isFocused) TvAccentGold else Color(0xFF1E293B),
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = if (isFocused) Color.Black else TvAccentGold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.action_retry),
+                                    color = if (isFocused) Color.Black else TvTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Next Channel Button
+                        TvFocusableCard(
+                            onClick = onNextChannel,
+                            modifier = Modifier
+                                .height(46.dp)
+                                .width(155.dp)
+                        ) { isFocused ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        if (isFocused) TvAccentGold else Color(0xFF1E293B),
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                    contentDescription = null,
+                                    tint = if (isFocused) Color.Black else TvAccentGold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.iptv_next_channel),
+                                    color = if (isFocused) Color.Black else TvTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Cancel / Exit Button
                         TvFocusableCard(
                             onClick = onClose,
                             modifier = Modifier
@@ -407,13 +477,26 @@ fun IptvPlayerOverlay(
                                 .width(140.dp)
                         ) { isFocused ->
                             Row(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        if (isFocused) TvAccentRed else Color(0xFF1E293B),
+                                        RoundedCornerShape(12.dp)
+                                    ),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = null, tint = TvTextSecondary)
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = null,
+                                    tint = if (isFocused) Color.White else TvTextSecondary
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_cancel), color = TvTextPrimary, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = stringResource(R.string.action_cancel),
+                                    color = if (isFocused) Color.White else TvTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -593,6 +676,34 @@ fun IptvPlayerOverlay(
                                 tint = if (isFocused) TvAccentGold else TvTextPrimary,
                                 modifier = Modifier.align(Alignment.Center)
                             )
+                        }
+
+                        // Quick Channel List Strip Button
+                        TvFocusableCard(
+                            onClick = {
+                                showControls = false
+                                showQuickBar = true
+                            },
+                            modifier = Modifier.height(46.dp)
+                        ) { isFocused ->
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LiveTv,
+                                    contentDescription = stringResource(R.string.iptv_quick_channels),
+                                    tint = if (isFocused) TvAccentGold else TvTextPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.iptv_quick_channels),
+                                    color = if (isFocused) TvAccentGold else TvTextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
 
                         // Favorite toggle

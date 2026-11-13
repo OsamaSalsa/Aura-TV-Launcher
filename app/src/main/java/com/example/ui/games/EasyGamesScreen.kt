@@ -45,7 +45,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.R
+import com.example.ui.common.BindWebViewLifecycle
 import com.example.ui.common.TvFocusableCard
+import com.example.ui.common.findActivityContext
+import com.example.ui.common.grantSafeWebPermissions
+import com.example.ui.common.hardenWebView
+import com.example.ui.common.injectWebViewStabilityShim
+import com.example.ui.common.isWebViewDestroyed
+import com.example.ui.common.postOnMain
+import com.example.ui.common.safeDestroyWebView
 import com.example.ui.downloader.VirtualMousePointer
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvTextPrimary
@@ -58,7 +66,7 @@ const val EASY_GAMES_USER_AGENT = "Mozilla/5.0 (Linux; Android 10; Mobile) Apple
 class EasyGamesWebView(
     context: Context,
     var onBackAtRoot: (() -> Unit)? = null,
-    var onRendererCrashed: (() -> Unit)? = null
+    var onRendererCrashed: ((didCrash: Boolean) -> Unit)? = null
 ) : WebView(context) {
 
     var onLoadingStateChanged: ((Boolean) -> Unit)? = null
@@ -96,13 +104,13 @@ class EasyGamesWebView(
             allowUniversalAccessFromFileURLs = true
             javaScriptCanOpenWindowsAutomatically = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            cacheMode = WebSettings.LOAD_DEFAULT
+            cacheMode = WebSettings.LOAD_NO_CACHE
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = false
             }
         }
 
-        setLayerType(View.LAYER_TYPE_NONE, null)
+        hardenWebView(this)
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
@@ -111,13 +119,13 @@ class EasyGamesWebView(
 
         webViewClient = object : WebViewClient() {
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
-                try {
-                    (view?.parent as? ViewGroup)?.removeView(view)
-                    view?.destroy()
-                } catch (_: Exception) {}
-                postDelayed({
-                    onRendererCrashed?.invoke()
-                }, 300)
+                safeDestroyWebView(view, rendererGone = true)
+                val didCrash = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    detail?.didCrash() == true
+                } else false
+                postOnMain(300L) {
+                    onRendererCrashed?.invoke(didCrash)
+                }
                 return true
             }
 
@@ -127,44 +135,20 @@ class EasyGamesWebView(
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                injectWebViewStabilityShim(view, disableWebGl = false)
                 onLoadingStateChanged?.invoke(true)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                injectWebViewStabilityShim(view, disableWebGl = false)
                 onLoadingStateChanged?.invoke(false)
-                view?.evaluateJavascript(
-                    """
-                    (function() {
-                        try {
-                            if (!window.WebGLRenderingContext) return;
-                            var origGetContext = HTMLCanvasElement.prototype.getContext;
-                            HTMLCanvasElement.prototype.getContext = function(type, attributes) {
-                                if (type === 'webgl' || type === 'experimental-webgl' || type === 'webgl2') {
-                                    attributes = attributes || {};
-                                    attributes.failIfMajorPerformanceCaveat = false;
-                                    if (attributes.alpha === undefined) attributes.alpha = true;
-                                    attributes.preserveDrawingBuffer = true;
-                                }
-                                return origGetContext.call(this, type, attributes);
-                            };
-                        } catch(e) {}
-                    })();
-                    """.trimIndent(),
-                    null
-                )
             }
         }
 
         webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.let {
-                    try {
-                        it.grant(it.resources)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                grantSafeWebPermissions(request)
             }
 
             override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
@@ -183,7 +167,7 @@ class EasyGamesWebView(
                     addView(view)
                 }
                 (parent as? ViewGroup)?.addView(fullscreenContainer)
-                visibility = View.GONE
+                visibility = View.INVISIBLE
             }
 
             override fun onHideCustomView() {
@@ -222,6 +206,17 @@ class EasyGamesWebView(
         }
         return super.dispatchKeyEvent(event)
     }
+
+    override fun onDetachedFromWindow() {
+        fullscreenContainer?.let { container ->
+            container.removeAllViews()
+            (container.parent as? ViewGroup)?.removeView(container)
+        }
+        fullscreenContainer = null
+        customView = null
+        customViewCallback = null
+        super.onDetachedFromWindow()
+    }
 }
 
 @Composable
@@ -245,6 +240,7 @@ fun EasyGamesScreen(
 
     fun dispatchClickAtCursor() {
         val webView = webViewRef ?: return
+        if (isWebViewDestroyed(webView)) return
         isCursorClicking = true
         val downTime = SystemClock.uptimeMillis()
         val downEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, cursorX, cursorY, 0)
@@ -253,7 +249,7 @@ fun EasyGamesScreen(
         webView.dispatchTouchEvent(upEvent)
         downEvent.recycle()
         upEvent.recycle()
-        webView.postDelayed({ isCursorClicking = false }, 120)
+        postOnMain(120L) { isCursorClicking = false }
     }
 
     BackHandler {
@@ -265,7 +261,7 @@ fun EasyGamesScreen(
         }
     }
 
-    if (crashCount > 10) {
+    if (crashCount > 1) {
         LaunchedEffect(Unit) {
             onBackToHome()
         }
@@ -339,9 +335,11 @@ fun EasyGamesScreen(
             AndroidView(
                 factory = { ctx ->
                     EasyGamesWebView(
-                        ctx,
+                        ctx.findActivityContext(),
                         onBackAtRoot = { onBackToHome() },
-                        onRendererCrashed = { crashCount++ }
+                        onRendererCrashed = { _ ->
+                            onBackToHome()
+                        }
                     ).apply {
                         onLoadingStateChanged = { loading ->
                             isLoading = loading
@@ -354,6 +352,10 @@ fun EasyGamesScreen(
                     webViewRef = webView
                     webView.isFocusable = !isMouseModeEnabled
                     webView.isFocusableInTouchMode = !isMouseModeEnabled
+                },
+                onRelease = { webView ->
+                    if (webViewRef === webView) webViewRef = null
+                    safeDestroyWebView(webView)
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -415,15 +417,12 @@ fun EasyGamesScreen(
         }
     }
 
+    BindWebViewLifecycle(webViewRef)
+
     DisposableEffect(Unit) {
         onDispose {
-            try {
-                webViewRef?.stopLoading()
-                webViewRef?.destroy()
-                webViewRef = null
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            safeDestroyWebView(webViewRef)
+            webViewRef = null
         }
     }
 }

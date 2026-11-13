@@ -317,6 +317,9 @@
     <string name="control_center_audio_sub">Звук и аудиовыход</string>
     <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%.1f / %.1f ГБ</string>
+    <string name="control_center_section_layout">Внешний вид и макет</string>
+    <string name="control_center_section_clock">Часы, дата и экран</string>
+    <string name="control_center_section_experience">Приветствие, заставка и приложения</string>
 
     <string name="universal_search_hint">Поиск приложений, игр и каналов TV…</string>
     <string name="universal_search_all">Все</string>

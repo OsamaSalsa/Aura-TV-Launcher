@@ -42,9 +42,20 @@ class AuraTvApp : Application() {
         appRepository = AppRepository(this, preferences)
         iptvRepository = IptvRepository(database.iptvDao(), preferences)
 
-        // Initialize defaults for IPTV
+        // Initialize defaults for IPTV and ensure WebView Code Cache directories exist early
         applicationScope.launch(Dispatchers.IO) {
+            com.example.ui.common.ensureWebViewCacheDirs(this@AuraTvApp)
             iptvRepository.initializeDefaultsIfNeeded()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
+            try {
+                coil.Coil.imageLoader(this).memoryCache?.clear()
+            } catch (_: Exception) {}
         }
     }
 

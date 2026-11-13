@@ -79,7 +79,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import com.example.R
+import com.example.ui.common.BindWebViewLifecycle
 import com.example.ui.common.TvFocusableCard
+import com.example.ui.common.findActivityContext
+import com.example.ui.common.grantSafeWebPermissions
+import com.example.ui.common.hardenWebView
+import com.example.ui.common.injectWebViewStabilityShim
+import com.example.ui.common.isWebViewDestroyed
+import com.example.ui.common.postOnMain
+import com.example.ui.common.safeDestroyWebView
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvMidnightBackground
@@ -1322,6 +1330,7 @@ fun BrowserScreen(
     onOpenDownloads: () -> Unit = {}
 ) {
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var crashCount by remember { mutableStateOf(0) }
     var currentDisplayUrl by remember { mutableStateOf(url) }
     var editableUrlText by remember(url) { mutableStateOf(url) }
     var isLoading by remember { mutableStateOf(true) }
@@ -1359,6 +1368,7 @@ fun BrowserScreen(
 
     fun dispatchClickAtCursor() {
         val webView = webViewRef ?: return
+        if (isWebViewDestroyed(webView)) return
         isCursorClicking = true
         val downTime = SystemClock.uptimeMillis()
         val downEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, cursorX, cursorY, 0)
@@ -1367,7 +1377,7 @@ fun BrowserScreen(
         webView.dispatchTouchEvent(upEvent)
         downEvent.recycle()
         upEvent.recycle()
-        webView.postDelayed({ isCursorClicking = false }, 120)
+        postOnMain(120L) { isCursorClicking = false }
     }
 
     BoxWithConstraints(
@@ -1432,56 +1442,61 @@ fun BrowserScreen(
         screenHeightPx = with(density) { maxHeight.toPx() }
 
         // WebView
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    isFocusable = true
-                    isFocusableInTouchMode = true
-                    isClickable = true
+        androidx.compose.runtime.key(crashCount) {
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx.findActivityContext()).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                        isClickable = true
 
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        useWideViewPort = true
-                        loadWithOverviewMode = true
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                        allowFileAccess = true
-                        allowContentAccess = true
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        userAgentString = "Mozilla/5.0 (Linux; Android 10; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Downloader/1.4.3"
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            safeBrowsingEnabled = false
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            setSupportZoom(true)
+                            builtInZoomControls = true
+                            displayZoomControls = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            userAgentString = "Mozilla/5.0 (Linux; Android 10; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Downloader/1.4.3"
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                safeBrowsingEnabled = false
+                            }
                         }
-                    }
 
-                    CookieManager.getInstance().let { cm ->
-                        cm.setAcceptCookie(true)
-                        cm.setAcceptThirdPartyCookies(this, true)
-                    }
-
-                    setLayerType(View.LAYER_TYPE_NONE, null)
-
-                    webViewClient = object : WebViewClient() {
-                        override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
-                            (view?.parent as? ViewGroup)?.removeView(view)
-                            try {
-                                view?.destroy()
-                            } catch (_: Exception) {}
-                            try {
-                                Toast.makeText(ctx, ctx.getString(R.string.mini_downloader_browser_crash), Toast.LENGTH_SHORT).show()
-                            } catch (_: Exception) {}
-                            postDelayed({
-                                onGoToKeypad()
-                            }, 300)
-                            return true
+                        CookieManager.getInstance().let { cm ->
+                            cm.setAcceptCookie(true)
+                            cm.setAcceptThirdPartyCookies(this, true)
                         }
+
+                        hardenWebView(this)
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                grantSafeWebPermissions(request)
+                            }
+                        }
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+                                safeDestroyWebView(view, rendererGone = true)
+                                if (webViewRef === view) webViewRef = null
+                                postOnMain(300L) {
+                                    try {
+                                        Toast.makeText(ctx, ctx.getString(R.string.mini_downloader_browser_crash), Toast.LENGTH_SHORT).show()
+                                    } catch (_: Exception) {}
+                                    onGoToKeypad()
+                                }
+                                return true
+                            }
 
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                             val targetUrl = request?.url?.toString() ?: return false
@@ -1529,12 +1544,14 @@ fun BrowserScreen(
 
                         override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: Bitmap?) {
                             super.onPageStarted(view, startedUrl, favicon)
+                            injectWebViewStabilityShim(view, disableWebGl = true)
                             isLoading = true
                             startedUrl?.let { currentDisplayUrl = it }
                         }
 
                         override fun onPageFinished(view: WebView?, finishedUrl: String?) {
                             super.onPageFinished(view, finishedUrl)
+                            injectWebViewStabilityShim(view, disableWebGl = true)
                             isLoading = false
                             finishedUrl?.let { currentDisplayUrl = it }
 
@@ -1570,33 +1587,27 @@ fun BrowserScreen(
                         onRequestDownload(dUrl, effectiveUa, contentDisposition, mimetype, currentDisplayUrl)
                     }
 
-                    loadUrl(url)
-                    lastLoadedUrl = url
+                    val targetUrl = currentDisplayUrl.ifBlank { url }
+                    loadUrl(targetUrl)
+                    lastLoadedUrl = targetUrl
                     webViewRef = this
                 }
             },
             update = { webView ->
                 webViewRef = webView
             },
+            onRelease = { webView ->
+                if (webViewRef === webView) webViewRef = null
+                safeDestroyWebView(webView)
+            },
             modifier = Modifier.fillMaxSize()
         )
+        }
 
         LaunchedEffect(url) {
             if (url.isNotBlank() && url != lastLoadedUrl) {
                 lastLoadedUrl = url
                 webViewRef?.loadUrl(url)
-            }
-        }
-
-        DisposableEffect(Unit) {
-            onDispose {
-                try {
-                    webViewRef?.stopLoading()
-                    webViewRef?.destroy()
-                    webViewRef = null
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
             }
         }
 
@@ -1823,15 +1834,12 @@ fun BrowserScreen(
         )
     }
 
+    BindWebViewLifecycle(webViewRef)
+
     DisposableEffect(Unit) {
         onDispose {
-            try {
-                webViewRef?.stopLoading()
-                webViewRef?.destroy()
-                webViewRef = null
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            safeDestroyWebView(webViewRef)
+            webViewRef = null
         }
     }
 }
