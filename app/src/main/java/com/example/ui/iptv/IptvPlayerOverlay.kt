@@ -173,7 +173,7 @@ fun IptvPlayerOverlay(
     // Live clock for Top Broadcast Bar
     var currentClockText by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val sdf = SimpleDateFormat("HH:mm", Locale.US)
         while (true) {
             currentClockText = sdf.format(Date())
             delay(15_000L)
@@ -626,7 +626,11 @@ fun IptvPlayerOverlay(
                         keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
                 val isMenuKey = keyCode == KeyEvent.KEYCODE_MENU ||
                         keyCode == KeyEvent.KEYCODE_SETTINGS ||
+                        keyCode == KeyEvent.KEYCODE_INFO ||
+                        keyCode == KeyEvent.KEYCODE_GUIDE ||
                         keyCode == 82 ||
+                        keyCode == 165 ||
+                        keyCode == 172 ||
                         keyCode == 176
 
                 if (nativeEvent.action == KeyEvent.ACTION_DOWN) {
@@ -724,6 +728,18 @@ fun IptvPlayerOverlay(
                     }
                     Key.MediaPlayPause -> {
                         if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
+                        showControls = true
+                        controlsInteractionTick = System.currentTimeMillis()
+                        true
+                    }
+                    Key.MediaPlay -> {
+                        exoPlayer.play()
+                        showControls = true
+                        controlsInteractionTick = System.currentTimeMillis()
+                        true
+                    }
+                    Key.MediaPause -> {
+                        exoPlayer.pause()
                         showControls = true
                         controlsInteractionTick = System.currentTimeMillis()
                         true
@@ -1016,7 +1032,8 @@ fun IptvPlayerOverlay(
                                 text = "CH %02d / %02d".format(currentChannelIndex, channels.size.coerceAtLeast(1)),
                                 color = TvAccentGold,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold
+                                fontWeight = FontWeight.ExtraBold,
+                                style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
                             )
                         }
 
@@ -1097,7 +1114,8 @@ fun IptvPlayerOverlay(
                                     text = currentClockText,
                                     color = Color.White,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold
+                                    fontWeight = FontWeight.ExtraBold,
+                                    style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
                                 )
                             }
                         }

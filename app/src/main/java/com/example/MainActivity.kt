@@ -254,6 +254,7 @@ class MainActivity : ComponentActivity() {
                     KeyEvent.KEYCODE_DPAD_DOWN,
                     KeyEvent.KEYCODE_DPAD_CENTER,
                     KeyEvent.KEYCODE_ENTER,
+                    KeyEvent.KEYCODE_NUMPAD_ENTER,
                     KeyEvent.KEYCODE_BACK
                 )
             ) {
@@ -281,7 +282,7 @@ class MainActivity : ComponentActivity() {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (appState != null) vm.moveAppDown()
                         }
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
                             if (appState != null) vm.confirmReorder() else vm.confirmChannelReorder()
                         }
                         KeyEvent.KEYCODE_BACK -> {

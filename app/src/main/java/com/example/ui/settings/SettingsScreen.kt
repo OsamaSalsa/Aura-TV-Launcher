@@ -310,7 +310,7 @@ fun SettingsScreen(
                         scaleUpRatio = 1.08f,
                         shape = RoundedCornerShape(12.dp),
                         useDefaultBorder = false,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(48.dp)
                     ) { isFocused ->
                         Box(
                             modifier = Modifier

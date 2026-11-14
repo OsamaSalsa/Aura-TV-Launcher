@@ -42,6 +42,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import java.text.SimpleDateFormat
@@ -1765,7 +1766,7 @@ fun BrowserScreen(
             TvFocusableCard(
                 onClick = { navigateToEditableUrl() },
                 scaleUpRatio = 1.05f,
-                modifier = Modifier.height(44.dp)
+                modifier = Modifier.height(48.dp)
             ) { isFocused ->
                 Row(
                     modifier = Modifier
@@ -1779,8 +1780,8 @@ fun BrowserScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Go",
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = stringResource(R.string.mini_downloader_go),
                         tint = if (isFocused) Color.Black else Color.White,
                         modifier = Modifier.size(18.dp)
                     )

@@ -161,7 +161,6 @@
     <string name="mini_downloader_download_error">Errore di download</string>
     <string name="mini_downloader_open_in_browser">Apri nel browser</string>
     <string name="mini_downloader_file_deleted">File eliminato</string>
-    <string name="mini_downloader_forbidden_403">HTTP 403: Accesso vietato per questo link</string>
     <string name="mini_downloader_requires_browser">La pagina richiede interazione nel browser</string>
     <string name="settings_reset_default_launcher">Ripristina launcher predefinito</string>
     <string name="settings_reset_default_launcher_desc">Ripristina il launcher predefinito precedente e imposta Aura TV</string>
@@ -292,8 +291,6 @@
     <string name="mini_downloader_downloads_subtitle">Gestisci o installa i pacchetti APK scaricati</string>
     <string name="mini_downloader_downloads_title">Download e APK</string>
     <string name="mini_downloader_install_now">Installa ora</string>
-    <string name="mini_downloader_keep">Conserva</string>
-    <string name="mini_downloader_no_downloads">Nessun file scaricato ancora</string>
     <string name="mini_downloader_redownload">Scarica di nuovo</string>
     <string name="mini_downloader_view_downloads">Visualizza download</string>
     <string name="mini_downloader_no_files">Nessun file</string>
@@ -318,7 +315,7 @@
     <string name="control_center_display_sub">Schermo e risoluzione</string>
     <string name="control_center_audio_sub">Audio e uscita sonora</string>
     <string name="control_center_ip_tag">IP: %s</string>
-    <string name="control_center_gb_format">%.1f / %.1f GB</string>
+    <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
     <string name="control_center_section_layout">Aspetto e layout</string>
     <string name="control_center_section_clock">Orologio, data e schermo</string>
     <string name="control_center_section_experience">Saluto, salvaschermo e app</string>

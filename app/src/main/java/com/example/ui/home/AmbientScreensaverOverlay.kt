@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -64,7 +62,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,7 +100,6 @@ import com.example.ui.common.hardenWebView
 import com.example.ui.common.injectWebViewStabilityShim
 import com.example.ui.common.isWebViewDestroyed
 import com.example.ui.common.postOnMain
-import com.example.ui.common.safeBlur
 import com.example.ui.common.safeDestroyWebView
 import com.example.ui.settings.onlineWallpaperCategories
 import com.example.ui.theme.CairoFontFamily
@@ -117,7 +113,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.cos
-import kotlin.math.roundToInt
 import kotlin.math.sin
 
 data class ScreensaverPresetVideo(
@@ -218,7 +213,7 @@ fun AmbientScreensaverOverlay(
             )
         }
         else -> {
-            // Mode 1 (Default): Clock and Date centered with drift & ambient glow
+            // Mode 1 (Default): Clock and Date centered with ambient glow
             ClockDateScreensaver(
                 is24hFormat = is24hFormat,
                 auroraColors = auroraColors,
@@ -745,19 +740,6 @@ private fun WallpaperInfoScreensaver(
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "wallpaper_ambient_drift")
-    val phase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2f * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 28000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "drift_phase"
-    )
-
-    val driftX = (sin(phase.toDouble()) * 16.0).roundToInt()
-    val driftY = (cos(phase.toDouble()) * 10.0).roundToInt()
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     Box(
@@ -785,35 +767,29 @@ private fun WallpaperInfoScreensaver(
             contentScale = ContentScale.Crop
         )
 
-        // Deep black corner blur starting from the active corner (bottom-left in RTL, bottom-right in LTR)
-        // and fading out gradually along a 45-degree angle
+        // Deep black corner shadow anchored flush at the active corner (bottom-left in RTL, bottom-right in LTR)
+        // and fading out smoothly behind the clock without unbounded edge washout
         Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeBlur(36.dp, BlurredEdgeTreatment.Unbounded)
+            modifier = Modifier.fillMaxSize()
         ) {
             val cornerX = if (isRtl) 0f else size.width
             val cornerY = size.height
-            val diagReach = 390.dp.toPx()
+            val startCorner = Offset(x = cornerX, y = cornerY)
+            val diagReach = 440.dp.toPx()
 
-            val startCorner = Offset(
-                x = cornerX + driftX * 0.5f,
-                y = cornerY + driftY * 0.5f
-            )
-            // Exact 45-degree diagonal vector: |dx| == |dy| == diagReach
+            // Exact 45-degree diagonal fade starting right at the corner
             val end45Deg = Offset(
-                x = if (isRtl) cornerX + diagReach + driftX else cornerX - diagReach + driftX,
-                y = cornerY - diagReach + driftY
+                x = if (isRtl) cornerX + diagReach else cornerX - diagReach,
+                y = cornerY - diagReach
             )
 
             drawRect(
                 brush = Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.00f to Color.Black.copy(alpha = 0.96f),
-                        0.22f to Color.Black.copy(alpha = 0.86f),
-                        0.45f to Color.Black.copy(alpha = 0.64f),
-                        0.70f to Color.Black.copy(alpha = 0.32f),
-                        0.90f to Color.Black.copy(alpha = 0.10f),
+                        0.00f to Color.Black.copy(alpha = 0.92f),
+                        0.28f to Color.Black.copy(alpha = 0.72f),
+                        0.55f to Color.Black.copy(alpha = 0.38f),
+                        0.82f to Color.Black.copy(alpha = 0.10f),
                         1.00f to Color.Transparent
                     ),
                     start = startCorner,
@@ -821,15 +797,15 @@ private fun WallpaperInfoScreensaver(
                 )
             )
 
-            // Corner-anchored radial reinforcement so the 45-degree corner fade wraps softly around the text
-            val radialRadius = 460.dp.toPx()
+            // Corner-anchored radial shadow wrapping smoothly from the exact corner behind the clock
+            val radialRadius = maxOf(size.width * 0.56f, 520.dp.toPx())
             drawCircle(
                 brush = Brush.radialGradient(
                     colorStops = arrayOf(
-                        0.00f to Color.Black.copy(alpha = 0.92f),
-                        0.32f to Color.Black.copy(alpha = 0.72f),
-                        0.62f to Color.Black.copy(alpha = 0.38f),
-                        0.85f to Color.Black.copy(alpha = 0.12f),
+                        0.00f to Color.Black.copy(alpha = 0.96f),
+                        0.28f to Color.Black.copy(alpha = 0.84f),
+                        0.54f to Color.Black.copy(alpha = 0.54f),
+                        0.78f to Color.Black.copy(alpha = 0.20f),
                         1.00f to Color.Transparent
                     ),
                     center = startCorner,
@@ -840,11 +816,10 @@ private fun WallpaperInfoScreensaver(
             )
         }
 
-        // Bottom-End Info & Clock over the 45-degree corner blur (Bottom-Left in RTL, Bottom-Right in LTR)
+        // Fixed Bottom-End Info & Clock over the 45-degree corner blur (Bottom-Left in RTL, Bottom-Right in LTR)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .offset { IntOffset(driftX, driftY) }
                 .padding(end = 44.dp, bottom = 38.dp)
         ) {
             Column(
@@ -886,6 +861,7 @@ private fun WallpaperInfoScreensaver(
                             fontFamily = FontFamily.Default,
                             letterSpacing = (-1).sp,
                             style = TextStyle(
+                                fontFeatureSettings = "tnum",
                                 shadow = Shadow(
                                     color = Color.Black.copy(alpha = 0.9f),
                                     blurRadius = 18f,
@@ -899,7 +875,10 @@ private fun WallpaperInfoScreensaver(
                             color = TvAccentGold,
                             fontSize = 21.sp,
                             fontWeight = FontWeight.Bold,
-                            style = TextStyle(shadow = directTextShadow),
+                            style = TextStyle(
+                                fontFeatureSettings = "tnum",
+                                shadow = directTextShadow
+                            ),
                             modifier = Modifier.padding(bottom = 10.dp)
                         )
                     }
@@ -1024,10 +1003,6 @@ private fun ClockDateScreensaver(
         label = "drift_phase"
     )
 
-    // Subtle OLED burn-in protection drift
-    val driftX = (sin(phase.toDouble()) * 18.0).roundToInt()
-    val driftY = (cos(phase.toDouble()) * 12.0).roundToInt()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1090,13 +1065,11 @@ private fun ClockDateScreensaver(
                 )
         )
 
-        // Center Clock & Date with OLED protection offset
+        // Stationary Centered Clock & Date
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset { IntOffset(driftX, driftY) }
+            modifier = Modifier.align(Alignment.Center)
         ) {
             if (greetingStr.isNotBlank()) {
                 Row(
@@ -1135,6 +1108,7 @@ private fun ClockDateScreensaver(
                         fontFamily = FontFamily.Default,
                         letterSpacing = (-2).sp,
                         style = TextStyle(
+                            fontFeatureSettings = "tnum",
                             shadow = Shadow(
                                 color = Color.Black.copy(alpha = 0.75f),
                                 blurRadius = 24f,
@@ -1149,6 +1123,7 @@ private fun ClockDateScreensaver(
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Default,
+                        style = TextStyle(fontFeatureSettings = "tnum"),
                         modifier = Modifier.padding(bottom = 18.dp)
                     )
                 }

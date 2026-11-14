@@ -43,6 +43,8 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -350,18 +352,32 @@ fun HomeScreen(
                     
                     TvFocusableCard(
                         onClick = { viewModel.onDefaultLauncherPromptDismissed() },
-                        scaleUpRatio = 1.05f,
-                        modifier = Modifier.fillMaxWidth().height(44.dp)
+                        scaleUpRatio = 1.04f,
+                        elevation = 0.dp,
+                        cardBackgroundColor = Color.Transparent,
+                        useDefaultBorder = false,
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
                     ) { isFocused ->
                         Box(
                             modifier = Modifier
-                                .fillMaxSize(),
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isFocused) Color.White.copy(alpha = 0.16f)
+                                    else Color.White.copy(alpha = 0.05f)
+                                )
+                                .border(
+                                    width = if (isFocused) 1.5.dp else 1.dp,
+                                    color = if (isFocused) TvAccentGold else Color.White.copy(alpha = 0.10f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = stringResource(R.string.action_later),
                                 color = if (isFocused) TvAccentGold else TvTextSecondary,
-                                fontSize = 14.sp
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -439,18 +455,32 @@ fun HomeScreen(
 
                     TvFocusableCard(
                         onClick = { showStoragePermissionPrompt = false },
-                        scaleUpRatio = 1.05f,
-                        modifier = Modifier.fillMaxWidth().height(44.dp)
+                        scaleUpRatio = 1.04f,
+                        elevation = 0.dp,
+                        cardBackgroundColor = Color.Transparent,
+                        useDefaultBorder = false,
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
                     ) { isFocused ->
                         Box(
                             modifier = Modifier
-                                .fillMaxSize(),
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isFocused) Color.White.copy(alpha = 0.16f)
+                                    else Color.White.copy(alpha = 0.05f)
+                                )
+                                .border(
+                                    width = if (isFocused) 1.5.dp else 1.dp,
+                                    color = if (isFocused) TvAccentGold else Color.White.copy(alpha = 0.10f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = stringResource(R.string.action_later),
                                 color = if (isFocused) TvAccentGold else TvTextSecondary,
-                                fontSize = 14.sp
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -1321,8 +1351,8 @@ fun FavoriteChannelCard(
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Move Left",
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
                             tint = TvAccentGold,
                             modifier = Modifier.size(10.dp)
                         )
@@ -1333,8 +1363,8 @@ fun FavoriteChannelCard(
                             fontWeight = FontWeight.ExtraBold
                         )
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Move Right",
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
                             tint = TvAccentGold,
                             modifier = Modifier.size(10.dp)
                         )

@@ -161,7 +161,6 @@
     <string name="mini_downloader_download_error">Ошибка загрузки</string>
     <string name="mini_downloader_open_in_browser">Открыть в браузере</string>
     <string name="mini_downloader_file_deleted">Файл удален</string>
-    <string name="mini_downloader_forbidden_403">HTTP 403: Доступ по ссылке запрещен</string>
     <string name="mini_downloader_requires_browser">Страница требует действий в браузере</string>
     <string name="settings_reset_default_launcher">Сбросить главный экран по умолчанию</string>
     <string name="settings_reset_default_launcher_desc">Сбросить прежний главный экран и назначить Aura TV</string>
@@ -263,8 +262,6 @@
     <string name="mini_downloader_downloads_subtitle">Управление и установка загруженных APK</string>
     <string name="mini_downloader_downloads_title">Загрузки и APK</string>
     <string name="mini_downloader_install_now">Установить сейчас</string>
-    <string name="mini_downloader_keep">Сохранить</string>
-    <string name="mini_downloader_no_downloads">Пока нет загруженных файлов</string>
     <string name="mini_downloader_redownload">Скачать снова</string>
     <string name="status_ads_blocker_enabled">Блокировщик рекламы включен</string>
     <string name="status_all_apps_restored">Все приложения восстановлены</string>
@@ -316,7 +313,7 @@
     <string name="control_center_display_sub">Экран и разрешение</string>
     <string name="control_center_audio_sub">Звук и аудиовыход</string>
     <string name="control_center_ip_tag">IP: %s</string>
-    <string name="control_center_gb_format">%.1f / %.1f ГБ</string>
+    <string name="control_center_gb_format">%1$.1f / %2$.1f ГБ</string>
     <string name="control_center_section_layout">Внешний вид и макет</string>
     <string name="control_center_section_clock">Часы, дата и экран</string>
     <string name="control_center_section_experience">Приветствие, заставка и приложения</string>

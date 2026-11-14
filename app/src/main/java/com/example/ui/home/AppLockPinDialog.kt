@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -238,7 +238,7 @@ fun AppLockPinDialog(
                                     scaleUpRatio = 1.06f,
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(46.dp)
+                                        .height(48.dp)
                                 ) { isFocused ->
                                     Box(
                                         modifier = Modifier
@@ -251,8 +251,8 @@ fun AppLockPinDialog(
                                     ) {
                                         if (key == "⌫") {
                                             Icon(
-                                                imageVector = Icons.Default.Backspace,
-                                                contentDescription = "Backspace",
+                                                imageVector = Icons.AutoMirrored.Filled.Backspace,
+                                                contentDescription = stringResource(R.string.action_delete),
                                                 tint = if (isFocused) Color.Black else TvTextPrimary,
                                                 modifier = Modifier.size(18.dp)
                                             )

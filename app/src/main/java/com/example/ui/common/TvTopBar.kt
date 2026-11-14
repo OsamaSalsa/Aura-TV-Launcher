@@ -302,6 +302,7 @@ fun TvTopBar(
                         maxLines = 1,
                         style = TextStyle(
                             fontFamily = FontFamily.Default,
+                            fontFeatureSettings = "tnum",
                             shadow = topTextShadow
                         )
                     )
@@ -393,6 +394,7 @@ fun TvTopBar(
                 TvActionButton(
                     icon = Icons.Default.Search,
                     text = "",
+                    contentDescription = stringResource(R.string.control_center_search),
                     onClick = onOpenSearch,
                     onFocused = onNonAppFocused,
                     onRequestFocusDown = onRequestFocusDown,
@@ -411,6 +413,7 @@ fun TvTopBar(
             TvActionButton(
                 icon = netInfo.first, 
                 text = "", 
+                contentDescription = netInfo.second,
                 onClick = {
                     context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                 }, 
@@ -423,6 +426,7 @@ fun TvTopBar(
             TvActionButton(
                 icon = Icons.Default.LiveTv, 
                 text = "", 
+                contentDescription = stringResource(R.string.iptv_title),
                 onClick = onOpenIptv, 
                 onLongClick = onOpenSettings, // Long click on TV shows settings/menu
                 onFocused = onNonAppFocused,
@@ -436,6 +440,7 @@ fun TvTopBar(
                 TvActionButton(
                     icon = if (isEditingMode) Icons.Default.Check else Icons.Default.Edit,
                     text = "",
+                    contentDescription = stringResource(if (isEditingMode) R.string.action_stop_editing else R.string.action_edit),
                     onClick = onToggleEditMode,
                     onFocused = onNonAppFocused,
                     onRequestFocusDown = onRequestFocusDown,
@@ -448,6 +453,7 @@ fun TvTopBar(
             TvActionButton(
                 icon = if (onOpenControlCenter != null) Icons.Default.Tune else Icons.Default.Settings,
                 text = "",
+                contentDescription = stringResource(if (onOpenControlCenter != null) R.string.control_center_title else R.string.settings_title),
                 onClick = onOpenControlCenter ?: onOpenSettings,
                 onLongClick = onOpenSettings,
                 onFocused = onNonAppFocused,
@@ -470,7 +476,8 @@ fun TvActionButton(
     onRequestFocusDown: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     glassOpacity: Int = 75,
-    showText: Boolean = true
+    showText: Boolean = true,
+    contentDescription: String? = null
 ) {
     TvFocusableCard(
         onClick = onClick,
@@ -481,7 +488,7 @@ fun TvActionButton(
         useDefaultBorder = false,
         elevation = 0.dp,
         modifier = Modifier
-            .height(44.dp)
+            .height(48.dp)
             .onKeyEvent { keyEvent ->
                 val native = keyEvent.nativeKeyEvent
                 if (native.action == android.view.KeyEvent.ACTION_DOWN) {
@@ -514,14 +521,15 @@ fun TvActionButton(
 
         Row(
             modifier = Modifier
-                .background(pillBg, RoundedCornerShape(22.dp))
-                .border(if (isFocused) 2.dp else 1.dp, borderColor, RoundedCornerShape(22.dp))
-                .padding(horizontal = if (showText && text.isNotBlank()) 16.dp else 12.dp, vertical = 8.dp),
+                .fillMaxHeight()
+                .background(pillBg, RoundedCornerShape(24.dp))
+                .border(if (isFocused) 2.dp else 1.dp, borderColor, RoundedCornerShape(24.dp))
+                .padding(horizontal = if (showText && text.isNotBlank()) 18.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = contentDescription,
                 tint = contentColor,
                 modifier = Modifier.size(20.dp)
             )

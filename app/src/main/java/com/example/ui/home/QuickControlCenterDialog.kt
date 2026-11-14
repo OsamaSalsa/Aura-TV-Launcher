@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,26 +28,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Opacity
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartDisplay
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -125,22 +114,13 @@ fun QuickControlCenterDialog(
     val scope = rememberCoroutineScope()
     val prefs = remember(dialogContext) { LauncherPreferences(dialogContext.applicationContext) }
 
-    // 4x4 Focus Matrix for deterministic TV Remote D-Pad navigation + Header Close button
-    val gridRequesters = remember { Array(4) { Array(4) { FocusRequester() } } }
+    // Streamlined 2x4 Focus Matrix for fast, maze-free TV Remote D-Pad navigation + Header Close button
+    val gridRequesters = remember { Array(2) { Array(4) { FocusRequester() } } }
     val closeFocusRequester = remember { FocusRequester() }
 
     val wallpaperMode by prefs.wallpaperModeFlow.collectAsState(initial = if (isDynamicBg) "dynamic" else "custom")
-    val appsTopOffset by prefs.appsTopOffsetFlow.collectAsState(initial = 340)
-    val appsPerRow by prefs.appsPerRowFlow.collectAsState(initial = 5)
-    val glassOpacity by prefs.glassOpacityFlow.collectAsState(initial = 75)
-
     val showSeconds by prefs.isClockSecondsEnabled.collectAsState(initial = false)
-    val clockSize by prefs.clockSizeFlow.collectAsState(initial = "large")
-    val dateFormatStyle by prefs.dateFormatStyleFlow.collectAsState(initial = "full")
-    val greetingMode by prefs.greetingModeFlow.collectAsState(initial = "poetic")
-
     val screensaverMode by prefs.screensaverModeFlow.collectAsState(initial = "clock_date")
-    val screensaverTimeout by prefs.screensaverTimeoutFlow.collectAsState(initial = "5")
     val showOnlyTvApps by prefs.showOnlyTvAppsFlow.collectAsState(initial = true)
 
     // Live RAM telemetry & 1-click boost state
@@ -202,71 +182,6 @@ fun QuickControlCenterDialog(
         else -> 3
     }
 
-    val appsPositionSub = when (appsTopOffset) {
-        220 -> stringResource(R.string.settings_apps_position_compact)
-        280 -> stringResource(R.string.settings_apps_position_balanced)
-        340 -> stringResource(R.string.settings_apps_position_lower)
-        else -> stringResource(R.string.settings_apps_position_ultra)
-    }
-    val appsPositionStep = when (appsTopOffset) {
-        220 -> 0
-        280 -> 1
-        340 -> 2
-        else -> 3
-    }
-
-    val appsPerRowStep = when (appsPerRow) {
-        4 -> 0
-        5 -> 1
-        6 -> 2
-        else -> 3
-    }
-
-    val glassOpacityStep = when (glassOpacity) {
-        25 -> 0
-        50 -> 1
-        75 -> 2
-        90 -> 3
-        else -> 4
-    }
-
-    val clockSizeSub = when (clockSize) {
-        "compact" -> stringResource(R.string.settings_clock_size_compact)
-        "medium" -> stringResource(R.string.settings_clock_size_medium)
-        else -> stringResource(R.string.settings_clock_size_large)
-    }
-    val clockSizeStep = when (clockSize) {
-        "large" -> 0
-        "medium" -> 1
-        else -> 2
-    }
-
-    val dateFormatSub = when (dateFormatStyle) {
-        "medium" -> stringResource(R.string.settings_date_format_medium)
-        "numeric" -> stringResource(R.string.settings_date_format_numeric)
-        "hidden" -> stringResource(R.string.settings_date_format_hidden)
-        else -> stringResource(R.string.settings_date_format_full)
-    }
-    val dateFormatStep = when (dateFormatStyle) {
-        "full" -> 0
-        "medium" -> 1
-        "numeric" -> 2
-        else -> 3
-    }
-
-    val greetingModeSub = when (greetingMode) {
-        "classic" -> stringResource(R.string.settings_greeting_mode_classic)
-        "custom" -> stringResource(R.string.settings_greeting_mode_custom)
-        "hidden" -> stringResource(R.string.settings_greeting_mode_hidden)
-        else -> stringResource(R.string.settings_greeting_mode_poetic)
-    }
-    val greetingModeStep = when (greetingMode) {
-        "poetic" -> 0
-        "classic" -> 1
-        "custom" -> 2
-        else -> 3
-    }
-
     val screensaverModeSub = when (screensaverMode) {
         "wallpaper_info" -> stringResource(R.string.screensaver_mode_wallpaper)
         "video_stream" -> stringResource(R.string.screensaver_mode_video)
@@ -278,45 +193,15 @@ fun QuickControlCenterDialog(
         else -> 2
     }
 
-    val screensaverTimeoutSub = when (screensaverTimeout) {
-        "2" -> stringResource(R.string.timeout_2min)
-        "5" -> stringResource(R.string.timeout_5min)
-        "10" -> stringResource(R.string.timeout_10min)
-        "15" -> stringResource(R.string.timeout_15min)
-        "30" -> stringResource(R.string.timeout_30min)
-        else -> stringResource(R.string.timeout_never)
-    }
-    val screensaverTimeoutStep = when (screensaverTimeout) {
-        "2" -> 0
-        "5" -> 1
-        "10" -> 2
-        "15" -> 3
-        "30" -> 4
-        else -> 5
-    }
-
-    // Track currently focused tile coordinates so Header Inspector & Selected Options Bar stay live on click & focus
+    // Track currently focused tile coordinates so Header Inspector updates reactively on focus & click
     var focusedCoord by remember { mutableStateOf(0 to 0) }
 
     val tile00Title = stringResource(R.string.settings_wallpaper_style)
-    val tile01Title = stringResource(R.string.settings_apps_top_position)
-    val tile02Title = stringResource(R.string.settings_apps_per_row)
-    val tile02Sub = "$appsPerRow ${stringResource(R.string.settings_apps_suffix)}"
-    val tile03Title = stringResource(R.string.settings_glass_opacity)
-    val tile03Sub = "$glassOpacity%"
-
-    val tile10Title = stringResource(R.string.settings_clock_format)
-    val tile10Sub = if (is24hFormat) "24h" else "12h (AM/PM)"
-    val tile11Title = stringResource(R.string.settings_clock_seconds)
-    val tile11Sub = if (showSeconds) stringResource(R.string.settings_seconds_enabled) else stringResource(R.string.settings_seconds_disabled)
-    val tile12Title = stringResource(R.string.settings_clock_size)
-    val tile13Title = stringResource(R.string.settings_date_format)
-
-    val tile20Title = stringResource(R.string.settings_greeting_mode)
-    val tile21Title = stringResource(R.string.settings_screensaver_mode)
-    val tile22Title = stringResource(R.string.settings_screensaver_timeout)
-    val tile23Title = stringResource(R.string.settings_show_only_tv_apps)
-    val tile23Sub = if (showOnlyTvApps) stringResource(R.string.settings_app_filter_tv_only) else stringResource(R.string.settings_app_filter_all)
+    val tile01Title = stringResource(R.string.settings_clock_format)
+    val tile01Sub = if (is24hFormat) "24h" else "12h (AM/PM)"
+    val tile02Title = stringResource(R.string.settings_screensaver_mode)
+    val tile03Title = stringResource(R.string.settings_show_only_tv_apps)
+    val tile03Sub = if (showOnlyTvApps) stringResource(R.string.settings_app_filter_tv_only) else stringResource(R.string.settings_app_filter_all)
 
     val dock0Title = stringResource(R.string.settings_screensaver_preview_btn)
     val dock1Title = stringResource(R.string.control_center_search)
@@ -333,21 +218,13 @@ fun QuickControlCenterDialog(
     val closeTitle = stringResource(R.string.action_cancel)
     val (focusedItemTitle, focusedItemValue) = when (focusedCoord) {
         0 to 0 -> tile00Title to wallpaperSub
-        0 to 1 -> tile01Title to appsPositionSub
-        0 to 2 -> tile02Title to tile02Sub
+        0 to 1 -> tile01Title to tile01Sub
+        0 to 2 -> tile02Title to screensaverModeSub
         0 to 3 -> tile03Title to tile03Sub
-        1 to 0 -> tile10Title to tile10Sub
-        1 to 1 -> tile11Title to tile11Sub
-        1 to 2 -> tile12Title to clockSizeSub
-        1 to 3 -> tile13Title to dateFormatSub
-        2 to 0 -> tile20Title to greetingModeSub
-        2 to 1 -> tile21Title to screensaverModeSub
-        2 to 2 -> tile22Title to screensaverTimeoutSub
-        2 to 3 -> tile23Title to tile23Sub
-        3 to 0 -> dock0Title to screensaverModeSub
-        3 to 1 -> dock1Title to dock1Sub
-        3 to 2 -> dock2Title to dock2Sub
-        3 to 3 -> dock3Title to dock3Sub
+        1 to 0 -> dock0Title to screensaverModeSub
+        1 to 1 -> dock1Title to dock1Sub
+        1 to 2 -> dock2Title to dock2Sub
+        1 to 3 -> dock3Title to dock3Sub
         -1 to -1 -> closeTitle to "OK"
         else -> tile00Title to wallpaperSub
     }
@@ -357,7 +234,7 @@ fun QuickControlCenterDialog(
         val prevCol = (col + 3) % 4
         return this.focusProperties {
             up = if (row > 0) gridRequesters[row - 1][col] else closeFocusRequester
-            down = if (row < 3) gridRequesters[row + 1][col] else gridRequesters[3][col]
+            down = if (row < 1) gridRequesters[row + 1][col] else gridRequesters[1][col]
             left = if (isRtl) gridRequesters[row][nextCol] else gridRequesters[row][prevCol]
             right = if (isRtl) gridRequesters[row][prevCol] else gridRequesters[row][nextCol]
         }
@@ -393,9 +270,9 @@ fun QuickControlCenterDialog(
                         )
                     ),
                     modifier = Modifier
-                        .widthIn(max = 936.dp)
-                        .fillMaxWidth(0.95f)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .widthIn(max = 920.dp)
+                        .fillMaxWidth(0.92f)
+                        .padding(horizontal = 12.dp, vertical = 12.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -459,7 +336,7 @@ fun QuickControlCenterDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 18.dp, vertical = 10.dp)
+                                .padding(horizontal = 22.dp, vertical = 18.dp)
                         ) {
                             // Header: Crest Icon, Title, RAM, Clock & Close Button
                             Row(
@@ -473,7 +350,7 @@ fun QuickControlCenterDialog(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(42.dp)
                                             .clip(RoundedCornerShape(13.dp))
                                             .background(
                                                 Brush.linearGradient(
@@ -510,7 +387,7 @@ fun QuickControlCenterDialog(
                                         Text(
                                             text = stringResource(R.string.control_center_subtitle),
                                             color = TvTextSecondary,
-                                            fontSize = 11.sp,
+                                            fontSize = 11.5.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -579,7 +456,7 @@ fun QuickControlCenterDialog(
                                         shape = CircleShape,
                                         useDefaultBorder = false,
                                         modifier = Modifier
-                                            .size(36.dp)
+                                            .size(38.dp)
                                             .focusProperties {
                                                 down = gridRequesters[0][3]
                                                 left = gridRequesters[0][0]
@@ -610,45 +487,45 @@ fun QuickControlCenterDialog(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = stringResource(R.string.action_cancel),
                                                 tint = if (isFocused) Color.Black else TvTextPrimary,
-                                                modifier = Modifier.size(17.dp)
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             // Live Selected Option Bar showing ONLY the currently focused item and its selected option
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(13.dp))
                                     .background(Color(0xFF10182B).copy(alpha = 0.88f))
                                     .border(
                                         width = 1.dp,
                                         color = TvAccentGold.copy(alpha = 0.36f),
-                                        shape = RoundedCornerShape(12.dp)
+                                        shape = RoundedCornerShape(13.dp)
                                     )
-                                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                                    .padding(horizontal = 14.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.weight(1f, fill = false)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(7.dp)
+                                            .size(8.dp)
                                             .clip(CircleShape)
                                             .background(TvAccentGoldRadiant)
                                     )
                                     Text(
                                         text = "${stringResource(R.string.control_center_selected_label)} • $focusedItemTitle",
-                                        color = TvTextPrimary.copy(alpha = 0.90f),
-                                        fontSize = 11.5.sp,
+                                        color = TvTextPrimary.copy(alpha = 0.92f),
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -664,18 +541,18 @@ fun QuickControlCenterDialog(
                                         .clip(RoundedCornerShape(50))
                                         .background(TvAccentGold.copy(alpha = 0.22f))
                                         .border(1.dp, TvAccentGold.copy(alpha = 0.80f), RoundedCornerShape(50))
-                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                        .padding(horizontal = 11.dp, vertical = 3.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
                                         tint = TvAccentGoldRadiant,
-                                        modifier = Modifier.size(12.dp)
+                                        modifier = Modifier.size(13.dp)
                                     )
                                     Text(
                                         text = focusedItemValue,
                                         color = TvAccentGoldRadiant,
-                                        fontSize = 11.5.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -683,18 +560,12 @@ fun QuickControlCenterDialog(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            // Section 1 (Row 0): Appearance & Home Layout
-                            ControlSectionHeader(
-                                icon = Icons.Default.Palette,
-                                title = stringResource(R.string.control_center_section_layout),
-                                accentColor = SectionGoldAccent
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            // Row 0: 4 Essential Quick Toggles (Wallpaper, Clock Format, Screensaver Mode, Apps Filter)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 QuickToggleTile(
                                     icon = Icons.Default.Wallpaper,
@@ -724,236 +595,31 @@ fun QuickControlCenterDialog(
                                 )
 
                                 QuickToggleTile(
-                                    icon = Icons.Default.VerticalAlignBottom,
+                                    icon = Icons.Default.Schedule,
                                     title = tile01Title,
-                                    subtitle = appsPositionSub,
-                                    isActive = appsTopOffset >= 340,
-                                    accentColor = SectionGoldAccent,
-                                    totalSteps = 4,
-                                    currentStep = appsPositionStep,
+                                    subtitle = tile01Sub,
+                                    isActive = is24hFormat,
+                                    accentColor = SectionCyanAccent,
+                                    totalSteps = 2,
+                                    currentStep = if (is24hFormat) 0 else 1,
                                     focusRequester = gridRequesters[0][1],
                                     onFocused = { focusedCoord = 0 to 1 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextOffset = when (appsTopOffset) {
-                                                220 -> 280
-                                                280 -> 340
-                                                340 -> 400
-                                                else -> 220
-                                            }
-                                            prefs.setAppsTopOffset(nextOffset)
-                                        }
-                                    },
+                                    onClick = onToggleClock24h,
                                     modifier = Modifier
                                         .weight(1f)
                                         .matrixNavigation(0, 1)
                                 )
 
                                 QuickToggleTile(
-                                    icon = Icons.Default.GridView,
-                                    title = tile02Title,
-                                    subtitle = tile02Sub,
-                                    isActive = true,
-                                    accentColor = SectionGoldAccent,
-                                    totalSteps = 4,
-                                    currentStep = appsPerRowStep,
-                                    focusRequester = gridRequesters[0][2],
-                                    onFocused = { focusedCoord = 0 to 2 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextCount = when (appsPerRow) {
-                                                4 -> 5
-                                                5 -> 6
-                                                6 -> 7
-                                                else -> 4
-                                            }
-                                            prefs.setAppsPerRow(nextCount)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(0, 2)
-                                )
-
-                                QuickToggleTile(
-                                    icon = Icons.Default.Opacity,
-                                    title = tile03Title,
-                                    subtitle = tile03Sub,
-                                    isActive = glassOpacity >= 75,
-                                    accentColor = SectionGoldAccent,
-                                    totalSteps = 5,
-                                    currentStep = glassOpacityStep,
-                                    progressFraction = glassOpacity / 100f,
-                                    focusRequester = gridRequesters[0][3],
-                                    onFocused = { focusedCoord = 0 to 3 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextOpacity = when (glassOpacity) {
-                                                25 -> 50
-                                                50 -> 75
-                                                75 -> 90
-                                                90 -> 100
-                                                else -> 25
-                                            }
-                                            prefs.setGlassOpacity(nextOpacity)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(0, 3)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(7.dp))
-
-                            // Section 2 (Row 1): Clock, Date & Display
-                            ControlSectionHeader(
-                                icon = Icons.Default.Schedule,
-                                title = stringResource(R.string.control_center_section_clock),
-                                accentColor = SectionCyanAccent
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                QuickToggleTile(
-                                    icon = Icons.Default.Schedule,
-                                    title = tile10Title,
-                                    subtitle = tile10Sub,
-                                    isActive = is24hFormat,
-                                    accentColor = SectionCyanAccent,
-                                    totalSteps = 2,
-                                    currentStep = if (is24hFormat) 0 else 1,
-                                    focusRequester = gridRequesters[1][0],
-                                    onFocused = { focusedCoord = 1 to 0 },
-                                    onClick = onToggleClock24h,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(1, 0)
-                                )
-
-                                QuickToggleTile(
-                                    icon = Icons.Default.Timer,
-                                    title = tile11Title,
-                                    subtitle = tile11Sub,
-                                    isActive = showSeconds,
-                                    accentColor = SectionCyanAccent,
-                                    totalSteps = 2,
-                                    currentStep = if (showSeconds) 1 else 0,
-                                    focusRequester = gridRequesters[1][1],
-                                    onFocused = { focusedCoord = 1 to 1 },
-                                    onClick = {
-                                        scope.launch {
-                                            prefs.setClockSecondsEnabled(!showSeconds)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(1, 1)
-                                )
-
-                                QuickToggleTile(
-                                    icon = Icons.Default.FormatSize,
-                                    title = tile12Title,
-                                    subtitle = clockSizeSub,
-                                    isActive = clockSize == "large",
-                                    accentColor = SectionCyanAccent,
-                                    totalSteps = 3,
-                                    currentStep = clockSizeStep,
-                                    focusRequester = gridRequesters[1][2],
-                                    onFocused = { focusedCoord = 1 to 2 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextSize = when (clockSize) {
-                                                "large" -> "medium"
-                                                "medium" -> "compact"
-                                                else -> "large"
-                                            }
-                                            prefs.setClockSize(nextSize)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(1, 2)
-                                )
-
-                                QuickToggleTile(
-                                    icon = Icons.Default.CalendarMonth,
-                                    title = tile13Title,
-                                    subtitle = dateFormatSub,
-                                    isActive = dateFormatStyle != "hidden",
-                                    accentColor = SectionCyanAccent,
-                                    totalSteps = 4,
-                                    currentStep = dateFormatStep,
-                                    focusRequester = gridRequesters[1][3],
-                                    onFocused = { focusedCoord = 1 to 3 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextDateStyle = when (dateFormatStyle) {
-                                                "full" -> "medium"
-                                                "medium" -> "numeric"
-                                                "numeric" -> "hidden"
-                                                else -> "full"
-                                            }
-                                            prefs.setDateFormatStyle(nextDateStyle)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(1, 3)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(7.dp))
-
-                            // Section 3 (Row 2): Greeting, Screensaver & Apps
-                            ControlSectionHeader(
-                                icon = Icons.Default.Layers,
-                                title = stringResource(R.string.control_center_section_experience),
-                                accentColor = SectionPurpleAccent
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                QuickToggleTile(
-                                    icon = Icons.Default.AutoAwesome,
-                                    title = tile20Title,
-                                    subtitle = greetingModeSub,
-                                    isActive = greetingMode != "hidden",
-                                    accentColor = SectionPurpleAccent,
-                                    totalSteps = 4,
-                                    currentStep = greetingModeStep,
-                                    focusRequester = gridRequesters[2][0],
-                                    onFocused = { focusedCoord = 2 to 0 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextGreeting = when (greetingMode) {
-                                                "poetic" -> "classic"
-                                                "classic" -> "custom"
-                                                "custom" -> "hidden"
-                                                else -> "poetic"
-                                            }
-                                            prefs.setGreetingMode(nextGreeting)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(2, 0)
-                                )
-
-                                QuickToggleTile(
                                     icon = Icons.Default.SmartDisplay,
-                                    title = tile21Title,
+                                    title = tile02Title,
                                     subtitle = screensaverModeSub,
                                     isActive = true,
                                     accentColor = SectionPurpleAccent,
                                     totalSteps = 3,
                                     currentStep = screensaverModeStep,
-                                    focusRequester = gridRequesters[2][1],
-                                    onFocused = { focusedCoord = 2 to 1 },
+                                    focusRequester = gridRequesters[0][2],
+                                    onFocused = { focusedCoord = 0 to 2 },
                                     onClick = {
                                         scope.launch {
                                             val nextSaverMode = when (screensaverMode) {
@@ -966,47 +632,19 @@ fun QuickControlCenterDialog(
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(2, 1)
-                                )
-
-                                QuickToggleTile(
-                                    icon = Icons.Default.Bedtime,
-                                    title = tile22Title,
-                                    subtitle = screensaverTimeoutSub,
-                                    isActive = screensaverTimeout != "never",
-                                    accentColor = SectionPurpleAccent,
-                                    totalSteps = 6,
-                                    currentStep = screensaverTimeoutStep,
-                                    focusRequester = gridRequesters[2][2],
-                                    onFocused = { focusedCoord = 2 to 2 },
-                                    onClick = {
-                                        scope.launch {
-                                            val nextTimeout = when (screensaverTimeout) {
-                                                "2" -> "5"
-                                                "5" -> "10"
-                                                "10" -> "15"
-                                                "15" -> "30"
-                                                "30" -> "never"
-                                                else -> "2"
-                                            }
-                                            prefs.setScreensaverTimeout(nextTimeout)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .matrixNavigation(2, 2)
+                                        .matrixNavigation(0, 2)
                                 )
 
                                 QuickToggleTile(
                                     icon = Icons.Default.Apps,
-                                    title = tile23Title,
-                                    subtitle = tile23Sub,
+                                    title = tile03Title,
+                                    subtitle = tile03Sub,
                                     isActive = showOnlyTvApps,
-                                    accentColor = SectionPurpleAccent,
+                                    accentColor = SectionEmeraldAccent,
                                     totalSteps = 2,
                                     currentStep = if (showOnlyTvApps) 0 else 1,
-                                    focusRequester = gridRequesters[2][3],
-                                    onFocused = { focusedCoord = 2 to 3 },
+                                    focusRequester = gridRequesters[0][3],
+                                    onFocused = { focusedCoord = 0 to 3 },
                                     onClick = {
                                         scope.launch {
                                             prefs.setShowOnlyTvApps(!showOnlyTvApps)
@@ -1014,16 +652,16 @@ fun QuickControlCenterDialog(
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(2, 3)
+                                        .matrixNavigation(0, 3)
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                            // Section 4 (Row 3): 4-Column Equal-Width Action Dock aligned 1:1 with the 4 columns above
+                            // Row 1: 4 Essential Quick Actions (Screensaver Now, Search, RAM Boost, All Settings)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 ControlDockButton(
                                     icon = Icons.Default.PlayArrow,
@@ -1031,15 +669,15 @@ fun QuickControlCenterDialog(
                                     subtitle = screensaverModeSub,
                                     accentColor = TvAccentGold,
                                     isPrimaryHighlight = true,
-                                    focusRequester = gridRequesters[3][0],
-                                    onFocused = { focusedCoord = 3 to 0 },
+                                    focusRequester = gridRequesters[1][0],
+                                    onFocused = { focusedCoord = 1 to 0 },
                                     onClick = {
                                         onDismiss()
                                         onOpenAmbientMode()
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(3, 0)
+                                        .matrixNavigation(1, 0)
                                 )
 
                                 ControlDockButton(
@@ -1048,15 +686,15 @@ fun QuickControlCenterDialog(
                                     subtitle = dock1Sub,
                                     accentColor = SectionCyanAccent,
                                     isPrimaryHighlight = false,
-                                    focusRequester = gridRequesters[3][1],
-                                    onFocused = { focusedCoord = 3 to 1 },
+                                    focusRequester = gridRequesters[1][1],
+                                    onFocused = { focusedCoord = 1 to 1 },
                                     onClick = {
                                         onDismiss()
                                         onOpenSearch()
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(3, 1)
+                                        .matrixNavigation(1, 1)
                                 )
 
                                 ControlDockButton(
@@ -1065,8 +703,8 @@ fun QuickControlCenterDialog(
                                     subtitle = dock2Sub,
                                     accentColor = SectionEmeraldAccent,
                                     isPrimaryHighlight = freedMb > 0,
-                                    focusRequester = gridRequesters[3][2],
-                                    onFocused = { focusedCoord = 3 to 2 },
+                                    focusRequester = gridRequesters[1][2],
+                                    onFocused = { focusedCoord = 1 to 2 },
                                     onClick = {
                                         if (!isBoosting) {
                                             scope.launch {
@@ -1093,7 +731,7 @@ fun QuickControlCenterDialog(
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(3, 2)
+                                        .matrixNavigation(1, 2)
                                 )
 
                                 ControlDockButton(
@@ -1104,15 +742,15 @@ fun QuickControlCenterDialog(
                                     isPrimaryHighlight = false,
                                     showChevron = true,
                                     isRtl = isRtl,
-                                    focusRequester = gridRequesters[3][3],
-                                    onFocused = { focusedCoord = 3 to 3 },
+                                    focusRequester = gridRequesters[1][3],
+                                    onFocused = { focusedCoord = 1 to 3 },
                                     onClick = {
                                         onDismiss()
                                         onOpenSettings()
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .matrixNavigation(3, 3)
+                                        .matrixNavigation(1, 3)
                                 )
                             }
                         }
@@ -1120,57 +758,6 @@ fun QuickControlCenterDialog(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ControlSectionHeader(
-    icon: ImageVector,
-    title: String,
-    accentColor: Color
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .width(3.5.dp)
-                .height(13.dp)
-                .clip(CircleShape)
-                .background(accentColor)
-        )
-        Spacer(modifier = Modifier.width(7.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = accentColor,
-            modifier = Modifier.size(13.5.dp)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = title,
-            color = TvTextPrimary.copy(alpha = 0.94f),
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            accentColor.copy(alpha = 0.28f),
-                            Color.White.copy(alpha = 0.08f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
     }
 }
 
@@ -1186,18 +773,17 @@ private fun QuickToggleTile(
     focusRequester: FocusRequester = remember { FocusRequester() },
     onFocused: () -> Unit = {},
     totalSteps: Int = 0,
-    currentStep: Int = 0,
-    progressFraction: Float? = null
+    currentStep: Int = 0
 ) {
     TvFocusableCard(
         onClick = onClick,
         focusRequester = focusRequester,
         scaleUpRatio = 1.05f,
         elevation = 18.dp,
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(16.dp),
         useDefaultBorder = false,
         modifier = modifier
-            .height(78.dp)
+            .height(94.dp)
             .onFocusChanged { state ->
                 if (state.isFocused) {
                     onFocused()
@@ -1242,12 +828,12 @@ private fun QuickToggleTile(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(containerColor)
                 .border(
                     width = if (isFocused) 2.2.dp else 1.dp,
                     color = borderColor,
-                    shape = RoundedCornerShape(15.dp)
+                    shape = RoundedCornerShape(16.dp)
                 )
         ) {
             if (isFocused) {
@@ -1284,7 +870,7 @@ private fun QuickToggleTile(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 // Top row: Icon badge + Step/Status indicator
@@ -1295,8 +881,8 @@ private fun QuickToggleTile(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .clip(RoundedCornerShape(7.dp))
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .background(iconBadgeBg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1304,7 +890,7 @@ private fun QuickToggleTile(
                             imageVector = icon,
                             contentDescription = null,
                             tint = iconTint,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
 
@@ -1316,7 +902,7 @@ private fun QuickToggleTile(
                             for (index in 0 until totalSteps) {
                                 val selected = index == currentStep
                                 val pillWidth by animateDpAsState(
-                                    targetValue = if (selected) 11.dp else 4.dp,
+                                    targetValue = if (selected) 12.dp else 4.dp,
                                     animationSpec = tween(150),
                                     label = "step_pill_w"
                                 )
@@ -1357,13 +943,13 @@ private fun QuickToggleTile(
                     Text(
                         text = title,
                         color = labelColor,
-                        fontSize = 10.sp,
-                        lineHeight = 12.sp,
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1391,7 +977,7 @@ private fun QuickToggleTile(
                                     },
                                     shape = RoundedCornerShape(8.dp)
                                 )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(horizontal = 7.dp, vertical = 2.5.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -1401,13 +987,13 @@ private fun QuickToggleTile(
                                     isActive -> accentColor
                                     else -> TvTextSecondary
                                 },
-                                modifier = Modifier.size(10.5.dp)
+                                modifier = Modifier.size(11.dp)
                             )
                             Text(
                                 text = subtitle,
                                 color = valueColor,
-                                fontSize = 10.8.sp,
-                                lineHeight = 13.sp,
+                                fontSize = 11.5.sp,
+                                lineHeight = 14.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1430,29 +1016,6 @@ private fun QuickToggleTile(
                             }
                         }
                     }
-                }
-            }
-
-            if (progressFraction != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.5.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            if (isFocused) Color.Black.copy(alpha = 0.18f)
-                            else Color.White.copy(alpha = 0.08f)
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progressFraction.coerceIn(0.05f, 1f))
-                            .fillMaxHeight()
-                            .background(
-                                if (isFocused) Color.Black.copy(alpha = 0.72f)
-                                else accentColor
-                            )
-                    )
                 }
             }
         }
@@ -1481,7 +1044,7 @@ private fun ControlDockButton(
         shape = RoundedCornerShape(15.dp),
         useDefaultBorder = false,
         modifier = modifier
-            .height(46.dp)
+            .height(56.dp)
             .onFocusChanged { state ->
                 if (state.isFocused) {
                     onFocused()
@@ -1521,12 +1084,12 @@ private fun ControlDockButton(
                     color = borderColor,
                     shape = RoundedCornerShape(15.dp)
                 )
-                .padding(horizontal = 11.dp),
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(31.dp)
+                    .size(32.dp)
                     .clip(RoundedCornerShape(9.dp))
                     .background(
                         if (isFocused) Color.Black.copy(alpha = 0.16f)
@@ -1538,17 +1101,17 @@ private fun ControlDockButton(
                     imageVector = icon,
                     contentDescription = null,
                     tint = if (isFocused) Color.Black else accentColor,
-                    modifier = Modifier.size(17.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(9.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     color = if (isFocused) Color.Black else TvTextPrimary,
-                    fontSize = 11.8.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

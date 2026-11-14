@@ -161,7 +161,6 @@
     <string name="mini_downloader_download_error">Erreur de téléchargement</string>
     <string name="mini_downloader_open_in_browser">Ouvrir dans le navigateur</string>
     <string name="mini_downloader_file_deleted">Fichier supprimé</string>
-    <string name="mini_downloader_forbidden_403">HTTP 403: Accès interdit pour ce lien</string>
     <string name="mini_downloader_requires_browser">La page nécessite une interaction dans le navigateur</string>
     <string name="settings_reset_default_launcher">Réinitialiser le lanceur TV par défaut</string>
     <string name="settings_reset_default_launcher_desc">Réinitialiser les préférences du lanceur par défaut et définir Aura TV</string>
@@ -263,8 +262,6 @@
     <string name="mini_downloader_downloads_subtitle">Gérer ou installer les paquets APK téléchargés</string>
     <string name="mini_downloader_downloads_title">Téléchargements et APKs</string>
     <string name="mini_downloader_install_now">Installer maintenant</string>
-    <string name="mini_downloader_keep">Conserver</string>
-    <string name="mini_downloader_no_downloads">Aucun fichier téléchargé pour l’instant</string>
     <string name="mini_downloader_redownload">Télécharger à nouveau</string>
     <string name="status_ads_blocker_enabled">Bloqueur de publicités activé</string>
     <string name="status_all_apps_restored">Toutes les applications restaurées</string>
@@ -316,7 +313,7 @@
     <string name="control_center_display_sub">Affichage et résolution</string>
     <string name="control_center_audio_sub">Audio et sortie son</string>
     <string name="control_center_ip_tag">IP : %s</string>
-    <string name="control_center_gb_format">%.1f / %.1f Go</string>
+    <string name="control_center_gb_format">%1$.1f / %2$.1f Go</string>
     <string name="control_center_section_layout">Apparence et disposition</string>
     <string name="control_center_section_clock">Horloge, date et affichage</string>
     <string name="control_center_section_experience">Accueil, écran de veille et apps</string>
