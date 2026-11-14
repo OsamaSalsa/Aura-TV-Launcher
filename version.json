@@ -1,7 +1,7 @@
 {
-  "versionCode": 2,
-  "versionName": "1.1",
+  "versionCode": 3,
+  "versionName": "1.2",
   "apkUrl": "https://raw.githubusercontent.com/OsamaSalsa/Aura-TV-Launcher/main/aura-tv-launcher.apk",
-  "changelog": "Aura TV Launcher v1.1 - Stability fixes, full localization & improved Control Center",
+  "changelog": "Aura TV Launcher v1.2 - Photo Slideshow Screensaver with Folder Picker, Ambient Music & Snow/Particle Effects, Direct Settings / Control Center Top Bar Modes, American & International Date Formats, 21 Languages",
   "mandatory": false
 }

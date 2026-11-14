@@ -111,6 +111,7 @@ fun TvTopBar(
     
     val prefs = remember { com.example.data.local.LauncherPreferences(context) }
     val lang by prefs.languageFlow.collectAsState(initial = "system")
+    val headerControlMode by prefs.headerControlModeFlow.collectAsState(initial = "control_center")
 
     // Live network callback
     DisposableEffect(context) {
@@ -170,16 +171,7 @@ fun TvTopBar(
         }
         val timeFormat = SimpleDateFormat(timePattern, Locale.US)
         
-        val isArabicLang = lang == "ar" || lang == "ar_rtl" || (lang == "system" && Locale.getDefault().language == "ar")
-        val dateLocale = if (isArabicLang) Locale("ar") else Locale.getDefault()
-        val dateFormat = when (dateFormatStyle) {
-            "medium" -> SimpleDateFormat("d MMMM", dateLocale)
-            "numeric" -> SimpleDateFormat("dd/MM/yyyy", dateLocale)
-            "hidden" -> null
-            else -> SimpleDateFormat("EEEE, d MMMM", dateLocale)
-        }
-        
-        val effectiveLang = if (lang == "system") Locale.getDefault().language else lang
+        val effectiveLang = com.example.util.LocaleHelper.getEffectiveLanguage(lang)
 
         while (true) {
             val now = java.util.Calendar.getInstance()
@@ -199,7 +191,7 @@ fun TvTopBar(
                 ""
             }
             
-            currentDateString = dateFormat?.format(now.time) ?: ""
+            currentDateString = com.example.util.LocaleHelper.formatDate(now.time, dateFormatStyle, lang)
             currentGreeting = com.example.util.GreetingHelper.getGreeting(hourOfDay, effectiveLang, greetingMode, customGreetingText)
             
             delay(if (showSeconds) 500L else 1000L)
@@ -449,19 +441,66 @@ fun TvTopBar(
                 )
             }
 
-            // Control Center Button (long-press opens full Settings)
-            TvActionButton(
-                icon = if (onOpenControlCenter != null) Icons.Default.Tune else Icons.Default.Settings,
-                text = "",
-                contentDescription = stringResource(if (onOpenControlCenter != null) R.string.control_center_title else R.string.settings_title),
-                onClick = onOpenControlCenter ?: onOpenSettings,
-                onLongClick = onOpenSettings,
-                onFocused = onNonAppFocused,
-                onRequestFocusDown = onRequestFocusDown,
-                focusRequester = focusRequester,
-                glassOpacity = glassOpacity,
-                showText = false
-            )
+            when (headerControlMode) {
+                "direct_settings" -> {
+                    // Skip Control Center -> Direct Settings Button on Home Screen
+                    TvActionButton(
+                        icon = Icons.Default.Settings,
+                        text = "",
+                        contentDescription = stringResource(R.string.settings_title),
+                        onClick = onOpenSettings,
+                        onLongClick = onOpenControlCenter ?: onOpenSettings,
+                        onFocused = onNonAppFocused,
+                        onRequestFocusDown = onRequestFocusDown,
+                        focusRequester = focusRequester,
+                        glassOpacity = glassOpacity,
+                        showText = false
+                    )
+                }
+                "both" -> {
+                    // Show Both Together: Control Center + Direct Settings Icons
+                    if (onOpenControlCenter != null) {
+                        TvActionButton(
+                            icon = Icons.Default.Tune,
+                            text = "",
+                            contentDescription = stringResource(R.string.control_center_title),
+                            onClick = onOpenControlCenter,
+                            onLongClick = onOpenSettings,
+                            onFocused = onNonAppFocused,
+                            onRequestFocusDown = onRequestFocusDown,
+                            glassOpacity = glassOpacity,
+                            showText = false
+                        )
+                    }
+                    TvActionButton(
+                        icon = Icons.Default.Settings,
+                        text = "",
+                        contentDescription = stringResource(R.string.settings_title),
+                        onClick = onOpenSettings,
+                        onLongClick = onOpenControlCenter ?: onOpenSettings,
+                        onFocused = onNonAppFocused,
+                        onRequestFocusDown = onRequestFocusDown,
+                        focusRequester = focusRequester,
+                        glassOpacity = glassOpacity,
+                        showText = false
+                    )
+                }
+                else -> {
+                    // Default: Control Center Button (long-press opens full Settings)
+                    TvActionButton(
+                        icon = if (onOpenControlCenter != null) Icons.Default.Tune else Icons.Default.Settings,
+                        text = "",
+                        contentDescription = stringResource(if (onOpenControlCenter != null) R.string.control_center_title else R.string.settings_title),
+                        onClick = onOpenControlCenter ?: onOpenSettings,
+                        onLongClick = onOpenSettings,
+                        onFocused = onNonAppFocused,
+                        onRequestFocusDown = onRequestFocusDown,
+                        focusRequester = focusRequester,
+                        glassOpacity = glassOpacity,
+                        showText = false
+                    )
+                }
+            }
         }
     }
 }

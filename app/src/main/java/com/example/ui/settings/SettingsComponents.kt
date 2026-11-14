@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -434,6 +435,121 @@ fun DefaultLauncherManagementCard(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.settings_set_default_launcher_desc),
+            color = TvTextSecondary,
+            fontSize = 12.sp,
+            lineHeight = 16.sp
+        )
+    }
+}
+
+@Composable
+fun VoiceAssistantManagementCard(
+    isDefaultAssistant: Boolean,
+    onEnable: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SettingsGlassCard(
+        modifier = modifier,
+        highlightColor = if (isDefaultAssistant) Color(0xFF34D399) else TvAccentGold,
+        highlightActive = isDefaultAssistant
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isDefaultAssistant) TvAccentGold.copy(alpha = 0.16f)
+                            else Color(0xFF334155).copy(alpha = 0.5f)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (isDefaultAssistant) TvAccentGold.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = null,
+                        tint = if (isDefaultAssistant) TvAccentGold else TvTextSecondary,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = stringResource(R.string.settings_voice_assist_title),
+                        color = TvTextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.settings_voice_assist_desc),
+                        color = TvTextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isDefaultAssistant) Color(0xFF065F46).copy(alpha = 0.75f)
+                        else Color(0xFF475569).copy(alpha = 0.5f)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (isDefaultAssistant) Color(0xFF34D399) else Color(0xFF94A3B8).copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(if (isDefaultAssistant) Color(0xFF34D399) else Color(0xFF94A3B8))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isDefaultAssistant) stringResource(R.string.settings_voice_assist_active)
+                        else stringResource(R.string.settings_voice_assist_not_active),
+                        color = if (isDefaultAssistant) Color(0xFFD1FAE5) else TvTextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TvActionButton(
+            text = stringResource(R.string.settings_voice_assist_set_btn),
+            onClick = onEnable,
+            icon = Icons.Default.Mic,
+            baseColor = if (isDefaultAssistant) Color(0xFF0F766E).copy(alpha = 0.75f) else TvAccentGold,
+            focusedColor = TvAccentGold,
+            fillWidth = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.settings_voice_assist_hint),
             color = TvTextSecondary,
             fontSize = 12.sp,
             lineHeight = 16.sp

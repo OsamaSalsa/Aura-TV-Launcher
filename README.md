@@ -1,4 +1,4 @@
-**English** | [العربية](README_ar.md) | [Français](README_fr.md) | [Italiano](README_it.md) | [Русский](README_ru.md) | [Español](README_es.md)
+**English** | [العربية](README_ar.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [Italiano](README_it.md) | [Русский](README_ru.md) | [Español](README_es.md) | [Português](README_pt.md) | [Türkçe](README_tr.md) | [Polski](README_pl.md) | [Nederlands](README_nl.md) | [Ελληνικά](README_el.md) | [Bahasa Indonesia](README_id.md) | [Tiếng Việt](README_vi.md) | [ไทย](README_th.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [हिन्दी](README_hi.md) | [اردو](README_ur.md) | [فارسی](README_fa.md)
 
 <div align="center">
 
@@ -50,15 +50,22 @@ Most smart TV launchers today are cluttered with forced ads, heavy video preview
   * **Clock & Date Mode**: Luminous time and date with drift protection.
   * **4K Wallpaper & Info Mode**: 45-degree corner gradient with clock, date, and live greeting.
   * **Cinematic Video Screensaver**: Fullscreen relaxing fireplace, winter cabin, or tropical waterfall streams without intrusive banners or sign-in prompts.
+  * **Photo Slideshow Screensaver (`Slideshow`)**: Turn your TV into a living gallery using a custom folder from device storage/USB, selected photos, or curated 4K collections:
+    * **Slide Duration & Shuffle**: Configurable interval per photo (`5s`, `10s`, `15s`, `30s`, `1m`, `5m`) with optional shuffle order.
+    * **Photo Motion**: Choose **Ken Burns (Pan & Zoom)**, **Gentle Zoom**, or **Static**.
+    * **Entry Transitions**: **Crossfade**, **Slide Horizontal**, **Zoom & Fade**, **Soft Scale Reveal**, **3D Perspective Flip**, or **Random**.
+    * **Atmospheric Particle Overlays**: **Falling Snow ❄️**, **Glowing Fireflies ✨**, **Gentle Rain 🌧️**, **Autumn Leaves 🍂**, **Sakura Petals 🌸**, **Twinkling Stars ⭐**, or **Bokeh Lights 🔮**.
+    * **Corner Clock & Ambient Music**: Displays the 45° corner clock, date, and greeting (matching the static wallpaper screensaver) plus built-in relaxing ambient soundscapes or custom MP3 audio with independent volume & night dimming controls.
 
 ### 🕒 Comprehensive Clock, Date & Greeting Customization
-* **Multilingual Typography (6 Languages)**: Complete localization in **Arabic (Cairo Font)**, **English**, **Spanish**, **French**, **Italian**, and **Russian**.
+* **Multilingual Typography (21 Languages)**: Complete localization in **Arabic (Cairo Font)**, **English**, **German**, **Spanish**, **French**, **Italian**, **Russian**, **Portuguese**, **Turkish**, **Polish**, **Dutch**, **Greek**, **Indonesian**, **Vietnamese**, **Thai**, **Chinese**, **Japanese**, **Korean**, **Hindi**, **Urdu (RTL)**, and **Persian (RTL)**.
 * **Clock Customization**: 12-hour / 24-hour toggle, optional live seconds display, and 3 sizing choices (Compact, Medium, Large).
-* **Date Styles**: Full date with day name, Medium date, Numeric date (`DD/MM/YYYY`), or Hidden.
+* **American & International Date Formats**: Choose US Numeric (`MM/dd/yyyy`), US Long (`MMMM d, yyyy`), US Full with Day (`EEEE, MMMM d, yyyy`), US Compact (`EEE, MMM d`), International (`dd/MM/yyyy`), ISO (`yyyy-MM-dd`), European Dot (`dd.MM.yyyy`), Full International (`EEEE, d MMMM yyyy`), or Hidden.
 * **Greeting Styles**: Poetic hourly greetings, Warm greetings, Brief greeting, Custom personal greeting, or Hidden.
 
 ### 🎛️ Launcher Customization & Home Screen Layout
-* **Default Focus on Settings**: Launcher boots with the cursor focused directly on the top-right Settings icon for rapid TV configuration.
+* **Top Bar Control Center & Direct Settings Mode**: Choose whether the top bar shows the **Quick Control Center** icon, skips the Control Center to show the **Direct Settings** gear icon, or **Shows Both Icons Together** on the Home Screen.
+* **Default Focus on Settings**: Launcher boots with the cursor focused directly on the top-right Settings / Control Center icon for rapid TV configuration.
 * **Vertical Apps Top Offset**: Shift app rows downward (from 180dp to 380dp) to showcase high-resolution 4K wallpapers and dynamic background aurora effects.
 * **Custom Grid Density**: Choose between 4, 5, 6, or 7 apps per row to match your display size and viewing distance.
 * **Glassmorphic Opacity Control**: Adjust frosted glass card translucency from 10% to 100%.
@@ -120,7 +127,9 @@ adb install -r aura-tv-launcher.apk
 | :--- | :--- |
 | **D-Pad Arrows** | Smooth high-speed navigation across apps, channels, and settings. |
 | **OK / D-Pad Center** | Launch selected app or play IPTV channel. |
-| **Long Press OK / Menu (`KEYCODE_MENU`)** | Open App/Channel Management Menu (Reorder, Lock with PIN, Hide, Game category). |
+| **Long Press OK / Menu (`☰` Three Lines)** | Open App/Channel Management Menu when focused on an item (Reorder, Lock with PIN, Hide, Game category), or jump focus directly to apps/channels when pressed on the top bar. |
+| **Voice / Google Assistant Button (`🎤`)** | Opens in-app Voice Search to find apps, IPTV channels, or launch web searches. |
+| **Settings Button (`KEYCODE_SETTINGS`)** | Opens the Quick Control Center or jumps directly to Settings (based on your Top Bar Icon preference). |
 | **Back Button** | Returns to previous screen or safely returns to Home without exiting to OS. |
 
 ---

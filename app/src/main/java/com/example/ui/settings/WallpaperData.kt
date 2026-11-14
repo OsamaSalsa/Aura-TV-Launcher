@@ -28,7 +28,6 @@ val onlineWallpaperCategories = listOf(
         titleAr = "حيوانات",
         wallpapers = listOf(
             UnsplashWallpaper("anim_1", "Leopard in Wild", "1546182990-dffeafbe841d"),
-            UnsplashWallpaper("anim_2", "Roe Deer in Woods", "1534188753412-3e26d0d618d6"),
             UnsplashWallpaper("anim_3", "Golden Retriever", "1552053831-71594a27632d"),
             UnsplashWallpaper("anim_4", "Playful Dog Portrait", "1543466835-00a7907e9de1"),
             UnsplashWallpaper("anim_5", "Majestic Bengal Tiger", "1574063413132-355dbfd83e0c"),

@@ -86,6 +86,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -118,6 +119,79 @@ private enum class SearchFilter {
     ALL, APPS, GAMES, CHANNELS
 }
 
+private enum class VoiceSystemAction {
+    OPEN_SETTINGS, OPEN_IPTV
+}
+
+private data class ParsedVoiceQuery(
+    val effectiveQuery: String,
+    val isActionCommand: Boolean,
+    val systemAction: VoiceSystemAction? = null
+)
+
+private fun parseSmartVoiceQuery(raw: String): ParsedVoiceQuery {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return ParsedVoiceQuery("", false, null)
+
+    val normalized = trimmed.lowercase(Locale.getDefault())
+    val prefixes = listOf(
+        "افتح لي ", "شغل لي ", "شغلي ", "افتح ", "شغّل ", "شغل ", "ابغى ", "أبغى ", "قناة ", "قناه ",
+        "open ", "launch ", "start ", "play ", "watch ", "go to ", "channel ",
+        "öffne ", "starte ", "spiele ", "zeige ", "sender ",
+        "abrir ", "abre ", "iniciar ", "reproduzir ", "canal ",
+        "aç ", "başlat ", "oynat ", "kanal ",
+        "buka ", "putar ", "jalankan ", "saluran ",
+        "کھولیں ", "کھولو ", "چلائیں ", "چلاؤ ", "چینل ",
+        "باز کن ", "پخش کن ", "اجرا کن ", "کانال ", "شبکه ",
+        "otwórz ", "uruchom ", "włącz ", "kanał ",
+        "openen ", "speel ", "bekijk ", "kanaal ",
+        "mở ", "phát ", "chạy ", "kênh ",
+        "เปิด", "เล่น", "ช่อง",
+        "άνοιξε ", "παίξε ", "κανάλι ",
+        "打开", "播放", "启动", "观看", "频道",
+        "開いて", "再生", "起動", "チャンネル",
+        "열어 ", "실행 ", "재생 ", "틀어 ", "채널 ",
+        "खोलो ", "चलाओ ", "देखो ", "चैनल "
+    )
+
+    var cleaned = trimmed
+    var isAction = false
+    for (prefix in prefixes) {
+        if (normalized.startsWith(prefix)) {
+            cleaned = trimmed.substring(prefix.length).trim()
+            isAction = true
+            break
+        }
+    }
+
+    val targetLower = cleaned.lowercase(Locale.getDefault())
+    val sysAction = when {
+        targetLower in setOf(
+            "الاعدادات", "الإعدادات", "اعدادات", "إعدادات",
+            "settings", "paramètres", "impostazioni", "ajustes", "настройки",
+            "einstellungen", "设置", "設定", "설정", "सेटिंग्स",
+            "configurações", "definições", "ayarlar", "pengaturan", "setelan",
+            "ترتیبات", "تنظیمات", "ustawienia", "instellingen", "cài đặt", "การตั้งค่า", "ρυθμίσεις"
+        ) ->
+            VoiceSystemAction.OPEN_SETTINGS
+        targetLower in setOf(
+            "تلفزيون", "التلفزيون", "بث مباشر", "قنوات", "القنوات",
+            "iptv", "tv", "live tv", "channels",
+            "fernsehen", "sender", "电视", "直播", "テレビ", "ライブ", "티비", "방송", "टीवी", "चैनल",
+            "canais", "televisão", "canlı tv", "kanallar", "saluran tv",
+            "ٹی وی", "چینلز", "تلویزیون", "کانال‌ها", "telewizja", "kanały", "zenders", "truyền hình", "ทีวี", "τηλεόραση", "κανάλια"
+        ) ->
+            VoiceSystemAction.OPEN_IPTV
+        else -> null
+    }
+
+    return ParsedVoiceQuery(
+        effectiveQuery = cleaned.ifBlank { trimmed },
+        isActionCommand = isAction || sysAction != null,
+        systemAction = sysAction
+    )
+}
+
 @Composable
 fun UniversalSearchDialog(
     apps: List<AppItem>,
@@ -126,6 +200,8 @@ fun UniversalSearchDialog(
     voiceTriggerTick: Int = 0,
     onSelectApp: (AppItem) -> Unit,
     onSelectChannel: (IptvChannel) -> Unit,
+    onOpenSettings: () -> Unit = {},
+    onOpenIptv: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -144,6 +220,9 @@ fun UniversalSearchDialog(
     val noSpeechErrorText = stringResource(R.string.voice_search_try_again)
     val micPermissionDeniedText = stringResource(R.string.voice_search_permission_needed)
 
+    var wasVoiceResult by remember { mutableStateOf(false) }
+    var autoLaunchCancelled by remember { mutableStateOf(false) }
+
     // System RecognizerIntent activity fallback for Android TV boxes without direct service binding
     val fallbackVoiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -154,6 +233,8 @@ fun UniversalSearchDialog(
             val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val best = matches?.firstOrNull()
             if (!best.isNullOrBlank()) {
+                autoLaunchCancelled = false
+                wasVoiceResult = true
                 query = best
                 partialVoiceText = ""
                 voiceStatusMessage = null
@@ -170,13 +251,35 @@ fun UniversalSearchDialog(
         } catch (_: Exception) {}
     }
 
+    val currentConfig = LocalConfiguration.current
+    var hasTriedFallbackActivity by remember { mutableStateOf(false) }
+
+    fun launchSystemVoiceActivity(localeTag: String) {
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, localeTag)
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, speakNowHintText)
+            }
+            fallbackVoiceLauncher.launch(intent)
+        } catch (_: Exception) {
+            isListening = false
+            voiceRmsLevel = 0f
+            voiceStatusMessage = noSpeechErrorText
+        }
+    }
+
     fun startVoiceRecognitionInternal() {
         partialVoiceText = ""
         voiceStatusMessage = listeningPromptText
         isListening = true
         voiceRmsLevel = 0.25f
+        hasTriedFallbackActivity = false
 
-        val localeTag = Locale.getDefault().toLanguageTag().ifBlank { "ar-SA" }
+        val configLocale = if (!currentConfig.locales.isEmpty) currentConfig.locales[0] else Locale.getDefault()
+        val localeTag = configLocale.toLanguageTag().ifBlank { "ar-SA" }
 
         try {
             if (SpeechRecognizer.isRecognitionAvailable(context)) {
@@ -209,21 +312,23 @@ fun UniversalSearchDialog(
                     }
 
                     override fun onError(error: Int) {
-                        // If direct service binding fails on a TV ROM, try fallback intent
-                        if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
-                            isListening = false
-                            voiceRmsLevel = 0f
-                            voiceStatusMessage = noSpeechErrorText
+                        val isServiceBindingFailure = error == SpeechRecognizer.ERROR_CLIENT ||
+                            error == SpeechRecognizer.ERROR_AUDIO ||
+                            error == SpeechRecognizer.ERROR_SERVER ||
+                            error == 11 // ERROR_SERVER_DISCONNECTED
+                        if (isServiceBindingFailure && partialVoiceText.isBlank() && !hasTriedFallbackActivity) {
+                            hasTriedFallbackActivity = true
+                            launchSystemVoiceActivity(localeTag)
+                            return
+                        }
+                        isListening = false
+                        voiceRmsLevel = 0f
+                        if (partialVoiceText.isNotBlank()) {
+                            query = partialVoiceText
+                            partialVoiceText = ""
+                            voiceStatusMessage = null
                         } else {
-                            isListening = false
-                            voiceRmsLevel = 0f
-                            if (partialVoiceText.isNotBlank()) {
-                                query = partialVoiceText
-                                partialVoiceText = ""
-                                voiceStatusMessage = null
-                            } else {
-                                voiceStatusMessage = noSpeechErrorText
-                            }
+                            voiceStatusMessage = noSpeechErrorText
                         }
                     }
 
@@ -233,10 +338,14 @@ fun UniversalSearchDialog(
                         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         val spoken = matches?.firstOrNull()
                         if (!spoken.isNullOrBlank()) {
+                            autoLaunchCancelled = false
+                            wasVoiceResult = true
                             query = spoken
                             partialVoiceText = ""
                             voiceStatusMessage = null
                         } else if (partialVoiceText.isNotBlank()) {
+                            autoLaunchCancelled = false
+                            wasVoiceResult = true
                             query = partialVoiceText
                             partialVoiceText = ""
                             voiceStatusMessage = null
@@ -260,6 +369,7 @@ fun UniversalSearchDialog(
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, localeTag)
+                    putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                     putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 }
@@ -268,25 +378,12 @@ fun UniversalSearchDialog(
                 recognizer.startListening(recognizerIntent)
             } else {
                 // Fallback to system speech recognition activity
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
-                    putExtra(RecognizerIntent.EXTRA_PROMPT, speakNowHintText)
-                }
-                fallbackVoiceLauncher.launch(intent)
+                hasTriedFallbackActivity = true
+                launchSystemVoiceActivity(localeTag)
             }
         } catch (_: Exception) {
-            try {
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
-                    putExtra(RecognizerIntent.EXTRA_PROMPT, speakNowHintText)
-                }
-                fallbackVoiceLauncher.launch(intent)
-            } catch (_: Exception) {
-                // Keep visual listening animation active for 4 seconds if emulator has no speech engine installed
-                voiceStatusMessage = speakNowHintText
-            }
+            hasTriedFallbackActivity = true
+            launchSystemVoiceActivity(localeTag)
         }
     }
 
@@ -340,7 +437,10 @@ fun UniversalSearchDialog(
         }
     }
 
-    val filteredApps = remember(apps, query, filter) {
+    val parsedVoice = remember(query) { parseSmartVoiceQuery(query) }
+    val effectiveQuery = parsedVoice.effectiveQuery
+
+    val filteredApps = remember(apps, effectiveQuery, filter) {
         if (filter == SearchFilter.CHANNELS) emptyList()
         else apps.filter { app ->
             val matchesCategory = when (filter) {
@@ -348,20 +448,69 @@ fun UniversalSearchDialog(
                 SearchFilter.GAMES -> app.isGame
                 else -> true
             }
-            val matchesQuery = query.isBlank() ||
-                    app.label.contains(query, ignoreCase = true) ||
-                    app.packageName.contains(query, ignoreCase = true)
+            val matchesQuery = effectiveQuery.isBlank() ||
+                    app.label.contains(effectiveQuery, ignoreCase = true) ||
+                    app.packageName.contains(effectiveQuery, ignoreCase = true)
             matchesCategory && matchesQuery
         }
     }
 
-    val filteredChannels = remember(channels, query, filter) {
+    val filteredChannels = remember(channels, effectiveQuery, filter) {
         if (filter == SearchFilter.APPS || filter == SearchFilter.GAMES) emptyList()
         else channels.filter { ch ->
-            query.isBlank() ||
-                    ch.name.contains(query, ignoreCase = true) ||
-                    ch.groupTitle.contains(query, ignoreCase = true)
+            effectiveQuery.isBlank() ||
+                    ch.name.contains(effectiveQuery, ignoreCase = true) ||
+                    ch.groupTitle.contains(effectiveQuery, ignoreCase = true)
         }.take(40)
+    }
+
+    val totalMatches = filteredApps.size + filteredChannels.size
+    val pendingVoiceTargetLabel: String? = remember(
+        wasVoiceResult,
+        autoLaunchCancelled,
+        isListening,
+        parsedVoice,
+        filteredApps,
+        filteredChannels
+    ) {
+        if (!wasVoiceResult || autoLaunchCancelled || isListening) return@remember null
+        when {
+            parsedVoice.systemAction == VoiceSystemAction.OPEN_SETTINGS -> "Settings"
+            parsedVoice.systemAction == VoiceSystemAction.OPEN_IPTV -> "IPTV"
+            parsedVoice.isActionCommand && filteredApps.size == 1 && filteredChannels.isEmpty() -> filteredApps[0].label
+            parsedVoice.isActionCommand && filteredChannels.size == 1 && filteredApps.isEmpty() -> filteredChannels[0].name
+            totalMatches == 1 && filteredApps.size == 1 -> filteredApps[0].label
+            totalMatches == 1 && filteredChannels.size == 1 -> filteredChannels[0].name
+            else -> null
+        }
+    }
+
+    LaunchedEffect(pendingVoiceTargetLabel, wasVoiceResult, autoLaunchCancelled, isListening) {
+        if (pendingVoiceTargetLabel != null) {
+            delay(950L)
+            if (wasVoiceResult && !autoLaunchCancelled && !isListening) {
+                when {
+                    parsedVoice.systemAction == VoiceSystemAction.OPEN_SETTINGS -> {
+                        onDismiss()
+                        onOpenSettings()
+                    }
+                    parsedVoice.systemAction == VoiceSystemAction.OPEN_IPTV -> {
+                        onDismiss()
+                        onOpenIptv()
+                    }
+                    filteredApps.size == 1 && filteredChannels.isEmpty() -> {
+                        val target = filteredApps[0]
+                        onDismiss()
+                        onSelectApp(target)
+                    }
+                    filteredChannels.size == 1 && filteredApps.isEmpty() -> {
+                        val target = filteredChannels[0]
+                        onDismiss()
+                        onSelectChannel(target)
+                    }
+                }
+            }
+        }
     }
 
     val quickKeys = remember {
@@ -404,14 +553,14 @@ fun UniversalSearchDialog(
                 )
                 .onKeyEvent { keyEvent ->
                     val native = keyEvent.nativeKeyEvent
-                    if (keyEvent.type == KeyEventType.KeyDown) {
-                        val isVoiceKey = native.keyCode == android.view.KeyEvent.KEYCODE_VOICE_ASSIST ||
-                                native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH ||
-                                native.keyCode == android.view.KeyEvent.KEYCODE_ASSIST
-                        if (isVoiceKey) {
+                    val isVoiceKey = native.keyCode == android.view.KeyEvent.KEYCODE_VOICE_ASSIST ||
+                            native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH ||
+                            native.keyCode == android.view.KeyEvent.KEYCODE_ASSIST
+                    if (isVoiceKey) {
+                        if (keyEvent.type == KeyEventType.KeyDown && native.repeatCount == 0) {
                             triggerVoiceSearch()
-                            true
-                        } else false
+                        }
+                        true
                     } else false
                 }
         ) {
@@ -436,6 +585,8 @@ fun UniversalSearchDialog(
                     TvTextField(
                         value = query,
                         onValueChange = {
+                            wasVoiceResult = false
+                            autoLaunchCancelled = true
                             query = it
                             if (isListening) stopVoiceRecognition()
                         },
@@ -452,7 +603,10 @@ fun UniversalSearchDialog(
 
                     // Backspace button
                     TvFocusableCard(
-                        onClick = { if (query.isNotEmpty()) query = query.dropLast(1) },
+                        onClick = {
+                            wasVoiceResult = false
+                            if (query.isNotEmpty()) query = query.dropLast(1)
+                        },
                         modifier = Modifier.size(48.dp)
                     ) { isFocused ->
                         Icon(
@@ -497,6 +651,49 @@ fun UniversalSearchDialog(
                         },
                         modifier = Modifier.padding(top = 12.dp)
                     )
+                }
+
+                // Smart Voice Command Auto-Launch Countdown Banner
+                AnimatedVisibility(
+                    visible = pendingVoiceTargetLabel != null,
+                    enter = fadeIn(tween(180)) + expandVertically(tween(200)),
+                    exit = fadeOut(tween(150)) + shrinkVertically(tween(160))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(TvAccentGold.copy(alpha = 0.16f))
+                            .border(1.dp, TvAccentGold.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.voice_command_opening)}: ${pendingVoiceTargetLabel.orEmpty()}",
+                            color = TvAccentGold,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        TvFocusableCard(
+                            onClick = { autoLaunchCancelled = true },
+                            shape = RoundedCornerShape(10.dp),
+                            cardBackgroundColor = Color.White.copy(alpha = 0.12f)
+                        ) { isFocused ->
+                            Text(
+                                text = stringResource(R.string.action_cancel),
+                                color = if (isFocused) TvAccentGold else TvTextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

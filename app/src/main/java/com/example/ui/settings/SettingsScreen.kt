@@ -44,20 +44,27 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DisplaySettings
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SettingsRemote
 import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VerticalAlignBottom
@@ -114,7 +121,7 @@ import com.example.util.FilePermissionHelper
 import kotlinx.coroutines.delay
 
 enum class SettingsSection {
-    SYSTEM, LAUNCHER, SCREENSAVER, IPTV
+    SYSTEM, LAUNCHER, SCREENSAVER, IPTV, REMOTE_CONTROLS
 }
 
 private data class SystemShortcutItem(
@@ -138,6 +145,7 @@ fun SettingsScreen(
     val isDynamicBg by viewModel.isDynamicBgEnabled.collectAsState()
     val wallpaperMode by viewModel.wallpaperMode.collectAsState()
     val customWallpaperUrl by viewModel.customWallpaperUrl.collectAsState()
+    val headerControlMode by viewModel.headerControlMode.collectAsState()
     val isClock24h by viewModel.isClock24h.collectAsState()
     val isClockSecondsEnabled by viewModel.isClockSecondsEnabled.collectAsState()
     val clockSize by viewModel.clockSize.collectAsState()
@@ -159,6 +167,11 @@ fun SettingsScreen(
     val isCheckingUpdates by viewModel.isCheckingUpdates.collectAsState()
     val glassOpacity by viewModel.glassOpacity.collectAsState()
     val showOnlyTvApps by viewModel.showOnlyTvApps.collectAsState()
+    val useDynamicColor by viewModel.useDynamicColor.collectAsState()
+    val showRecentApps by viewModel.showRecentApps.collectAsState()
+    val customWebBookmarks by viewModel.customWebBookmarks.collectAsState()
+    val autoResumeLastChannel by viewModel.autoResumeLastChannel.collectAsState()
+    val epgUrlOverride by viewModel.epgUrlOverride.collectAsState()
     val appLanguage by viewModel.language.collectAsState()
     val statusMessage by viewModel.statusMessage.collectAsState()
     val screensaverTimeout by viewModel.screensaverTimeout.collectAsState()
@@ -167,15 +180,34 @@ fun SettingsScreen(
     val screensaverVideo by viewModel.screensaverVideo.collectAsState()
     val customScreensaverVideos by viewModel.customScreensaverVideos.collectAsState()
     val deletedScreensaverPresets by viewModel.deletedScreensaverPresets.collectAsState()
+    val slideshowSource by viewModel.slideshowSource.collectAsState()
+    val slideshowFolderUri by viewModel.slideshowFolderUri.collectAsState()
+    val slideshowCustomPhotos by viewModel.slideshowCustomPhotos.collectAsState()
+    val slideshowIntervalSec by viewModel.slideshowIntervalSec.collectAsState()
+    val slideshowMotion by viewModel.slideshowMotion.collectAsState()
+    val slideshowTransition by viewModel.slideshowTransition.collectAsState()
+    val slideshowEffect by viewModel.slideshowEffect.collectAsState()
+    val slideshowClockMode by viewModel.slideshowClockMode.collectAsState()
+    val slideshowMusicMode by viewModel.slideshowMusicMode.collectAsState()
+    val slideshowCustomMusicUri by viewModel.slideshowCustomMusicUri.collectAsState()
+    val slideshowMusicVolume by viewModel.slideshowMusicVolume.collectAsState()
+    val slideshowShuffle by viewModel.slideshowShuffle.collectAsState()
+    val slideshowDimLevel by viewModel.slideshowDimLevel.collectAsState()
     var showPreviewScreensaver by remember { mutableStateOf(false) }
+    var showStorageManagerDialog by remember { mutableStateOf(false) }
+    var showTvFolderPickerDialog by remember { mutableStateOf(false) }
 
     var newPlaylistName by remember { mutableStateOf("") }
     var newPlaylistUrl by remember { mutableStateOf("") }
+    var newBookmarkName by remember { mutableStateOf("") }
+    var newBookmarkUrl by remember { mutableStateOf("") }
+    var epgUrlInput by remember(epgUrlOverride) { mutableStateOf(epgUrlOverride) }
     @Suppress("UNUSED_VARIABLE")
     var customWallpaperInput by remember(customWallpaperUrl) { mutableStateOf(customWallpaperUrl) }
     var customVideoInput by remember { mutableStateOf("") }
 
     var isDefaultLauncher by remember { mutableStateOf(viewModel.isDefaultLauncher(context)) }
+    var isDefaultAssistant by remember { mutableStateOf(viewModel.isDefaultAssistant(context)) }
     var hasFilePermission by remember { mutableStateOf(FilePermissionHelper.hasStoragePermission(context)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -183,6 +215,7 @@ fun SettingsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 isDefaultLauncher = viewModel.isDefaultLauncher(context)
+                isDefaultAssistant = viewModel.isDefaultAssistant(context)
                 hasFilePermission = FilePermissionHelper.hasStoragePermission(context)
             }
         }
@@ -225,6 +258,57 @@ fun SettingsScreen(
         }
     }
 
+    val folderTreePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            viewModel.setSlideshowFolderUri(uri.toString())
+            showTvFolderPickerDialog = false
+        }
+    }
+
+    val slideshowMultiPhotosLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach { uri ->
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
+            }
+            viewModel.addSlideshowCustomPhotos(uris.map { it.toString() })
+        }
+    }
+
+    val slideshowMusicPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            viewModel.setSlideshowCustomMusicUri(uri.toString())
+        }
+    }
+
+    val assistantRoleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        isDefaultAssistant = viewModel.isDefaultAssistant(context)
+    }
+
     fun requestDefaultLauncher() {
         if (Build.VERSION.SDK_INT >= 29) {
             val rm = context.getSystemService(RoleManager::class.java)
@@ -234,6 +318,17 @@ fun SettingsScreen(
             }
         }
         viewModel.promptSetDefaultLauncher(context)
+    }
+
+    fun requestDefaultAssistant() {
+        if (Build.VERSION.SDK_INT >= 29) {
+            val rm = context.getSystemService(RoleManager::class.java)
+            if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_ASSISTANT) && !rm.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+                assistantRoleLauncher.launch(rm.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT))
+                return
+            }
+        }
+        viewModel.promptSetDefaultAssistant(context)
     }
 
     BackHandler {
@@ -251,7 +346,8 @@ fun SettingsScreen(
         Triple(SettingsSection.SYSTEM, stringResource(R.string.settings_category_system), Icons.Default.Settings),
         Triple(SettingsSection.LAUNCHER, stringResource(R.string.settings_category_launcher), Icons.Default.ColorLens),
         Triple(SettingsSection.SCREENSAVER, stringResource(R.string.settings_category_screensaver), Icons.Default.Bedtime),
-        Triple(SettingsSection.IPTV, stringResource(R.string.settings_category_iptv), Icons.Default.LiveTv)
+        Triple(SettingsSection.IPTV, stringResource(R.string.settings_category_iptv), Icons.Default.LiveTv),
+        Triple(SettingsSection.REMOTE_CONTROLS, stringResource(R.string.settings_category_remote), Icons.Default.SettingsRemote)
     )
 
     val activeNav = navItems.first { it.first == currentSection }
@@ -652,6 +748,12 @@ fun SettingsScreen(
                                 title = stringResource(R.string.settings_open_app_info),
                                 desc = stringResource(R.string.settings_open_app_info_desc),
                                 onClick = { viewModel.openAppInfo(context) }
+                            ),
+                            SystemShortcutItem(
+                                icon = Icons.Default.Storage,
+                                title = stringResource(R.string.settings_storage_manager_title),
+                                desc = stringResource(R.string.settings_storage_manager_desc),
+                                onClick = { showStorageManagerDialog = true }
                             )
                         )
 
@@ -675,13 +777,50 @@ fun SettingsScreen(
                                             "ar" to "العربية",
                                             "ar_rtl" to "العربية (RTL)",
                                             "en" to "English",
+                                            "de" to "Deutsch",
                                             "fr" to "Français",
                                             "it" to "Italiano",
+                                            "es" to "Español",
+                                            "pt" to "Português",
                                             "ru" to "Русский",
-                                            "es" to "Español"
+                                            "tr" to "Türkçe",
+                                            "pl" to "Polski",
+                                            "nl" to "Nederlands",
+                                            "el" to "Ελληνικά",
+                                            "id" to "Bahasa Indonesia",
+                                            "vi" to "Tiếng Việt",
+                                            "th" to "ไทย",
+                                            "zh" to "中文",
+                                            "ja" to "日本語",
+                                            "ko" to "한국어",
+                                            "hi" to "हिन्दी",
+                                            "ur" to "اردو (RTL)",
+                                            "fa" to "فارسی (RTL)"
                                         ),
                                         selectedOption = appLanguage,
                                         onOptionSelected = { viewModel.setLanguage(it) }
+                                    )
+                                }
+                            }
+
+                            // Top Bar Settings & Control Center Icon Mode Card
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Settings,
+                                        title = stringResource(R.string.settings_header_control_title),
+                                        subtitle = stringResource(R.string.settings_header_control_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    TvSelectField(
+                                        label = stringResource(R.string.settings_header_control_label),
+                                        options = listOf(
+                                            "control_center" to stringResource(R.string.settings_header_mode_control_center),
+                                            "direct_settings" to stringResource(R.string.settings_header_mode_direct_settings),
+                                            "both" to stringResource(R.string.settings_header_mode_both)
+                                        ),
+                                        selectedOption = headerControlMode,
+                                        onOptionSelected = { viewModel.setHeaderControlMode(it) }
                                     )
                                 }
                             }
@@ -717,6 +856,13 @@ fun SettingsScreen(
                                         onEnable = { requestDefaultLauncher() }
                                     )
                                 }
+                            }
+
+                            item {
+                                VoiceAssistantManagementCard(
+                                    isDefaultAssistant = isDefaultAssistant,
+                                    onEnable = { requestDefaultAssistant() }
+                                )
                             }
 
                             if (!hasFilePermission) {
@@ -843,6 +989,27 @@ fun SettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                             contentPadding = PaddingValues(bottom = 32.dp)
                         ) {
+                            // Top Bar Settings & Control Center Icon Mode Card
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Settings,
+                                        title = stringResource(R.string.settings_header_control_title),
+                                        subtitle = stringResource(R.string.settings_header_control_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    TvSelectField(
+                                        label = stringResource(R.string.settings_header_control_label),
+                                        options = listOf(
+                                            "control_center" to stringResource(R.string.settings_header_mode_control_center),
+                                            "direct_settings" to stringResource(R.string.settings_header_mode_direct_settings),
+                                            "both" to stringResource(R.string.settings_header_mode_both)
+                                        ),
+                                        selectedOption = headerControlMode,
+                                        onOptionSelected = { viewModel.setHeaderControlMode(it) }
+                                    )
+                                }
+                            }
 
                             // Wallpaper Style & Background Selector Card
                             item {
@@ -964,12 +1131,25 @@ fun SettingsScreen(
                                         subtitle = stringResource(R.string.settings_date_settings_desc)
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
+                                    val sampleNow = remember(appLanguage) { java.util.Date() }
+                                    fun withDatePreview(styleKey: String, label: String): Pair<String, String> {
+                                        if (styleKey == "hidden") return styleKey to label
+                                        val preview = com.example.util.LocaleHelper.formatDate(sampleNow, styleKey, appLanguage)
+                                        return styleKey to "$label ($preview)"
+                                    }
                                     TvSelectField(
                                         label = stringResource(R.string.settings_date_format),
                                         options = listOf(
-                                            "full" to stringResource(R.string.settings_date_format_full),
-                                            "medium" to stringResource(R.string.settings_date_format_medium),
-                                            "numeric" to stringResource(R.string.settings_date_format_numeric),
+                                            withDatePreview("full", stringResource(R.string.settings_date_format_full)),
+                                            withDatePreview("full_year", stringResource(R.string.settings_date_format_full_year)),
+                                            withDatePreview("us_full", stringResource(R.string.settings_date_format_us_full)),
+                                            withDatePreview("us_written", stringResource(R.string.settings_date_format_us_written)),
+                                            withDatePreview("us_short", stringResource(R.string.settings_date_format_us_short)),
+                                            withDatePreview("medium", stringResource(R.string.settings_date_format_medium)),
+                                            withDatePreview("numeric_us", stringResource(R.string.settings_date_format_numeric_us)),
+                                            withDatePreview("numeric", stringResource(R.string.settings_date_format_numeric)),
+                                            withDatePreview("numeric_iso", stringResource(R.string.settings_date_format_numeric_iso)),
+                                            withDatePreview("numeric_dots", stringResource(R.string.settings_date_format_numeric_dots)),
                                             "hidden" to stringResource(R.string.settings_date_format_hidden)
                                         ),
                                         selectedOption = dateFormatStyle,
@@ -1122,6 +1302,149 @@ fun SettingsScreen(
                                 }
                             }
 
+                            // Recent Apps Horizontal Strip Toggle
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.History,
+                                        title = stringResource(R.string.settings_recent_apps_title),
+                                        subtitle = stringResource(R.string.settings_recent_apps_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    TvSelectField(
+                                        label = stringResource(R.string.settings_recent_apps_title),
+                                        options = listOf(
+                                            false to stringResource(R.string.settings_seconds_disabled),
+                                            true to stringResource(R.string.settings_seconds_enabled)
+                                        ),
+                                        selectedOption = showRecentApps,
+                                        onOptionSelected = { viewModel.setShowRecentApps(it) }
+                                    )
+                                }
+                            }
+
+                            // Material 3 Dynamic Color Toggle (Android 12+)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.ColorLens,
+                                            title = stringResource(R.string.settings_dynamic_color_title),
+                                            subtitle = stringResource(R.string.settings_dynamic_color_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.settings_dynamic_color_title),
+                                            options = listOf(
+                                                false to stringResource(R.string.settings_seconds_disabled),
+                                                true to stringResource(R.string.settings_seconds_enabled)
+                                            ),
+                                            selectedOption = useDynamicColor,
+                                            onOptionSelected = { viewModel.setUseDynamicColor(it) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Custom Web Bookmarks / Portals
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.Public,
+                                        title = stringResource(R.string.settings_web_bookmarks_title),
+                                        subtitle = stringResource(R.string.settings_web_bookmarks_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TvTextField(
+                                            value = newBookmarkName,
+                                            onValueChange = { newBookmarkName = it },
+                                            placeholder = stringResource(R.string.settings_web_bookmark_name_hint),
+                                            modifier = Modifier.weight(0.9f)
+                                        )
+                                        TvTextField(
+                                            value = newBookmarkUrl,
+                                            onValueChange = { newBookmarkUrl = it },
+                                            placeholder = stringResource(R.string.settings_web_bookmark_url_hint),
+                                            modifier = Modifier.weight(1.4f)
+                                        )
+                                        TvActionButton(
+                                            text = stringResource(R.string.settings_web_bookmark_add),
+                                            icon = Icons.Default.Add,
+                                            onClick = {
+                                                if (newBookmarkName.isNotBlank() && newBookmarkUrl.isNotBlank()) {
+                                                    viewModel.addCustomWebBookmark(newBookmarkName, newBookmarkUrl)
+                                                    newBookmarkName = ""
+                                                    newBookmarkUrl = ""
+                                                }
+                                            },
+                                            baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                            focusedColor = TvAccentGold,
+                                            modifier = Modifier.height(52.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    if (customWebBookmarks.isEmpty()) {
+                                        Text(
+                                            text = stringResource(R.string.settings_web_bookmark_empty),
+                                            color = TvTextSecondary,
+                                            fontSize = 12.5.sp
+                                        )
+                                    } else {
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            customWebBookmarks.forEach { bm ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Color(0xFF0A101F).copy(alpha = 0.7f))
+                                                        .border(
+                                                            width = 1.dp,
+                                                            color = Color.White.copy(alpha = 0.06f),
+                                                            shape = RoundedCornerShape(12.dp)
+                                                        )
+                                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = bm.title,
+                                                            color = TvTextPrimary,
+                                                            fontSize = 14.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                        Text(
+                                                            text = bm.url,
+                                                            color = TvTextSecondary,
+                                                            fontSize = 11.5.sp,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                    TvActionButton(
+                                                        text = stringResource(R.string.action_delete),
+                                                        icon = Icons.Default.Delete,
+                                                        onClick = { viewModel.removeCustomWebBookmark(bm.id) },
+                                                        baseColor = TvAccentRed.copy(alpha = 0.25f),
+                                                        focusedColor = TvAccentRed,
+                                                        modifier = Modifier.height(38.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             // Reset App Order
                             item {
                                 SettingActionTile(
@@ -1250,11 +1573,328 @@ fun SettingsScreen(
                                         options = listOf(
                                             "clock_date" to stringResource(R.string.screensaver_mode_clock),
                                             "wallpaper_info" to stringResource(R.string.screensaver_mode_wallpaper),
+                                            "slideshow" to stringResource(R.string.screensaver_mode_slideshow),
                                             "video_stream" to stringResource(R.string.screensaver_mode_video)
                                         ),
                                         selectedOption = screensaverMode,
                                         onOptionSelected = { viewModel.setScreensaverMode(it) }
                                     )
+                                }
+                            }
+
+                            if (screensaverMode == "wallpaper_info") {
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.AutoAwesome,
+                                            title = stringResource(R.string.slideshow_effects_title),
+                                            subtitle = stringResource(R.string.slideshow_effects_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_effect_label),
+                                            options = listOf(
+                                                "snow" to stringResource(R.string.slideshow_effect_snow),
+                                                "fireflies" to stringResource(R.string.slideshow_effect_fireflies),
+                                                "rain" to stringResource(R.string.slideshow_effect_rain),
+                                                "autumn" to stringResource(R.string.slideshow_effect_autumn),
+                                                "sakura" to stringResource(R.string.slideshow_effect_sakura),
+                                                "stars" to stringResource(R.string.slideshow_effect_stars),
+                                                "bokeh" to stringResource(R.string.slideshow_effect_bokeh),
+                                                "none" to stringResource(R.string.slideshow_effect_none)
+                                            ),
+                                            selectedOption = slideshowEffect,
+                                            onOptionSelected = { viewModel.setSlideshowEffect(it) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (screensaverMode == "slideshow") {
+                                // 1. Photo Source & Folder Selection Card
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.PhotoLibrary,
+                                            title = stringResource(R.string.slideshow_source_title),
+                                            subtitle = stringResource(R.string.slideshow_source_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_source_title),
+                                            options = listOf(
+                                                "folder" to stringResource(R.string.slideshow_source_folder),
+                                                "custom_photos" to stringResource(R.string.slideshow_source_custom_photos),
+                                                "online_all" to stringResource(R.string.slideshow_source_online_all),
+                                                "online_nature" to stringResource(R.string.slideshow_source_online_nature),
+                                                "online_space" to stringResource(R.string.slideshow_source_online_space),
+                                                "online_cities" to stringResource(R.string.slideshow_source_online_cities)
+                                            ),
+                                            selectedOption = slideshowSource,
+                                            onOptionSelected = { viewModel.setSlideshowSource(it) }
+                                        )
+
+                                        if (slideshowSource == "folder") {
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            val folderDisplay = remember(slideshowFolderUri) {
+                                                com.example.ui.home.formatSlideshowFolderDisplay(slideshowFolderUri)
+                                            }
+                                            val detectedPhotoCount = remember(slideshowFolderUri) {
+                                                com.example.ui.home.loadSlideshowFolderImages(context, slideshowFolderUri).size
+                                            }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = if (folderDisplay.isNotBlank()) {
+                                                            "$folderDisplay ($detectedPhotoCount)"
+                                                        } else {
+                                                            stringResource(R.string.slideshow_no_folder_selected)
+                                                        },
+                                                        color = if (folderDisplay.isNotBlank()) TvAccentGoldRadiant else TvTextSecondary,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                TvActionButton(
+                                                    text = stringResource(R.string.slideshow_select_folder_btn),
+                                                    icon = Icons.Default.FolderOpen,
+                                                    onClick = { showTvFolderPickerDialog = true },
+                                                    baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                                    focusedColor = TvAccentGold
+                                                )
+                                            }
+                                        }
+
+                                        if (slideshowSource == "custom_photos") {
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "${slideshowCustomPhotos.size} ${stringResource(R.string.slideshow_source_custom_photos)}",
+                                                    color = TvAccentGoldRadiant,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    TvActionButton(
+                                                        text = stringResource(R.string.slideshow_pick_photos_btn),
+                                                        icon = Icons.Default.Add,
+                                                        onClick = {
+                                                            try {
+                                                                slideshowMultiPhotosLauncher.launch("image/*")
+                                                            } catch (_: Exception) {}
+                                                        },
+                                                        baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                                        focusedColor = TvAccentGold
+                                                    )
+                                                    if (slideshowCustomPhotos.isNotEmpty()) {
+                                                        TvActionButton(
+                                                            text = stringResource(R.string.action_delete),
+                                                            icon = Icons.Default.Delete,
+                                                            onClick = { viewModel.clearSlideshowCustomPhotos() },
+                                                            baseColor = TvAccentRed.copy(alpha = 0.3f),
+                                                            focusedColor = TvAccentRed
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_order_label),
+                                            options = listOf(
+                                                true to stringResource(R.string.slideshow_order_shuffle),
+                                                false to stringResource(R.string.slideshow_order_sequential)
+                                            ),
+                                            selectedOption = slideshowShuffle,
+                                            onOptionSelected = { viewModel.setSlideshowShuffle(it) }
+                                        )
+                                    }
+                                }
+
+                                // 2. Slide Duration, Motion & Entry Transition Card
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.Timer,
+                                            title = stringResource(R.string.slideshow_display_title),
+                                            subtitle = stringResource(R.string.slideshow_display_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_interval_label),
+                                            options = listOf(
+                                                5 to stringResource(R.string.slideshow_interval_5s),
+                                                10 to stringResource(R.string.slideshow_interval_10s),
+                                                15 to stringResource(R.string.slideshow_interval_15s),
+                                                30 to stringResource(R.string.slideshow_interval_30s),
+                                                60 to stringResource(R.string.slideshow_interval_1m),
+                                                120 to stringResource(R.string.slideshow_interval_2m),
+                                                300 to stringResource(R.string.slideshow_interval_5m)
+                                            ),
+                                            selectedOption = slideshowIntervalSec,
+                                            onOptionSelected = { viewModel.setSlideshowIntervalSec(it) }
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_motion_label),
+                                            options = listOf(
+                                                "ken_burns" to stringResource(R.string.slideshow_motion_ken_burns),
+                                                "gentle_zoom" to stringResource(R.string.slideshow_motion_gentle_zoom),
+                                                "static" to stringResource(R.string.slideshow_motion_static)
+                                            ),
+                                            selectedOption = slideshowMotion,
+                                            onOptionSelected = { viewModel.setSlideshowMotion(it) }
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_transition_label),
+                                            options = listOf(
+                                                "crossfade" to stringResource(R.string.slideshow_transition_crossfade),
+                                                "slide" to stringResource(R.string.slideshow_transition_slide),
+                                                "zoom_fade" to stringResource(R.string.slideshow_transition_zoom_fade),
+                                                "blur_reveal" to stringResource(R.string.slideshow_transition_blur_reveal),
+                                                "flip_3d" to stringResource(R.string.slideshow_transition_flip_3d),
+                                                "random" to stringResource(R.string.slideshow_transition_random)
+                                            ),
+                                            selectedOption = slideshowTransition,
+                                            onOptionSelected = { viewModel.setSlideshowTransition(it) }
+                                        )
+                                    }
+                                }
+
+                                // 3. Atmospheric Visual Effects, Clock & Night Dimming Card
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.AutoAwesome,
+                                            title = stringResource(R.string.slideshow_effects_title),
+                                            subtitle = stringResource(R.string.slideshow_effects_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_effect_label),
+                                            options = listOf(
+                                                "snow" to stringResource(R.string.slideshow_effect_snow),
+                                                "fireflies" to stringResource(R.string.slideshow_effect_fireflies),
+                                                "rain" to stringResource(R.string.slideshow_effect_rain),
+                                                "autumn" to stringResource(R.string.slideshow_effect_autumn),
+                                                "sakura" to stringResource(R.string.slideshow_effect_sakura),
+                                                "stars" to stringResource(R.string.slideshow_effect_stars),
+                                                "bokeh" to stringResource(R.string.slideshow_effect_bokeh),
+                                                "none" to stringResource(R.string.slideshow_effect_none)
+                                            ),
+                                            selectedOption = slideshowEffect,
+                                            onOptionSelected = { viewModel.setSlideshowEffect(it) }
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_clock_label),
+                                            options = listOf(
+                                                "corner_full" to stringResource(R.string.slideshow_clock_corner_full),
+                                                "minimal" to stringResource(R.string.slideshow_clock_minimal),
+                                                "hidden" to stringResource(R.string.slideshow_clock_hidden)
+                                            ),
+                                            selectedOption = slideshowClockMode,
+                                            onOptionSelected = { viewModel.setSlideshowClockMode(it) }
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_dim_label),
+                                            options = listOf(
+                                                0 to "0%",
+                                                20 to "20%",
+                                                35 to "35%",
+                                                50 to "50%"
+                                            ),
+                                            selectedOption = slideshowDimLevel,
+                                            onOptionSelected = { viewModel.setSlideshowDimLevel(it) }
+                                        )
+                                    }
+                                }
+
+                                // 4. Background Ambient Music Card
+                                item {
+                                    SettingsGlassCard {
+                                        SettingsCardHeader(
+                                            icon = Icons.Default.MusicNote,
+                                            title = stringResource(R.string.slideshow_music_title),
+                                            subtitle = stringResource(R.string.slideshow_music_desc)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        TvSelectField(
+                                            label = stringResource(R.string.slideshow_music_label),
+                                            options = listOf(
+                                                "off" to stringResource(R.string.slideshow_music_off),
+                                                "lofi_chill" to stringResource(R.string.slideshow_music_lofi),
+                                                "nature_rain" to stringResource(R.string.slideshow_music_nature),
+                                                "ambient_space" to stringResource(R.string.slideshow_music_space),
+                                                "oriental_cafe" to stringResource(R.string.slideshow_music_oriental),
+                                                "custom_file" to stringResource(R.string.slideshow_music_custom)
+                                            ),
+                                            selectedOption = slideshowMusicMode,
+                                            onOptionSelected = { viewModel.setSlideshowMusicMode(it) }
+                                        )
+
+                                        if (slideshowMusicMode == "custom_file") {
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = slideshowCustomMusicUri.ifBlank {
+                                                        stringResource(R.string.slideshow_music_custom)
+                                                    },
+                                                    color = if (slideshowCustomMusicUri.isNotBlank()) TvAccentGoldRadiant else TvTextSecondary,
+                                                    fontSize = 12.5.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                TvActionButton(
+                                                    text = stringResource(R.string.slideshow_music_pick_btn),
+                                                    icon = Icons.Default.MusicNote,
+                                                    onClick = {
+                                                        try {
+                                                            slideshowMusicPickerLauncher.launch("audio/*")
+                                                        } catch (_: Exception) {}
+                                                    },
+                                                    baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                                    focusedColor = TvAccentGold
+                                                )
+                                            }
+                                        }
+
+                                        if (slideshowMusicMode != "off") {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            TvSelectField(
+                                                label = stringResource(R.string.slideshow_music_volume_label),
+                                                options = listOf(
+                                                    25 to "25%",
+                                                    50 to "50%",
+                                                    75 to "75%",
+                                                    100 to "100%"
+                                                ),
+                                                selectedOption = slideshowMusicVolume,
+                                                onOptionSelected = { viewModel.setSlideshowMusicVolume(it) }
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -1888,6 +2528,71 @@ fun SettingsScreen(
                                 }
                             }
 
+                            // 2b. IPTV Auto-Resume & EPG Program Guide Settings
+                            item {
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.PlayArrow,
+                                        title = stringResource(R.string.settings_iptv_auto_resume_title),
+                                        subtitle = stringResource(R.string.settings_iptv_auto_resume_desc)
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    TvSelectField(
+                                        label = stringResource(R.string.settings_iptv_auto_resume_title),
+                                        options = listOf(
+                                            false to stringResource(R.string.settings_seconds_disabled),
+                                            true to stringResource(R.string.settings_seconds_enabled)
+                                        ),
+                                        selectedOption = autoResumeLastChannel,
+                                        onOptionSelected = { viewModel.setAutoResumeLastChannel(it) }
+                                    )
+                                }
+                            }
+
+                            item {
+                                val detectedEpgUrl = activeIptvPlaylist?.epgUrl.orEmpty()
+                                SettingsGlassCard {
+                                    SettingsCardHeader(
+                                        icon = Icons.Default.CalendarMonth,
+                                        title = stringResource(R.string.settings_iptv_epg_title),
+                                        subtitle = if (detectedEpgUrl.isNotBlank()) {
+                                            "${stringResource(R.string.settings_iptv_epg_desc)} ($detectedEpgUrl)"
+                                        } else {
+                                            stringResource(R.string.settings_iptv_epg_desc)
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TvTextField(
+                                            value = epgUrlInput,
+                                            onValueChange = { epgUrlInput = it },
+                                            placeholder = stringResource(R.string.settings_iptv_epg_hint),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TvActionButton(
+                                            text = stringResource(R.string.settings_iptv_epg_save),
+                                            icon = Icons.Default.Check,
+                                            onClick = { viewModel.setEpgUrlOverride(epgUrlInput) },
+                                            baseColor = TvAccentGold.copy(alpha = 0.88f),
+                                            focusedColor = TvAccentGold,
+                                            modifier = Modifier.height(52.dp)
+                                        )
+                                        TvActionButton(
+                                            text = stringResource(R.string.settings_iptv_epg_reload),
+                                            icon = Icons.Default.Refresh,
+                                            onClick = { viewModel.refreshEpg() },
+                                            baseColor = Color(0xFF23304A),
+                                            focusedColor = TvAccentGold,
+                                            modifier = Modifier.height(52.dp)
+                                        )
+                                    }
+                                }
+                            }
+
                             // 3. Saved IPTV Playlists Header with Delete All Option
                             item {
                                 Row(
@@ -2083,6 +2788,10 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    SettingsSection.REMOTE_CONTROLS -> {
+                        RemoteGuideSection()
+                    }
                 }
             }
         }
@@ -2096,6 +2805,27 @@ fun SettingsScreen(
                 wallpaperMode = if (screensaverWallpaper == "current") wallpaperMode else "custom",
                 customWallpaperUrl = if (screensaverWallpaper == "current") customWallpaperUrl else screensaverWallpaper,
                 onDismiss = { showPreviewScreensaver = false }
+            )
+        }
+
+        if (showStorageManagerDialog) {
+            AppStorageManagerDialog(
+                onDismiss = { showStorageManagerDialog = false }
+            )
+        }
+
+        if (showTvFolderPickerDialog) {
+            com.example.ui.home.TvFolderPickerDialog(
+                currentFolderUri = slideshowFolderUri,
+                onFolderSelected = { pathOrUri ->
+                    viewModel.setSlideshowFolderUri(pathOrUri)
+                },
+                onLaunchSystemPicker = {
+                    try {
+                        folderTreePickerLauncher.launch(null)
+                    } catch (_: Exception) {}
+                },
+                onDismiss = { showTvFolderPickerDialog = false }
             )
         }
     }

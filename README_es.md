@@ -1,4 +1,4 @@
-[English](README.md) | [العربية](README_ar.md) | [Français](README_fr.md) | [Italiano](README_it.md) | [Русский](README_ru.md) | **Español**
+[English](README.md) | [العربية](README_ar.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [Italiano](README_it.md) | [Русский](README_ru.md) | **Español** | [Português](README_pt.md) | [Türkçe](README_tr.md) | [Polski](README_pl.md) | [Nederlands](README_nl.md) | [Ελληνικά](README_el.md) | [Bahasa Indonesia](README_id.md) | [Tiếng Việt](README_vi.md) | [ไทย](README_th.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [हिन्दी](README_hi.md) | [اردو](README_ur.md) | [فارسی](README_fa.md)
 
 <div align="center">
 
@@ -50,14 +50,16 @@ La mayoría de los lanzadores de Smart TV actuales están llenos de anuncios for
   * **Reloj y fecha**: Hora brillante central con protección contra quemado de panel.
   * **Fondo 4K con información en esquina**: Gradiente a 45° que resalta la hora, fecha y saludo de forma elegante.
   * **Vídeo cinemático a pantalla completa**: Chimeneas cálidas, cabañas nevadas o cascadas en bucle continuo sin botones ni ventanas molestas.
+  * **Presentación de fotos (`Slideshow`)**: Muestra fotos desde una carpeta de tu dispositivo/USB, fotos seleccionadas o galerías 4K con duración ajustable (`5s` a `5m`), movimiento **Ken Burns / Zoom suave / Estático**, 6 transiciones de entrada, efectos atmosféricos (**Nieve ❄️**, **Luciérnagas ✨**, **Lluvia 🌧️**, **Hojas de otoño 🍂**, **Sakura 🌸**, **Estrellas ⭐**, **Bokeh 🔮**), reloj en esquina y música ambiental o MP3 personalizado.
 
 ### 🕒 Personalización completa de reloj, fecha y saludo
-* **Soporte multilingüe (6 idiomas)**: Traducción completa al **Español**, **Árabe (Fuente Cairo)**, **Inglés**, **Francés**, **Italiano** y **Ruso**.
+* **Soporte multilingüe (21 idiomas)**: Traducción completa al **Español**, **Árabe (Fuente Cairo)**, **Inglés**, **Alemán**, **Francés**, **Italiano**, **Ruso**, **Portugués**, **Turco**, **Polaco**, **Neerlandés**, **Griego**, **Indonesio**, **Vietnamita**, **Tailandés**, **Chino**, **Japonés**, **Coreano**, **Hindi**, **Urdu** y **Persa**.
 * **Opciones de reloj**: Formato 12h / 24h, visualización opcional de segundos y 3 tamaños (Compacto, Mediano, Grande).
-* **Estilos de fecha**: Fecha completa con día, Fecha media, Fecha numérica (`DD/MM/AAAA`) o modo oculto.
+* **Formatos de fecha de EE. UU. e internacionales**: Numérico de EE. UU. (`MM/dd/yyyy`), Largo de EE. UU. (`MMMM d, yyyy`), Completo de EE. UU. (`EEEE, MMMM d, yyyy`), Compacto (`EEE, MMM d`), Internacional (`dd/MM/yyyy`), ISO (`yyyy-MM-dd`), Europeo (`dd.MM.yyyy`), Completo o modo oculto.
 * **Estilos de saludo**: Saludos poéticos por hora, cálidos, breves, texto personalizado propio o desactivado.
 
 ### 🎛️ Personalización del diseño y pantalla de inicio
+* **Modo de icono superior (Centro de control / Ajustes directos / Ambos)**: Elige mostrar el icono del Centro de control rápido, omitir el Centro de control e ir directamente a Ajustes, o mostrar ambos iconos juntos en la pantalla de inicio.
 * **Foco predeterminado en Ajustes**: Al iniciar, el cursor se ubica directamente sobre el icono de Ajustes para una configuración ágil.
 * **Desplazamiento vertical de aplicaciones hacia abajo**: Ajuste para bajar las filas de apps (de 180dp a 380dp) para lucir los fondos 4K y la iluminación.
 * **Densidad de cuadrícula**: Elección entre 4, 5, 6 o 7 aplicaciones por fila.
@@ -92,7 +94,8 @@ adb install -r aura-tv-launcher.apk
 | :--- | :--- |
 | **Flechas del D-Pad** | Navegación de alta velocidad fluida entre apps, canales y ajustes. |
 | **Botón OK / Centro** | Abre la aplicación o reproduce el canal seleccionado. |
-| **Pulsación larga en OK o tecla Menú** | Abre las opciones (Mover, Bloquear con PIN, Ocultar). |
+| **Pulsación larga en OK o tecla Menú (`☰` Tres líneas)** | Abre las opciones de app/canal (Mover, Bloquear con PIN, Ocultar) o salta directamente a las aplicaciones desde la barra superior. |
+| **Botón de Voz / Google Assistant (`🎤`)** | Abre la búsqueda por voz integrada para encontrar aplicaciones o canales IPTV. |
 | **Botón Atrás (Back)** | Vuelve a la pantalla anterior o a la principal de forma segura. |
 
 ---

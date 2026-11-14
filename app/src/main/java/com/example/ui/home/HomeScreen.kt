@@ -110,6 +110,8 @@ import com.example.ui.theme.TvTextSecondary
 fun HomeScreen(
     viewModel: HomeViewModel,
     voiceSearchTriggerTick: Int = 0,
+    consumedVoiceSearchTick: Int = 0,
+    onVoiceSearchConsumed: () -> Unit = {},
     userActivityFlow: kotlinx.coroutines.flow.SharedFlow<Long>? = null,
     isPlaybackActive: Boolean = false,
     onOpenIptv: (channelId: Long?) -> Unit,
@@ -120,6 +122,7 @@ fun HomeScreen(
     onOpenEasyGames: () -> Unit,
     onOpenAuraStore: () -> Unit,
     onOpenMiniDownloader: () -> Unit,
+    onOpenWebBookmark: (title: String, url: String) -> Unit = { _, _ -> },
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
@@ -132,6 +135,7 @@ fun HomeScreen(
     val isDynamicBg by viewModel.isDynamicBgEnabled.collectAsState()
     val wallpaperMode by viewModel.wallpaperMode.collectAsState()
     val customWallpaperUrl by viewModel.customWallpaperUrl.collectAsState()
+    val headerControlMode by viewModel.headerControlMode.collectAsState()
     val isClock24h by viewModel.isClock24h.collectAsState()
     val isClockSecondsEnabled by viewModel.isClockSecondsEnabled.collectAsState()
     val clockSize by viewModel.clockSize.collectAsState()
@@ -153,6 +157,8 @@ fun HomeScreen(
     val screensaverMode by viewModel.screensaverMode.collectAsState()
     val screensaverWallpaper by viewModel.screensaverWallpaper.collectAsState()
     val screensaverVideo by viewModel.screensaverVideo.collectAsState()
+    val showRecentApps by viewModel.showRecentApps.collectAsState()
+    val recentApps by viewModel.recentApps.collectAsState()
 
     var showUniversalSearch by rememberSaveable { mutableStateOf(false) }
     var autoStartVoiceInSearch by rememberSaveable { mutableStateOf(false) }
@@ -204,8 +210,15 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(voiceSearchTriggerTick) {
-        if (voiceSearchTriggerTick > 0) {
+    LaunchedEffect(voiceSearchTriggerTick, consumedVoiceSearchTick) {
+        if (voiceSearchTriggerTick > consumedVoiceSearchTick) {
+            onVoiceSearchConsumed()
+            showAmbientMode = false
+            showControlCenter = false
+            viewModel.dismissAppMenu()
+            viewModel.dismissChannelMenu()
+            pendingLockedAppForLaunch = null
+            pendingLockedAppForToggle = null
             autoStartVoiceInSearch = true
             localVoiceTick++
             showUniversalSearch = true
@@ -213,14 +226,16 @@ fun HomeScreen(
     }
 
     fun executeAppOpen(app: AppItem) {
-        when (app.packageName) {
-            "com.minidownloader.portal" -> onOpenMiniDownloader()
-            "com.aurastore.portal" -> onOpenAuraStore()
-            "com.miniyube.portal" -> onOpenYouTube()
-            "com.crazygames.portal" -> onOpenCrazyGames()
-            "com.poki.portal" -> onOpenPoki()
-            "com.playhop.portal" -> onOpenPlayhop()
-            "com.easygames.portal" -> onOpenEasyGames()
+        viewModel.recordAppLaunch(app)
+        when {
+            app.bookmarkUrl != null -> onOpenWebBookmark(app.label, app.bookmarkUrl)
+            app.packageName == "com.minidownloader.portal" -> onOpenMiniDownloader()
+            app.packageName == "com.aurastore.portal" -> onOpenAuraStore()
+            app.packageName == "com.miniyube.portal" -> onOpenYouTube()
+            app.packageName == "com.crazygames.portal" -> onOpenCrazyGames()
+            app.packageName == "com.poki.portal" -> onOpenPoki()
+            app.packageName == "com.playhop.portal" -> onOpenPlayhop()
+            app.packageName == "com.easygames.portal" -> onOpenEasyGames()
             else -> viewModel.launchApp(app)
         }
     }
@@ -580,7 +595,11 @@ fun HomeScreen(
                     val native = keyEvent.nativeKeyEvent
                     if (native.keyCode == android.view.KeyEvent.KEYCODE_SETTINGS) {
                         if (native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0) {
-                            showControlCenter = true
+                            if (headerControlMode == "direct_settings") {
+                                onOpenSettings()
+                            } else {
+                                showControlCenter = true
+                            }
                         }
                         return@onKeyEvent true
                     } else if (com.example.ui.common.isRemoteMenuKey(native.keyCode)) {
@@ -588,8 +607,15 @@ fun HomeScreen(
                             focusFirstContentItem()
                         }
                         return@onKeyEvent true
-                    } else if (native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH) {
+                    } else if (native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH ||
+                        native.keyCode == android.view.KeyEvent.KEYCODE_ASSIST ||
+                        native.keyCode == android.view.KeyEvent.KEYCODE_VOICE_ASSIST
+                    ) {
                         if (native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0) {
+                            showAmbientMode = false
+                            showControlCenter = false
+                            autoStartVoiceInSearch = true
+                            localVoiceTick++
                             showUniversalSearch = true
                         }
                         return@onKeyEvent true
@@ -670,6 +696,38 @@ fun HomeScreen(
                                                     topBarFocusRequester.requestFocus()
                                                 } catch (_: Exception) {}
                                             }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (showRecentApps && recentApps.isNotEmpty() && reorderState == null) {
+                        item(key = "recent_apps_section") {
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.History, null, tint = TvAccentGold, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.home_recent_apps), color = TvTextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 48.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    itemsIndexed(recentApps, key = { _, app -> "recent_${app.packageName}" }) { _, app ->
+                                        AppItemCard(
+                                            app = app,
+                                            isHighlighted = false,
+                                            opacityPercent = glassOpacity,
+                                            modifier = Modifier.width((cardHeight.coerceAtLeast(100.dp)) * 1.77f),
+                                            onClick = { handleAppLaunchRequest(app) },
+                                            onLongClick = { viewModel.showAppMenu(app) },
+                                            onFocused = { viewModel.onAppFocused(app) }
                                         )
                                     }
                                 }
@@ -860,6 +918,7 @@ fun HomeScreen(
                         pendingLockedAppForToggle = app
                     },
                     onHide = { viewModel.hideApp(app) },
+                    onDeleteBookmark = { viewModel.deleteWebBookmark(app) },
                     onInfo = { viewModel.openAppInfo(context, app) },
                     onUninstall = { viewModel.uninstallApp(context, app) }
                 )
@@ -916,6 +975,8 @@ fun HomeScreen(
                     voiceTriggerTick = localVoiceTick,
                     onSelectApp = { app -> handleAppLaunchRequest(app) },
                     onSelectChannel = { ch -> onOpenIptv(ch.id) },
+                    onOpenSettings = onOpenSettings,
+                    onOpenIptv = { onOpenIptv(null) },
                     onDismiss = {
                         showUniversalSearch = false
                         autoStartVoiceInSearch = false
@@ -1084,6 +1145,7 @@ fun AppItemCard(
         scaleUpRatio = 1.07f,
         elevation = 8.dp,
         useDefaultBorder = false,
+        focusBorderColor = app.auroraColors?.glow ?: TvAccentGold,
         modifier = modifier
             .aspectRatio(1.77f)
             .onKeyEvent { keyEvent ->
@@ -1178,7 +1240,7 @@ fun AppItemCard(
                                 )
                         )
 
-                        // Centered sharp icon and application label
+                        // Centered sharp icon (or Globe for Web Bookmarks) and application label
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
@@ -1186,7 +1248,16 @@ fun AppItemCard(
                                 .fillMaxSize()
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
-                            if (iconImageBitmap != null) {
+                            if (app.bookmarkUrl != null) {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = app.label,
+                                    tint = Color(0xFF38BDF8),
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .padding(bottom = 4.dp)
+                                )
+                            } else if (iconImageBitmap != null) {
                                 Image(
                                     bitmap = iconImageBitmap,
                                     contentDescription = app.label,

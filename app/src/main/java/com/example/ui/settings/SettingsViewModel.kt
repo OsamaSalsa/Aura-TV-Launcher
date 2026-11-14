@@ -15,10 +15,12 @@ import com.example.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppRepository
+import com.example.data.EpgManager
 import com.example.data.IptvRepository
 import com.example.data.local.LauncherPreferences
 import com.example.data.model.AppItem
 import com.example.data.model.IptvPlaylist
+import com.example.data.model.WebBookmark
 import com.example.data.update.AppUpdateInfo
 import com.example.data.update.AppUpdateManager
 import com.example.data.update.UpdateCheckResult
@@ -49,6 +51,81 @@ class SettingsViewModel(
 
     val isDynamicBgEnabled: StateFlow<Boolean> = preferences.isDynamicBackgroundEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val useDynamicColor: StateFlow<Boolean> = preferences.useDynamicColorFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setUseDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setUseDynamicColor(enabled)
+        }
+    }
+
+    val showRecentApps: StateFlow<Boolean> = preferences.showRecentAppsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setShowRecentApps(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setShowRecentApps(enabled)
+        }
+    }
+
+    val customWebBookmarks: StateFlow<List<WebBookmark>> = preferences.customWebBookmarksFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun addCustomWebBookmark(title: String, url: String) {
+        if (title.isBlank() || url.isBlank()) return
+        viewModelScope.launch {
+            preferences.addCustomWebBookmark(title, url)
+            appRepository.triggerReload()
+            _statusMessage.value = StatusUiText.Resource(R.string.status_bookmark_added)
+        }
+    }
+
+    fun removeCustomWebBookmark(id: String) {
+        viewModelScope.launch {
+            preferences.removeCustomWebBookmark(id)
+            appRepository.triggerReload()
+            _statusMessage.value = StatusUiText.Resource(R.string.status_bookmark_removed)
+        }
+    }
+
+    val autoResumeLastChannel: StateFlow<Boolean> = preferences.autoResumeLastChannelFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setAutoResumeLastChannel(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setAutoResumeLastChannel(enabled)
+        }
+    }
+
+    val epgUrlOverride: StateFlow<String> = preferences.epgUrlOverrideFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setEpgUrlOverride(url: String) {
+        viewModelScope.launch {
+            val trimmed = url.trim()
+            preferences.setEpgUrlOverride(trimmed)
+            val targetUrl = trimmed.ifBlank { activeIptvPlaylist.value?.epgUrl.orEmpty() }
+            if (targetUrl.isNotBlank()) {
+                EpgManager.loadEpgIfNeeded(targetUrl, force = true)
+            }
+            _statusMessage.value = StatusUiText.Resource(R.string.status_epg_refreshed)
+        }
+    }
+
+    fun refreshEpg() {
+        viewModelScope.launch {
+            val targetUrl = epgUrlOverride.value.ifBlank { activeIptvPlaylist.value?.epgUrl.orEmpty() }
+            if (targetUrl.isNotBlank()) {
+                val res = EpgManager.loadEpgIfNeeded(targetUrl, force = true)
+                _statusMessage.value = res.fold(
+                    onSuccess = { StatusUiText.Resource(R.string.status_epg_refreshed) },
+                    onFailure = { err -> StatusUiText.DynamicString("EPG: ${err.message}") }
+                )
+            }
+        }
+    }
 
     val isClock24h: StateFlow<Boolean> = preferences.isClock24h
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -111,10 +188,19 @@ class SettingsViewModel(
     }
 
     val wallpaperMode: StateFlow<String> = preferences.wallpaperModeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "custom")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "dynamic")
 
     val customWallpaperUrl: StateFlow<String> = preferences.customWallpaperUrlFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "https://images.unsplash.com/photo-1543946207-39bd91e70ca7?w=1920&q=80")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    val headerControlMode: StateFlow<String> = preferences.headerControlModeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "control_center")
+
+    fun setHeaderControlMode(mode: String) {
+        viewModelScope.launch {
+            preferences.setHeaderControlMode(mode)
+        }
+    }
 
     val iptvUrl: StateFlow<String> = preferences.iptvPlaylistUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -250,6 +336,139 @@ class SettingsViewModel(
         viewModelScope.launch {
             preferences.restoreDefaultScreensaverVideos()
             _statusMessage.value = StatusUiText.Resource(R.string.status_screensaver_videos_restored)
+        }
+    }
+
+    // --- Photo Slideshow Screensaver State & Actions ---
+
+    val slideshowSource: StateFlow<String> = preferences.slideshowSourceFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "online_all")
+
+    fun setSlideshowSource(source: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowSource(source)
+        }
+    }
+
+    val slideshowFolderUri: StateFlow<String> = preferences.slideshowFolderUriFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setSlideshowFolderUri(uri: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowFolderUri(uri)
+            if (uri.isNotBlank()) {
+                preferences.setSlideshowSource("folder")
+            }
+        }
+    }
+
+    val slideshowCustomPhotos: StateFlow<Set<String>> = preferences.slideshowCustomPhotosFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun addSlideshowCustomPhotos(uris: Collection<String>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            preferences.addSlideshowCustomPhotos(uris)
+            preferences.setSlideshowSource("custom_photos")
+        }
+    }
+
+    fun clearSlideshowCustomPhotos() {
+        viewModelScope.launch {
+            preferences.clearSlideshowCustomPhotos()
+        }
+    }
+
+    val slideshowIntervalSec: StateFlow<Int> = preferences.slideshowIntervalSecFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10)
+
+    fun setSlideshowIntervalSec(seconds: Int) {
+        viewModelScope.launch {
+            preferences.setSlideshowIntervalSec(seconds)
+        }
+    }
+
+    val slideshowMotion: StateFlow<String> = preferences.slideshowMotionFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "ken_burns")
+
+    fun setSlideshowMotion(motion: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowMotion(motion)
+        }
+    }
+
+    val slideshowTransition: StateFlow<String> = preferences.slideshowTransitionFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "crossfade")
+
+    fun setSlideshowTransition(transition: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowTransition(transition)
+        }
+    }
+
+    val slideshowEffect: StateFlow<String> = preferences.slideshowEffectFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "snow")
+
+    fun setSlideshowEffect(effect: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowEffect(effect)
+        }
+    }
+
+    val slideshowClockMode: StateFlow<String> = preferences.slideshowClockModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "corner_full")
+
+    fun setSlideshowClockMode(mode: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowClockMode(mode)
+        }
+    }
+
+    val slideshowMusicMode: StateFlow<String> = preferences.slideshowMusicModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "off")
+
+    fun setSlideshowMusicMode(mode: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowMusicMode(mode)
+        }
+    }
+
+    val slideshowCustomMusicUri: StateFlow<String> = preferences.slideshowCustomMusicUriFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setSlideshowCustomMusicUri(uri: String) {
+        viewModelScope.launch {
+            preferences.setSlideshowCustomMusicUri(uri)
+            if (uri.isNotBlank()) {
+                preferences.setSlideshowMusicMode("custom_file")
+            }
+        }
+    }
+
+    val slideshowMusicVolume: StateFlow<Int> = preferences.slideshowMusicVolumeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 50)
+
+    fun setSlideshowMusicVolume(percent: Int) {
+        viewModelScope.launch {
+            preferences.setSlideshowMusicVolume(percent)
+        }
+    }
+
+    val slideshowShuffle: StateFlow<Boolean> = preferences.slideshowShuffleFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setSlideshowShuffle(shuffle: Boolean) {
+        viewModelScope.launch {
+            preferences.setSlideshowShuffle(shuffle)
+        }
+    }
+
+    val slideshowDimLevel: StateFlow<Int> = preferences.slideshowDimLevelFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
+
+    fun setSlideshowDimLevel(percent: Int) {
+        viewModelScope.launch {
+            preferences.setSlideshowDimLevel(percent)
         }
     }
 
@@ -618,5 +837,63 @@ class SettingsViewModel(
         } catch (_: Exception) {
             launchSystemSetting(context, Settings.ACTION_APPLICATION_SETTINGS)
         }
+    }
+
+    fun isDefaultAssistant(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val rm = context.getSystemService(Context.ROLE_SERVICE) as? RoleManager
+                if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                    if (rm.isRoleHeld(RoleManager.ROLE_ASSISTANT)) return true
+                }
+            } catch (_: Exception) {}
+        }
+        return try {
+            val currentAssistant = Settings.Secure.getString(context.contentResolver, "assistant")
+            currentAssistant?.startsWith("${context.packageName}/") == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun promptSetDefaultAssistant(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val roleManager = context.getSystemService(Context.ROLE_SERVICE) as? RoleManager
+                if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                    if (!roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+                        val roleIntent = roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(roleIntent)
+                        _statusMessage.value = StatusUiText.Resource(R.string.status_select_default_assistant)
+                        return
+                    } else {
+                        _statusMessage.value = StatusUiText.Resource(R.string.status_already_default_assistant)
+                        return
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        try {
+            val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            _statusMessage.value = StatusUiText.Resource(R.string.status_opening_assistant_settings)
+            return
+        } catch (_: Exception) {}
+
+        try {
+            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            _statusMessage.value = StatusUiText.Resource(R.string.status_opening_assistant_settings)
+            return
+        } catch (_: Exception) {}
+
+        launchSystemSetting(context, Settings.ACTION_SETTINGS)
     }
 }

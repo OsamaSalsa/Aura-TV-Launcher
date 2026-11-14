@@ -67,6 +67,7 @@ fun AppActionDialog(
     onToggleGameCategory: () -> Unit,
     onToggleLock: () -> Unit = {},
     onHide: () -> Unit,
+    onDeleteBookmark: () -> Unit = {},
     onInfo: () -> Unit,
     onUninstall: () -> Unit
 ) {
@@ -74,7 +75,10 @@ fun AppActionDialog(
     val currentLayoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val currentConfiguration = androidx.compose.ui.platform.LocalConfiguration.current
     val firstActionFocusRequester = remember { FocusRequester() }
-    val isBuiltInPortal = remember(app.packageName) { app.packageName.endsWith(".portal") }
+    val isCustomBookmark = remember(app.bookmarkUrl) { app.bookmarkUrl != null }
+    val isBuiltInPortal = remember(app.packageName, isCustomBookmark) {
+        app.packageName.endsWith(".portal") && !isCustomBookmark
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -185,7 +189,14 @@ fun AppActionDialog(
                             title = stringResource(R.string.action_hide),
                             onClick = onHide
                         )
-                        if (!isBuiltInPortal) {
+                        if (isCustomBookmark) {
+                            ActionMenuItem(
+                                icon = Icons.Default.Delete,
+                                title = stringResource(R.string.action_delete),
+                                tint = TvAccentRed,
+                                onClick = onDeleteBookmark
+                            )
+                        } else if (!isBuiltInPortal) {
                             // App Info
                             ActionMenuItem(
                                 icon = Icons.Default.Info,

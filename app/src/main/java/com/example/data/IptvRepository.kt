@@ -185,9 +185,17 @@ class IptvRepository(
         Result.success(Unit)
     }
 
+    suspend fun updatePlaylistEpgUrl(playlistId: Long, epgUrl: String) = withContext(Dispatchers.IO) {
+        val existingPlaylist = iptvDao.getPlaylistById(playlistId)
+        if (existingPlaylist != null) {
+            iptvDao.updatePlaylist(existingPlaylist.copy(epgUrl = epgUrl.trim()))
+        }
+    }
+
     private suspend fun refreshPlaylistChannels(playlistId: Long, url: String): Result<Int> {
         return try {
-            val parsedChannels = IptvParser.parseFromUrl(url)
+            val result = IptvParser.parsePlaylistFromUrl(url)
+            val parsedChannels = result.channels
             if (parsedChannels.isNotEmpty()) {
                 // Keep favorite streams across reloads
                 val existingFavUrls = iptvDao.getFavoriteChannels().first().map { it.streamUrl }.toSet()
@@ -204,7 +212,14 @@ class IptvRepository(
 
                 val existingPlaylist = iptvDao.getPlaylistById(playlistId)
                 if (existingPlaylist != null) {
-                    iptvDao.updatePlaylist(existingPlaylist.copy(channelCount = parsedChannels.size, isActive = true))
+                    val effectiveEpg = result.epgUrl.ifBlank { existingPlaylist.epgUrl }
+                    iptvDao.updatePlaylist(
+                        existingPlaylist.copy(
+                            channelCount = parsedChannels.size,
+                            isActive = true,
+                            epgUrl = effectiveEpg
+                        )
+                    )
                 }
                 Result.success(parsedChannels.size)
             } else {

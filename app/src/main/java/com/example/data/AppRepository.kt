@@ -16,6 +16,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 import com.example.data.local.LauncherPreferences
 import com.example.data.model.AppItem
+import com.example.data.model.WebBookmark
 import com.example.ui.common.AuroraColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -101,8 +102,39 @@ class AppRepository(
             )
     }
 
+    private fun webBookmarkToAppItem(
+        bookmark: WebBookmark,
+        hiddenPackages: Set<String>,
+        customGames: Set<String>,
+        lockedPackages: Set<String>
+    ): AppItem {
+        val pkg = "com.bookmark.${bookmark.id}.portal"
+        return AppItem(
+            packageName = pkg,
+            activityName = bookmark.url,
+            label = bookmark.title,
+            icon = null,
+            banner = null,
+            iconBitmap = null,
+            bannerBitmap = null,
+            dominantColor = 0xFF38BDF8.toInt(),
+            auroraColors = AuroraColors(
+                glow = Color(0xFF38BDF8),
+                mid = Color(0xFF0EA5E9),
+                accent = Color(0xFF6366F1),
+                deep = Color(0xFF0369A1),
+                base = Color(0xFF020617),
+                teal = Color(0xFF14B8A6)
+            ),
+            isHidden = hiddenPackages.contains(pkg),
+            isGame = customGames.contains(pkg),
+            isLocked = lockedPackages.contains(pkg),
+            bookmarkUrl = bookmark.url
+        )
+    }
+
     /**
-     * Flow of real installed apps, respecting saved order, hidden apps, and game categorization.
+     * Flow of real installed apps + custom web bookmarks, respecting saved order, hidden apps, and game categorization.
      */
     val installedAppsFlow: Flow<List<AppItem>> = combine(
         combine(
@@ -116,36 +148,81 @@ class AppRepository(
                 loadInstalledApps(savedOrder, hiddenPackages, customGames, customNonGames)
             }
         },
-        preferences.showOnlyTvAppsFlow,
-        preferences.lockedAppsFlow
-    ) { apps, tvOnly, lockedPackages ->
-        val filtered = if (tvOnly) {
-            apps.filter { it.banner != null || it.packageName.endsWith(".portal") }
+        combine(
+            preferences.showOnlyTvAppsFlow,
+            preferences.lockedAppsFlow,
+            preferences.customWebBookmarksFlow,
+            preferences.hiddenAppsFlow,
+            preferences.customGamesFlow
+        ) { tvOnly, lockedPackages, bookmarks, hiddenPackages, customGames ->
+            QuadFilterConfig(tvOnly, lockedPackages, bookmarks, hiddenPackages, customGames)
+        },
+        preferences.appOrderFlow
+    ) { apps, cfg, savedOrder ->
+        val bookmarkItems = cfg.bookmarks
+            .filter { !cfg.hiddenPackages.contains("com.bookmark.${it.id}.portal") }
+            .map { webBookmarkToAppItem(it, cfg.hiddenPackages, cfg.customGames, cfg.lockedPackages) }
+        val combined = apps + bookmarkItems
+        val filtered = if (cfg.tvOnly) {
+            combined.filter { it.banner != null || it.packageName.endsWith(".portal") }
         } else {
-            apps
+            combined
         }
-        filtered.map { it.copy(isLocked = lockedPackages.contains(it.packageName)) }
+        val withLocks = filtered.map { it.copy(isLocked = cfg.lockedPackages.contains(it.packageName)) }
+        if (savedOrder.isEmpty()) {
+            withLocks
+        } else {
+            val orderMap = savedOrder.withIndex().associate { it.value to it.index }
+            withLocks.sortedWith(
+                compareBy(
+                    {
+                        if (it.packageName == "com.minidownloader.portal" || it.packageName == "com.aurastore.portal" || it.packageName == "com.miniyube.portal") {
+                            orderMap[it.packageName] ?: (if (it.packageName == "com.minidownloader.portal") -3 else if (it.packageName == "com.aurastore.portal") -2 else -1)
+                        } else {
+                            orderMap[it.packageName] ?: Int.MAX_VALUE
+                        }
+                    },
+                    { it.label.lowercase() }
+                )
+            )
+        }
     }
+
+    private data class QuadFilterConfig(
+        val tvOnly: Boolean,
+        val lockedPackages: Set<String>,
+        val bookmarks: List<WebBookmark>,
+        val hiddenPackages: Set<String>,
+        val customGames: Set<String>
+    )
 
     /**
      * Flow of all apps including hidden ones (used in Settings to manage hidden apps).
      */
     val allAppsFlow: Flow<List<AppItem>> = combine(
-        reloadTrigger,
+        combine(
+            reloadTrigger,
+            preferences.hiddenAppsFlow,
+            preferences.customGamesFlow,
+            preferences.customNonGamesFlow,
+            preferences.lockedAppsFlow
+        ) { _, hiddenPackages, customGames, customNonGames, lockedPackages ->
+            withContext(Dispatchers.Default) {
+                loadInstalledApps(emptyList(), emptySet(), customGames, customNonGames, includeHidden = true)
+                    .map {
+                        it.copy(
+                            isHidden = hiddenPackages.contains(it.packageName),
+                            isLocked = lockedPackages.contains(it.packageName)
+                        )
+                    }
+            }
+        },
+        preferences.customWebBookmarksFlow,
         preferences.hiddenAppsFlow,
         preferences.customGamesFlow,
-        preferences.customNonGamesFlow,
         preferences.lockedAppsFlow
-    ) { _, hiddenPackages, customGames, customNonGames, lockedPackages ->
-        withContext(Dispatchers.Default) {
-            loadInstalledApps(emptyList(), emptySet(), customGames, customNonGames, includeHidden = true)
-                .map {
-                    it.copy(
-                        isHidden = hiddenPackages.contains(it.packageName),
-                        isLocked = lockedPackages.contains(it.packageName)
-                    )
-                }
-        }
+    ) { installed, bookmarks, hiddenPackages, customGames, lockedPackages ->
+        installed + bookmarks.map { webBookmarkToAppItem(it, hiddenPackages, customGames, lockedPackages) }
     }
 
     private fun checkIfGame(

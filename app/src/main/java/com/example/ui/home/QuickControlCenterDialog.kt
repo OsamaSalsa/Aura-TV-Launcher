@@ -2,6 +2,10 @@ package com.example.ui.home
 
 import android.app.ActivityManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Environment
+import android.os.StatFs
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -36,9 +40,13 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,6 +71,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -123,10 +134,13 @@ fun QuickControlCenterDialog(
     val screensaverMode by prefs.screensaverModeFlow.collectAsState(initial = "clock_date")
     val showOnlyTvApps by prefs.showOnlyTvAppsFlow.collectAsState(initial = true)
 
-    // Live RAM telemetry & 1-click boost state
+    // Live RAM, Storage & Network telemetry + 1-click boost state
     var ramUsedPercent by remember { mutableIntStateOf(42) }
     var isBoosting by remember { mutableStateOf(false) }
     var freedMb by remember { mutableIntStateOf(0) }
+    var storageUsedGb by remember { mutableStateOf(0f) }
+    var storageTotalGb by remember { mutableStateOf(0f) }
+    var networkKind by remember { mutableStateOf("wifi") } // "wifi", "ethernet", "offline"
 
     fun readRamPercent(context: Context): Int {
         return try {
@@ -145,6 +159,31 @@ fun QuickControlCenterDialog(
 
     LaunchedEffect(dialogContext) {
         ramUsedPercent = readRamPercent(dialogContext)
+        withContext(Dispatchers.IO) {
+            try {
+                val stat = StatFs(Environment.getDataDirectory().path)
+                val total = stat.totalBytes.toDouble()
+                val avail = stat.availableBytes.toDouble()
+                val gbDiv = 1024.0 * 1024.0 * 1024.0
+                storageTotalGb = (total / gbDiv).toFloat()
+                storageUsedGb = ((total - avail) / gbDiv).toFloat().coerceAtLeast(0f)
+            } catch (_: Exception) {}
+
+            try {
+                val cm = dialogContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                val net = cm?.activeNetwork
+                val caps = if (net != null) cm.getNetworkCapabilities(net) else null
+                networkKind = when {
+                    caps == null -> "offline"
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "wifi"
+                    else -> "offline"
+                }
+            } catch (_: Exception) {
+                networkKind = "offline"
+            }
+        }
     }
 
     var liveClockText by remember { mutableStateOf("") }
@@ -184,13 +223,15 @@ fun QuickControlCenterDialog(
 
     val screensaverModeSub = when (screensaverMode) {
         "wallpaper_info" -> stringResource(R.string.screensaver_mode_wallpaper)
+        "slideshow" -> stringResource(R.string.screensaver_mode_slideshow)
         "video_stream" -> stringResource(R.string.screensaver_mode_video)
         else -> stringResource(R.string.screensaver_mode_clock)
     }
     val screensaverModeStep = when (screensaverMode) {
         "clock_date" -> 0
         "wallpaper_info" -> 1
-        else -> 2
+        "slideshow" -> 2
+        else -> 3
     }
 
     // Track currently focused tile coordinates so Header Inspector updates reactively on focus & click
@@ -273,6 +314,21 @@ fun QuickControlCenterDialog(
                         .widthIn(max = 920.dp)
                         .fillMaxWidth(0.92f)
                         .padding(horizontal = 12.dp, vertical = 12.dp)
+                        .onKeyEvent { keyEvent ->
+                            val native = keyEvent.nativeKeyEvent
+                            val isVoiceKey = native.keyCode == android.view.KeyEvent.KEYCODE_VOICE_ASSIST ||
+                                native.keyCode == android.view.KeyEvent.KEYCODE_ASSIST ||
+                                native.keyCode == android.view.KeyEvent.KEYCODE_SEARCH
+                            if (isVoiceKey) {
+                                if (keyEvent.type == KeyEventType.KeyDown && native.repeatCount == 0) {
+                                    onDismiss()
+                                    onOpenSearch()
+                                }
+                                true
+                            } else {
+                                false
+                            }
+                        }
                 ) {
                     Box(
                         modifier = Modifier
@@ -400,6 +456,75 @@ fun QuickControlCenterDialog(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    // Storage Pill
+                                    if (storageTotalGb > 0f) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(18.dp))
+                                                .background(Color(0xFF111B2E).copy(alpha = 0.90f))
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = SectionCyanAccent.copy(alpha = 0.35f),
+                                                    shape = RoundedCornerShape(18.dp)
+                                                )
+                                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Storage,
+                                                contentDescription = stringResource(R.string.control_center_storage),
+                                                tint = SectionCyanAccent,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = stringResource(R.string.control_center_gb_format, storageUsedGb, storageTotalGb),
+                                                color = SectionCyanAccent,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+
+                                    // Network Pill
+                                    val netColor = if (networkKind == "offline") Color(0xFFF87171) else SectionPurpleAccent
+                                    val netIcon = when (networkKind) {
+                                        "ethernet" -> Icons.Default.SettingsEthernet
+                                        "offline" -> Icons.Default.WifiOff
+                                        else -> Icons.Default.Wifi
+                                    }
+                                    val netLabel = when (networkKind) {
+                                        "ethernet" -> "LAN"
+                                        "offline" -> stringResource(R.string.control_center_network_offline)
+                                        else -> "Wi-Fi"
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(Color(0xFF111B2E).copy(alpha = 0.90f))
+                                            .border(
+                                                width = 1.dp,
+                                                color = netColor.copy(alpha = 0.38f),
+                                                shape = RoundedCornerShape(18.dp)
+                                            )
+                                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = netIcon,
+                                            contentDescription = netLabel,
+                                            tint = netColor,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Text(
+                                            text = netLabel,
+                                            color = netColor,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
                                     // RAM Status Pill
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -616,7 +741,7 @@ fun QuickControlCenterDialog(
                                     subtitle = screensaverModeSub,
                                     isActive = true,
                                     accentColor = SectionPurpleAccent,
-                                    totalSteps = 3,
+                                    totalSteps = 4,
                                     currentStep = screensaverModeStep,
                                     focusRequester = gridRequesters[0][2],
                                     onFocused = { focusedCoord = 0 to 2 },
@@ -624,7 +749,8 @@ fun QuickControlCenterDialog(
                                         scope.launch {
                                             val nextSaverMode = when (screensaverMode) {
                                                 "clock_date" -> "wallpaper_info"
-                                                "wallpaper_info" -> "video_stream"
+                                                "wallpaper_info" -> "slideshow"
+                                                "slideshow" -> "video_stream"
                                                 else -> "clock_date"
                                             }
                                             prefs.setScreensaverMode(nextSaverMode)

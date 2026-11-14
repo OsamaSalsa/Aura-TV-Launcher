@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -61,13 +62,16 @@ class HomeViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "1234")
 
     val isDynamicBgEnabled: StateFlow<Boolean> = preferences.isDynamicBackgroundEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val wallpaperMode: StateFlow<String> = preferences.wallpaperModeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "custom")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "dynamic")
 
     val customWallpaperUrl: StateFlow<String> = preferences.customWallpaperUrlFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "https://images.unsplash.com/photo-1543946207-39bd91e70ca7?w=1920&q=80")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    val headerControlMode: StateFlow<String> = preferences.headerControlModeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "control_center")
 
     val isClock24h: StateFlow<Boolean> = preferences.isClock24h
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -108,10 +112,21 @@ class HomeViewModel(
     val screensaverVideo: StateFlow<String> = preferences.screensaverVideoFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "EG_g7BFaL5s")
 
+    val showRecentApps: StateFlow<Boolean> = preferences.showRecentAppsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val recentApps: StateFlow<List<AppItem>> = combine(
+        preferences.recentAppsFlow,
+        installedApps
+    ) { recentPkgs, apps ->
+        val byPkg = apps.associateBy { it.packageName }
+        recentPkgs.mapNotNull { byPkg[it] }.take(6)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val isRtl: StateFlow<Boolean> = preferences.languageFlow
         .map { lang ->
             val effective = LocaleHelper.getEffectiveLanguage(lang)
-            lang == "ar_rtl" || (lang == "system" && effective == "ar")
+            lang == "ar_rtl" || effective in setOf("ur", "fa") || (lang == "system" && effective in setOf("ar", "ur", "fa"))
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -167,6 +182,12 @@ class HomeViewModel(
         _editingMode.value = mode
     }
 
+    fun recordAppLaunch(app: AppItem) {
+        viewModelScope.launch {
+            preferences.recordRecentApp(app.packageName)
+        }
+    }
+
     fun launchApp(app: AppItem) {
         when (_editingMode.value) {
             EditingMode.MOVE -> startReorder(app)
@@ -179,9 +200,9 @@ class HomeViewModel(
                 }
                 if (_editingMode.value == EditingMode.DELETE) {
                     // Logic for uninstall will be handled by the UI or calling uninstallApp
-                    // But usually we just want to launch it if NONE
                 }
                 if (_editingMode.value == EditingMode.NONE) {
+                    recordAppLaunch(app)
                     appRepository.launchApp(app)
                 }
             }
@@ -468,6 +489,17 @@ class HomeViewModel(
         viewModelScope.launch {
             appRepository.hideApp(app.packageName)
             dismissAppMenu()
+        }
+    }
+
+    fun deleteWebBookmark(app: AppItem) {
+        val pkg = app.packageName
+        if (!pkg.startsWith("com.bookmark.") || !pkg.endsWith(".portal")) return
+        val id = pkg.removePrefix("com.bookmark.").removeSuffix(".portal")
+        viewModelScope.launch {
+            preferences.removeCustomWebBookmark(id)
+            dismissAppMenu()
+            appRepository.triggerReload()
         }
     }
 

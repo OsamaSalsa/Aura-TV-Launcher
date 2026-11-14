@@ -1,4 +1,4 @@
-[English](README.md) | [العربية](README_ar.md) | **Français** | [Italiano](README_it.md) | [Русский](README_ru.md) | [Español](README_es.md)
+[English](README.md) | [العربية](README_ar.md) | [Deutsch](README_de.md) | **Français** | [Italiano](README_it.md) | [Русский](README_ru.md) | [Español](README_es.md) | [Português](README_pt.md) | [Türkçe](README_tr.md) | [Polski](README_pl.md) | [Nederlands](README_nl.md) | [Ελληνικά](README_el.md) | [Bahasa Indonesia](README_id.md) | [Tiếng Việt](README_vi.md) | [ไทย](README_th.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [हिन्दी](README_hi.md) | [اردو](README_ur.md) | [فارسی](README_fa.md)
 
 <div align="center">
 
@@ -50,14 +50,16 @@ La plupart des lanceurs Android TV actuels sont saturés de publicités imposée
   * **Horloge et date** : Heure lumineuse avec protection anti-brûlure de dalle.
   * **Fond 4K avec infos en coin** : Dégradé à 45° mettant en valeur l'heure, la date et le message d'accueil.
   * **Vidéo cinématique plein écran** : Ambiance feu de cheminée, chalet d'hiver ou cascades en boucle sans boutons ni bannières.
+  * **Diaporama photo (`Slideshow`)** : Affichez les photos d'un dossier local/USB, des photos sélectionnées ou des galeries 4K avec durée réglable (`5s` à `5m`), mouvement **Ken Burns / Zoom doux / Statique**, 6 transitions d'entrée, effets atmosphériques (**Neige ❄️**, **Lucioles ✨**, **Pluie 🌧️**, **Feuilles d'automne 🍂**, **Sakura 🌸**, **Étoiles ⭐**, **Bokeh 🔮**), horloge en coin et musique d'ambiance ou MP3 personnalisé.
 
 ### 🕒 Personnalisation complète de l'horloge, date et salutation
-* **Typographie multilingue (6 langues)** : Traduction intégrale en **Français**, **Arabe (Police Cairo)**, **Anglais**, **Espagnol**, **Italien** et **Russe**.
+* **Typographie multilingue (21 langues)** : Traduction intégrale en **Français**, **Arabe (Police Cairo)**, **Anglais**, **Allemand**, **Espagnol**, **Italien**, **Russe**, **Portugais**, **Turc**, **Polonais**, **Néerlandais**, **Grec**, **Indonésien**, **Vietnamien**, **Thaï**, **Chinois**, **Japonais**, **Coréen**, **Hindi**, **Ourdou** et **Persan**.
 * **Options d'horloge** : Format 12h / 24h, affichage optionnel des secondes et 3 tailles réglables (Compact, Moyen, Grand).
-* **Styles de date** : Date complète avec jour, Date moyenne, Date numérique (`JJ/MM/AAAA`) ou masquée.
+* **Formats de date américains et internationaux** : US numérique (`MM/dd/yyyy`), US long (`MMMM d, yyyy`), US complet (`EEEE, MMMM d, yyyy`), US compact (`EEE, MMM d`), International (`dd/MM/yyyy`), ISO (`yyyy-MM-dd`), Européen (`dd.MM.yyyy`), Complet ou Masqué.
 * **Salutations horaires** : Messages d'accueil poétiques, chaleureux, brefs, personnalisés ou masqués.
 
 ### 🎛️ Personnalisation de l'affichage d'accueil
+* **Icône de la barre supérieure (Centre de contrôle / Paramètres directs / Les deux)** : Choisissez d'afficher le Centre de contrôle rapide, d'aller directement aux Paramètres en ignorant le Centre de contrôle, ou d'afficher les deux icônes ensemble sur l'écran d'accueil.
 * **Curseur par défaut sur les paramètres** : Dès le lancement, la télécommande se positionne sur l'icône Paramètres pour une configuration rapide.
 * **Décalage vertical des applications vers le bas** : Possibilité d'abaisser les rangées d'applications (de 180dp à 380dp) pour admirer les fonds d'écran 4K.
 * **Densité de la grille** : Choix entre 4, 5, 6 ou 7 applications par rangée.
@@ -92,7 +94,8 @@ adb install -r aura-tv-launcher.apk
 | :--- | :--- |
 | **Flèches directionnelles** | Navigation rapide et fluide entre applications et chaînes. |
 | **Bouton OK / Centre** | Lance l'application ou la chaîne sélectionnée. |
-| **Appui long OK / Menu (`KEYCODE_MENU`)** | Ouvre les options (Réorganiser, Verrouiller par PIN, Masquer). |
+| **Appui long OK / Menu (`☰` Trois lignes)** | Ouvre les options d'application/chaîne (Réorganiser, Verrouiller par PIN, Masquer) ou saute directement aux applications depuis la barre supérieure. |
+| **Bouton Voix / Google Assistant (`🎤`)** | Ouvre la recherche vocale intégrée pour trouver des applications ou des chaînes IPTV. |
 | **Bouton Retour** | Retourne à l'écran précédent ou à l'accueil en toute sécurité. |
 
 ---

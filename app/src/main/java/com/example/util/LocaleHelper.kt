@@ -8,7 +8,10 @@ import java.util.Locale
 
 object LocaleHelper {
 
-    val SUPPORTED_LANGUAGES = setOf("ar", "en", "fr", "es", "it", "ru")
+    val SUPPORTED_LANGUAGES = setOf(
+        "ar", "en", "fr", "es", "it", "ru", "zh", "hi", "ko", "ja", "de",
+        "pt", "tr", "id", "in", "ur", "fa", "pl", "nl", "vi", "th", "el"
+    )
 
     /**
      * Resolves the effective language code.
@@ -18,10 +21,12 @@ object LocaleHelper {
     fun getEffectiveLanguage(languageCode: String): String {
         val code = languageCode.lowercase().trim()
         if (code == "ar" || code == "ar_rtl") return "ar"
+        if (code == "id" || code == "in") return "id"
         if (code in SUPPORTED_LANGUAGES) return code
 
         // If "system", empty, or unknown:
         val systemLang = Locale.getDefault().language.lowercase()
+        if (systemLang == "in" || systemLang == "id") return "id"
         return if (systemLang in SUPPORTED_LANGUAGES) {
             systemLang
         } else {
@@ -31,7 +36,8 @@ object LocaleHelper {
 
     fun getLocale(languageCode: String): Locale {
         val effective = getEffectiveLanguage(languageCode)
-        return Locale(effective)
+        // Android uses legacy "in" resource qualifier for Indonesian
+        return if (effective == "id") Locale("in") else Locale(effective)
     }
 
     private fun applyConfigIfNeeded(resources: android.content.res.Resources?, locale: Locale) {
@@ -103,6 +109,22 @@ object LocaleHelper {
                     else -> "مساءً"
                 }
             }
+            "fa" -> {
+                when (hourOfDay) {
+                    in 5..11 -> "صبح"
+                    in 12..16 -> "بعدازظهر"
+                    in 17..20 -> "عصر"
+                    else -> "شب"
+                }
+            }
+            "ur" -> {
+                when (hourOfDay) {
+                    in 5..11 -> "صبح"
+                    in 12..16 -> "دوپہر"
+                    in 17..20 -> "شام"
+                    else -> "رات"
+                }
+            }
             "ru" -> {
                 when (hourOfDay) {
                     in 5..11 -> "утра"
@@ -112,8 +134,51 @@ object LocaleHelper {
                 }
             }
             "es" -> if (hourOfDay < 12) "a. m." else "p. m."
+            "zh" -> if (hourOfDay < 12) "上午" else "下午"
+            "ja" -> if (hourOfDay < 12) "午前" else "午後"
+            "ko" -> if (hourOfDay < 12) "오전" else "오후"
+            "hi" -> {
+                when (hourOfDay) {
+                    in 5..11 -> "सुबह"
+                    in 12..16 -> "दोपहर"
+                    in 17..20 -> "शाम"
+                    else -> "रात"
+                }
+            }
+            "de" -> if (hourOfDay < 12) "vorm." else "nachm."
+            "el" -> if (hourOfDay < 12) "π.μ." else "μ.μ."
+            "vi" -> if (hourOfDay < 12) "SA" else "CH"
+            "th" -> if (hourOfDay < 12) "ก่อนเที่ยง" else "หลังเที่ยง"
+            "tr" -> if (hourOfDay < 12) "ÖÖ" else "ÖS"
             else -> if (hourOfDay < 12) "AM" else "PM"
         }
     }
+
+    fun formatDate(date: java.util.Date, style: String, languageCode: String): String {
+        if (style == "hidden") return ""
+        val dateLocale = getLocale(languageCode)
+        val pattern = when (style) {
+            "full" -> "EEEE, d MMMM"
+            "full_year" -> "EEEE, d MMMM yyyy"
+            "us_full" -> "EEEE, MMMM d, yyyy"
+            "us_written" -> "MMMM d, yyyy"
+            "us_short" -> "EEE, MMM d"
+            "medium" -> "d MMMM"
+            "numeric_us" -> "MM/dd/yyyy"
+            "numeric" -> "dd/MM/yyyy"
+            "numeric_iso" -> "yyyy-MM-dd"
+            "numeric_dots" -> "dd.MM.yyyy"
+            else -> "EEEE, d MMMM"
+        }
+        val sdf = java.text.SimpleDateFormat(pattern, dateLocale)
+        val raw = sdf.format(date)
+        return raw.map { ch ->
+            val digit = Character.getNumericValue(ch)
+            if (digit in 0..9 && ch !in '0'..'9' && ch !in 'a'..'z' && ch !in 'A'..'Z') {
+                digit.toString()[0]
+            } else ch
+        }.joinToString("")
+    }
 }
+
 

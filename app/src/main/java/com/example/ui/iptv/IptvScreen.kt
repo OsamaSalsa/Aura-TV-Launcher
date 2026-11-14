@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.Refresh
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,11 +81,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.data.ChannelEpgInfo
 import com.example.data.model.IptvChannel
 import com.example.data.model.IptvPlaylist
 import com.example.ui.common.GlassSheenOverlay
 import com.example.ui.common.TvFocusableCard
 import com.example.ui.common.TvTextField
+import com.example.ui.home.AppLockPinDialog
 import com.example.ui.theme.TvAccentBlue
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvAccentRed
@@ -111,12 +115,29 @@ fun IptvScreen(
     val currentPlayingChannel by viewModel.currentPlayingChannel.collectAsState()
     val playbackError by viewModel.playbackError.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val lockedCategories by viewModel.lockedCategories.collectAsState()
+    val sessionUnlockedCategories by viewModel.sessionUnlockedCategories.collectAsState()
+    val appLockPin by viewModel.appLockPin.collectAsState()
+    val lastPlayedChannel by viewModel.lastPlayedChannel.collectAsState()
+    val autoResumeLastChannel by viewModel.autoResumeLastChannel.collectAsState()
+    val epgState by viewModel.epgState.collectAsState()
 
     var showIptvSettingsModal by remember { mutableStateOf(false) }
+    var pendingUnlockCategory by remember { mutableStateOf<String?>(null) }
+    var pendingToggleLockCategory by remember { mutableStateOf<String?>(null) }
+    var autoResumedOnce by remember { mutableStateOf(false) }
 
     val firstChannelFocusRequester = remember { FocusRequester() }
     val firstCategoryFocusRequester = remember { FocusRequester() }
     var initialFocusAssigned by remember { mutableStateOf(false) }
+
+    LaunchedEffect(autoResumeLastChannel, lastPlayedChannel) {
+        val lastCh = lastPlayedChannel
+        if (autoResumeLastChannel && !autoResumedOnce && lastCh != null && currentPlayingChannel == null) {
+            autoResumedOnce = true
+            viewModel.playChannel(lastCh)
+        }
+    }
 
     LaunchedEffect(channels.isNotEmpty(), currentPlayingChannel) {
         if (currentPlayingChannel == null && (!initialFocusAssigned || channels.isNotEmpty())) {
@@ -345,9 +366,21 @@ fun IptvScreen(
                 ) {
                     items(allCategories, key = { it }) { category ->
                         val isSelected = (category == selectedCategory) && searchQuery.isBlank()
+                        val isLocked = lockedCategories.contains(category)
+                        val isSessionUnlocked = sessionUnlockedCategories.contains(category)
+                        val isLockProtected = category != "All" && category != "Favorites"
                         val itemFr = if (category == "All") firstCategoryFocusRequester else remember { FocusRequester() }
                         TvFocusableCard(
-                            onClick = { viewModel.selectCategory(category) },
+                            onClick = {
+                                if (isLocked && !isSessionUnlocked) {
+                                    pendingUnlockCategory = category
+                                } else {
+                                    viewModel.selectCategory(category)
+                                }
+                            },
+                            onLongClick = if (isLockProtected) {
+                                { pendingToggleLockCategory = category }
+                            } else null,
                             focusRequester = itemFr,
                             scaleUpRatio = 1.03f,
                             elevation = 0.dp,
@@ -382,8 +415,8 @@ fun IptvScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Active indicator bar or icon
-                                when (category) {
-                                    "Favorites" -> {
+                                when {
+                                    category == "Favorites" -> {
                                         Icon(
                                             imageVector = Icons.Default.Star,
                                             contentDescription = null,
@@ -391,12 +424,20 @@ fun IptvScreen(
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
-                                    "All" -> {
+                                    category == "All" -> {
                                         Icon(
                                             imageVector = Icons.Default.LiveTv,
                                             contentDescription = null,
                                             tint = if (isFocused) Color.Black else if (isSelected) TvAccentGold else TvAccentBlue,
                                             modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    isLocked -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = stringResource(R.string.iptv_category_locked),
+                                            tint = if (isFocused) Color.Black else if (isSessionUnlocked) Color(0xFF4ADE80) else TvAccentGold,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                     else -> {
@@ -544,6 +585,47 @@ fun IptvScreen(
                             )
                         }
 
+                        lastPlayedChannel?.let { lastCh ->
+                            TvFocusableCard(
+                                onClick = { viewModel.resumeLastChannel() },
+                                scaleUpRatio = 1.05f,
+                                elevation = 0.dp,
+                                cardBackgroundColor = Color.Transparent,
+                                useDefaultBorder = false,
+                                modifier = Modifier.height(38.dp)
+                            ) { isFocused ->
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isFocused) TvAccentGold else Color(0xFF10B981).copy(alpha = 0.2f))
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isFocused) Color.White else Color(0xFF10B981).copy(alpha = 0.6f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = stringResource(R.string.iptv_resume_last),
+                                        tint = if (isFocused) Color.Black else Color(0xFF4ADE80),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = "${stringResource(R.string.iptv_resume_last)}: ${lastCh.name}",
+                                        color = if (isFocused) Color.Black else TvTextPrimary,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.widthIn(max = 160.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         // Active Category Badge
                         Box(
                             modifier = Modifier
@@ -659,9 +741,13 @@ fun IptvScreen(
                     ) {
                         itemsIndexed(channels, key = { _, ch -> ch.id }) { index, channel ->
                             val cardFr = if (index == 0) firstChannelFocusRequester else remember { FocusRequester() }
+                            val epgInfo = remember(channel.id, channel.tvgId, epgState) {
+                                viewModel.getChannelEpg(channel, epgState)
+                            }
                             ChannelGridCard(
                                 channel = channel,
                                 channelNumber = index + 1,
+                                epgInfo = epgInfo,
                                 focusRequester = cardFr,
                                 onClick = { viewModel.playChannel(channel) },
                                 onToggleFavorite = { viewModel.toggleFavorite(channel) }
@@ -708,6 +794,7 @@ fun IptvScreen(
             IptvPlayerOverlay(
                 channel = channel,
                 channels = channels,
+                epgPrograms = epgState,
                 playbackError = playbackError,
                 onNextChannel = { viewModel.nextChannel() },
                 onPrevChannel = { viewModel.prevChannel() },
@@ -720,6 +807,36 @@ fun IptvScreen(
                     showIptvSettingsModal = true
                 },
                 onClose = { viewModel.closePlayer() }
+            )
+        }
+
+        // Category Unlock PIN Dialog
+        pendingUnlockCategory?.let { cat ->
+            AppLockPinDialog(
+                title = stringResource(R.string.iptv_category_locked),
+                subtitle = cat,
+                expectedPin = appLockPin,
+                onPinVerified = {
+                    pendingUnlockCategory = null
+                    viewModel.unlockCategory(cat)
+                    viewModel.selectCategory(cat)
+                },
+                onDismiss = { pendingUnlockCategory = null }
+            )
+        }
+
+        // Toggle Category Lock/Unlock PIN Dialog
+        pendingToggleLockCategory?.let { cat ->
+            val willLock = !lockedCategories.contains(cat)
+            AppLockPinDialog(
+                title = if (willLock) stringResource(R.string.iptv_lock_category) else stringResource(R.string.iptv_unlock_category),
+                subtitle = cat,
+                expectedPin = appLockPin,
+                onPinVerified = {
+                    pendingToggleLockCategory = null
+                    viewModel.toggleCategoryLock(cat)
+                },
+                onDismiss = { pendingToggleLockCategory = null }
             )
         }
 
@@ -871,6 +988,7 @@ private fun IptvRemoteHintChip(
 private fun ChannelGridCard(
     channel: IptvChannel,
     channelNumber: Int,
+    epgInfo: ChannelEpgInfo = ChannelEpgInfo(),
     focusRequester: FocusRequester,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit
@@ -1002,22 +1120,44 @@ private fun ChannelGridCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = if (isFocused) TvAccentGold else TvTextSecondary.copy(alpha = 0.7f),
-                            modifier = Modifier.size(12.dp)
-                        )
+                    val nowProg = epgInfo.current
+                    if (nowProg != null) {
                         Text(
-                            text = if (isFocused) "OK • LIVE" else "LIVE",
-                            color = if (isFocused) TvAccentGold else TvTextSecondary.copy(alpha = 0.7f),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            text = nowProg.title,
+                            color = if (isFocused) TvAccentGold else TvTextSecondary,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        LinearProgressIndicator(
+                            progress = { epgInfo.progressFraction() },
+                            color = TvAccentGold,
+                            trackColor = Color.White.copy(alpha = 0.12f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(2.5.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = if (isFocused) TvAccentGold else TvTextSecondary.copy(alpha = 0.7f),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = if (isFocused) "OK • LIVE" else "LIVE",
+                                color = if (isFocused) TvAccentGold else TvTextSecondary.copy(alpha = 0.7f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
                     }
                 }
 

@@ -63,6 +63,7 @@ fun TvFocusableCard(
     elevation: Dp = 14.dp,
     cardBackgroundColor: Color? = null,
     useDefaultBorder: Boolean = true,
+    focusBorderColor: Color = TvAccentGold,
     content: @Composable BoxScope.(isFocused: Boolean) -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -80,7 +81,8 @@ fun TvFocusableCard(
         else -> cardBackgroundColor ?: Color.Transparent
     }
 
-    val currentBorderColor = if (isFocused) TvAccentGold else UnfocusedBorderColor
+    val currentBorderColor = if (isFocused) focusBorderColor else UnfocusedBorderColor
+    val effectiveGlowColor = if (focusBorderColor == TvAccentGold) FocusedGlowColor else focusBorderColor.copy(alpha = 0.75f)
 
     Box(
         modifier = modifier
@@ -148,8 +150,8 @@ fun TvFocusableCard(
                     Modifier.shadow(
                         elevation = elevation,
                         shape = shape,
-                        ambientColor = FocusedGlowColor,
-                        spotColor = FocusedGlowColor
+                        ambientColor = effectiveGlowColor,
+                        spotColor = effectiveGlowColor
                     )
                 } else Modifier
             )

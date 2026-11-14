@@ -284,7 +284,11 @@ fun DynamicBackground(
                     }
                 }
         ) {
-            if ((wallpaperMode == "custom" || wallpaperMode == "preset") && customWallpaperUrl.isNotBlank()) {
+            val hasValidCustomImage = (wallpaperMode == "custom" || wallpaperMode == "preset") &&
+                customWallpaperUrl.isNotBlank() &&
+                customWallpaperUrl != "aurora_gradient" &&
+                !customWallpaperUrl.contains("1543946207")
+            if (hasValidCustomImage) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
                         model = customWallpaperUrl,

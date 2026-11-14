@@ -35,6 +35,7 @@ import com.example.ui.games.PokiScreen
 import com.example.ui.games.PlayhopScreen
 import com.example.ui.games.EasyGamesScreen
 import com.example.ui.games.AuraStoreScreen
+import com.example.ui.games.CustomWebPortalScreen
 import com.example.ui.downloader.MiniDownloaderScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.TvMidnightBackground
@@ -45,8 +46,11 @@ import android.content.Intent
 import android.net.VpnService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 
 import androidx.compose.runtime.CompositionLocalProvider
@@ -54,28 +58,36 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.util.LocaleHelper
 
 enum class LauncherScreen {
-    HOME, IPTV, YOUTUBE, SETTINGS, CRAZYGAMES, POKI, PLAYHOP, EASYGAMES, MINI_DOWNLOADER, AURA_STORE
+    HOME, IPTV, YOUTUBE, SETTINGS, CRAZYGAMES, POKI, PLAYHOP, EASYGAMES, MINI_DOWNLOADER, AURA_STORE, CUSTOM_WEB_PORTAL
 }
 
 private var hasShownIntroProcessFlag = false
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val ACTION_AURA_VOICE_SEARCH = "com.example.ACTION_AURA_VOICE_SEARCH"
+    }
+
     private var homeVmRef: HomeViewModel? = null
     private var isRtlLayout: Boolean = false
     private var shouldKeepScreenOnFlag: Boolean = true
     private val _onHomePressed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val onHomePressed: SharedFlow<Unit> = _onHomePressed.asSharedFlow()
-    private val _onVoiceSearchPressed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val onVoiceSearchPressed: SharedFlow<Unit> = _onVoiceSearchPressed.asSharedFlow()
+    private val _voiceSearchRequestCount = MutableStateFlow(0)
+    val voiceSearchRequestCount: StateFlow<Int> = _voiceSearchRequestCount.asStateFlow()
     private val _onUserActivity = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     val onUserActivity: SharedFlow<Long> = _onUserActivity.asSharedFlow()
+
+    fun requestVoiceSearch() {
+        _voiceSearchRequestCount.value = _voiceSearchRequestCount.value + 1
+    }
 
     /**
      * Controls whether Aura TV keeps the system screen awake to block external/system screensavers:
      * - When internal screensaver is ENABLED (or media is playing): keepAwake = true -> sets FLAG_KEEP_SCREEN_ON
      *   and decorView.keepScreenOn = true so the app acts as continuously active and external screensavers never trigger.
-     * - When internal screensaver is DISABLED ("never") and no media is playing: keepAwake = false -> clears
+     * - When internal screensaver is DISABLED ("never" / timeoutMinutes == 0) and no media is playing: keepAwake = false -> clears
      *   FLAG_KEEP_SCREEN_ON and decorView.keepScreenOn = false so external/system screensavers have full permission to run.
      */
     fun updateScreenAwakePolicy(keepAwake: Boolean) {
@@ -95,11 +107,13 @@ class MainActivity : ComponentActivity() {
 
     private fun isVoiceOrSearchIntent(intent: Intent?): Boolean {
         val action = intent?.action ?: return false
-        return action == Intent.ACTION_ASSIST ||
+        return action == ACTION_AURA_VOICE_SEARCH ||
+                action == Intent.ACTION_ASSIST ||
                 action == Intent.ACTION_VOICE_COMMAND ||
                 action == Intent.ACTION_SEARCH ||
                 action == Intent.ACTION_SEARCH_LONG_PRESS ||
-                action == "android.speech.action.WEB_SEARCH"
+                action == "android.speech.action.WEB_SEARCH" ||
+                action == "android.speech.action.VOICE_SEARCH_HANDS_FREE"
     }
 
     override fun onUserInteraction() {
@@ -120,7 +134,7 @@ class MainActivity : ComponentActivity() {
         hideSystemBars(force = true)
 
         if (isVoiceOrSearchIntent(intent)) {
-            _onVoiceSearchPressed.tryEmit(Unit)
+            requestVoiceSearch()
         }
 
         setContent {
@@ -137,14 +151,15 @@ class MainActivity : ComponentActivity() {
             val effectiveLang = remember(currentLang) {
                 LocaleHelper.getEffectiveLanguage(currentLang)
             }
-            val isRtl = currentLang == "ar_rtl" || (currentLang == "system" && effectiveLang == "ar")
-            val isArabic = effectiveLang == "ar"
+            val isRtl = currentLang == "ar_rtl" || effectiveLang in setOf("ur", "fa") || (currentLang == "system" && effectiveLang in setOf("ar", "ur", "fa"))
+            val isArabic = effectiveLang in setOf("ar", "ur", "fa")
             isRtlLayout = isRtl
 
             LaunchedEffect(currentLang) {
                 LocaleHelper.applyLocaleToActivity(this@MainActivity, currentLang)
             }
 
+            val useDynamicColor by app.preferences.useDynamicColorFlow.collectAsState(initial = false)
             CompositionLocalProvider(
                 LocalContext provides localizedContext,
                 androidx.compose.ui.platform.LocalConfiguration provides localizedContext.resources.configuration,
@@ -152,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 androidx.activity.compose.LocalActivityResultRegistryOwner provides registryOwner
             ) {
                 androidx.compose.runtime.key(currentLang) {
-                    MyApplicationTheme(isArabic = isArabic) {
+                    MyApplicationTheme(isArabic = isArabic, useDynamicColor = useDynamicColor) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
                             color = TvMidnightBackground
@@ -160,7 +175,7 @@ class MainActivity : ComponentActivity() {
                             LauncherNavigation(
                                 app = app,
                                 onHomePressed = onHomePressed,
-                                onVoiceSearchPressed = onVoiceSearchPressed,
+                                voiceSearchRequestCount = voiceSearchRequestCount,
                                 onUserActivity = onUserActivity,
                                 onHomeViewModelCreated = { vm ->
                                     homeVmRef = vm
@@ -208,7 +223,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (isVoiceOrSearchIntent(intent)) {
-            _onVoiceSearchPressed.tryEmit(Unit)
+            requestVoiceSearch()
         } else {
             // When user presses remote Home button and launcher is re-invoked, return to Home screen
             _onHomePressed.tryEmit(Unit)
@@ -216,7 +231,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onSearchRequested(): Boolean {
-        _onVoiceSearchPressed.tryEmit(Unit)
+        requestVoiceSearch()
         return true
     }
 
@@ -235,7 +250,7 @@ class MainActivity : ComponentActivity() {
             event.keyCode == KeyEvent.KEYCODE_ASSIST
         ) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                _onVoiceSearchPressed.tryEmit(Unit)
+                requestVoiceSearch()
             }
             return true
         }
@@ -301,7 +316,7 @@ class MainActivity : ComponentActivity() {
 fun LauncherNavigation(
     app: AuraTvApp,
     onHomePressed: SharedFlow<Unit>,
-    onVoiceSearchPressed: SharedFlow<Unit>,
+    voiceSearchRequestCount: StateFlow<Int>,
     onUserActivity: SharedFlow<Long>,
     onHomeViewModelCreated: (HomeViewModel) -> Unit,
     onUpdateScreenAwakePolicy: (Boolean) -> Unit = {},
@@ -312,8 +327,11 @@ fun LauncherNavigation(
     var settingsReturnScreen by remember { mutableStateOf(LauncherScreen.HOME) }
     var selectedChannelIdToPlay by remember { mutableStateOf<Long?>(null) }
     var voiceSearchTriggerTick by remember { mutableStateOf(0) }
+    var consumedVoiceSearchTick by remember { mutableStateOf(0) }
     var pendingUpdateInfo by remember { mutableStateOf<com.example.data.update.AppUpdateInfo?>(null) }
     var dismissedUpdateVersion by remember { mutableStateOf<Int?>(null) }
+    var activeBookmarkTitle by remember { mutableStateOf("") }
+    var activeBookmarkUrl by remember { mutableStateOf("") }
 
     // Repositories & ViewModels
     val homeViewModel = remember {
@@ -325,7 +343,10 @@ fun LauncherNavigation(
     }
 
     val iptvViewModel = remember {
-        IptvViewModel(iptvRepository = app.iptvRepository)
+        IptvViewModel(
+            iptvRepository = app.iptvRepository,
+            preferences = app.preferences
+        )
     }
 
     val youtubeViewModel = remember {
@@ -462,9 +483,14 @@ fun LauncherNavigation(
         }
     }
 
-    // Remote Voice Search button press handler: opens Universal Search in Voice Listening mode
-    LaunchedEffect(Unit) {
-        onVoiceSearchPressed.collect {
+    // Remote Voice / Google Assistant button handler: dismisses screensaver/players, returns to Home, and opens Voice Search
+    val latestVoiceRequest by voiceSearchRequestCount.collectAsState()
+    var lastHandledVoiceRequest by remember { mutableStateOf(0) }
+    LaunchedEffect(latestVoiceRequest) {
+        if (latestVoiceRequest > lastHandledVoiceRequest) {
+            lastHandledVoiceRequest = latestVoiceRequest
+            showGlobalAmbientMode = false
+            lastGlobalInteractionTime = System.currentTimeMillis()
             iptvViewModel.closePlayer()
             youtubeViewModel.setVideoPlaying(false)
             currentScreen = LauncherScreen.HOME
@@ -515,7 +541,8 @@ fun LauncherNavigation(
                     LauncherScreen.PLAYHOP,
                     LauncherScreen.EASYGAMES,
                     LauncherScreen.AURA_STORE,
-                    LauncherScreen.MINI_DOWNLOADER -> androidx.compose.animation.ExitTransition.None
+                    LauncherScreen.MINI_DOWNLOADER,
+                    LauncherScreen.CUSTOM_WEB_PORTAL -> androidx.compose.animation.ExitTransition.None
                     else -> fadeOut()
                 }
                 fadeIn() togetherWith exit
@@ -527,6 +554,10 @@ fun LauncherNavigation(
                     HomeScreen(
                         viewModel = homeViewModel,
                         voiceSearchTriggerTick = voiceSearchTriggerTick,
+                        consumedVoiceSearchTick = consumedVoiceSearchTick,
+                        onVoiceSearchConsumed = {
+                            consumedVoiceSearchTick = voiceSearchTriggerTick
+                        },
                         userActivityFlow = onUserActivity,
                         isPlaybackActive = isPlaybackActive,
                         onOpenIptv = { channelId ->
@@ -553,6 +584,11 @@ fun LauncherNavigation(
                         },
                         onOpenMiniDownloader = {
                             currentScreen = LauncherScreen.MINI_DOWNLOADER
+                        },
+                        onOpenWebBookmark = { title, url ->
+                            activeBookmarkTitle = title
+                            activeBookmarkUrl = url
+                            currentScreen = LauncherScreen.CUSTOM_WEB_PORTAL
                         },
                         onOpenSettings = {
                             settingsInitialSection = com.example.ui.settings.SettingsSection.SYSTEM
@@ -635,6 +671,16 @@ fun LauncherNavigation(
 
                 LauncherScreen.MINI_DOWNLOADER -> {
                     MiniDownloaderScreen(
+                        onBackToHome = {
+                            currentScreen = LauncherScreen.HOME
+                        }
+                    )
+                }
+
+                LauncherScreen.CUSTOM_WEB_PORTAL -> {
+                    CustomWebPortalScreen(
+                        title = activeBookmarkTitle,
+                        url = activeBookmarkUrl,
                         onBackToHome = {
                             currentScreen = LauncherScreen.HOME
                         }

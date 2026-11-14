@@ -23,7 +23,15 @@ data class AppItem(
     val displayOrder: Int = 0,
     val auroraColors: com.example.ui.common.AuroraColors? = null,
     val isGame: Boolean = false,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val bookmarkUrl: String? = null
+)
+
+@Immutable
+data class WebBookmark(
+    val id: String,
+    val title: String,
+    val url: String
 )
 
 @Entity(tableName = "iptv_channels")
@@ -36,7 +44,8 @@ data class IptvChannel(
     val streamUrl: String,
     val isFavorite: Boolean = false,
     val orderIndex: Int = 0,
-    val playlistId: Long = 0
+    val playlistId: Long = 0,
+    val tvgId: String = ""
 )
 
 /**
@@ -49,5 +58,6 @@ data class IptvPlaylist(
     val name: String,
     val url: String,
     val isActive: Boolean = false,
-    val channelCount: Int = 0
+    val channelCount: Int = 0,
+    val epgUrl: String = ""
 )

@@ -2,7 +2,11 @@ package com.example.ui.iptv
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.ChannelEpgInfo
+import com.example.data.EpgManager
+import com.example.data.EpgProgram
 import com.example.data.IptvRepository
+import com.example.data.local.LauncherPreferences
 import com.example.data.model.IptvChannel
 import com.example.data.model.IptvPlaylist
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -17,7 +22,8 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IptvViewModel(
-    private val iptvRepository: IptvRepository
+    private val iptvRepository: IptvRepository,
+    private val preferences: LauncherPreferences
 ) : ViewModel() {
 
     private val _selectedCategory = MutableStateFlow("All")
@@ -41,6 +47,54 @@ class IptvViewModel(
     val favoriteChannels: StateFlow<List<IptvChannel>> = iptvRepository.favoriteChannelsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Category Lock & PIN Protection
+    val lockedCategories: StateFlow<Set<String>> = preferences.lockedIptvCategoriesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val appLockPin: StateFlow<String> = preferences.appLockPinFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0000")
+
+    private val _sessionUnlockedCategories = MutableStateFlow<Set<String>>(emptySet())
+    val sessionUnlockedCategories: StateFlow<Set<String>> = _sessionUnlockedCategories.asStateFlow()
+
+    // Resume Last Played Channel
+    val lastPlayedChannelId: StateFlow<Long> = preferences.lastPlayedChannelIdFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
+
+    val autoResumeLastChannel: StateFlow<Boolean> = preferences.autoResumeLastChannelFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    // EPG Guide State
+    val epgUrlOverride: StateFlow<String> = preferences.epgUrlOverrideFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val epgState: StateFlow<Map<String, List<EpgProgram>>> = EpgManager.epgState
+    val epgIsLoading: StateFlow<Boolean> = EpgManager.isLoading
+
+    init {
+        viewModelScope.launch {
+            combine(activePlaylist, epgUrlOverride) { playlist, override ->
+                override.ifBlank { playlist?.epgUrl.orEmpty() }
+            }.collectLatest { url ->
+                if (url.isNotBlank()) {
+                    EpgManager.loadEpgIfNeeded(url)
+                }
+            }
+        }
+    }
+
+    val lastPlayedChannel: StateFlow<IptvChannel?> = combine(
+        iptvRepository.getChannelsByCategory("All"),
+        lastPlayedChannelId,
+        lockedCategories,
+        _sessionUnlockedCategories
+    ) { allChannels, lastId, locked, unlocked ->
+        if (lastId <= 0L) return@combine null
+        val ch = allChannels.firstOrNull { it.id == lastId } ?: return@combine null
+        val blocked = locked.contains(ch.groupTitle) && !unlocked.contains(ch.groupTitle)
+        if (blocked) null else ch
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun switchPlaylist(playlistId: Long) {
         viewModelScope.launch {
             _isSyncing.value = true
@@ -55,7 +109,31 @@ class IptvViewModel(
         viewModelScope.launch {
             _isSyncing.value = true
             iptvRepository.refreshActivePlaylist()
+            val effectiveEpg = epgUrlOverride.value.ifBlank { activePlaylist.value?.epgUrl.orEmpty() }
+            if (effectiveEpg.isNotBlank()) {
+                EpgManager.loadEpgIfNeeded(effectiveEpg, force = true)
+            }
             _isSyncing.value = false
+        }
+    }
+
+    fun refreshEpg(force: Boolean = true) {
+        viewModelScope.launch {
+            val effectiveEpg = epgUrlOverride.value.ifBlank { activePlaylist.value?.epgUrl.orEmpty() }
+            if (effectiveEpg.isNotBlank()) {
+                EpgManager.loadEpgIfNeeded(effectiveEpg, force = force)
+            }
+        }
+    }
+
+    fun setEpgUrlOverride(url: String) {
+        viewModelScope.launch {
+            val trimmed = url.trim()
+            preferences.setEpgUrlOverride(trimmed)
+            val effectiveEpg = trimmed.ifBlank { activePlaylist.value?.epgUrl.orEmpty() }
+            if (effectiveEpg.isNotBlank()) {
+                EpgManager.loadEpgIfNeeded(effectiveEpg, force = true)
+            }
         }
     }
 
@@ -90,16 +168,33 @@ class IptvViewModel(
 
     val channels: StateFlow<List<IptvChannel>> = combine(
         _selectedCategory,
-        _searchQuery
-    ) { category, query ->
-        category to query
-    }.flatMapLatest { (category, query) ->
-        if (query.isNotBlank()) {
-            iptvRepository.searchChannels(query)
+        _searchQuery,
+        lockedCategories,
+        _sessionUnlockedCategories
+    ) { category, query, locked, unlocked ->
+        QuadChannelQuery(category, query, locked, unlocked)
+    }.flatMapLatest { q ->
+        val rawFlow = if (q.query.isNotBlank()) {
+            iptvRepository.searchChannels(q.query)
         } else {
-            iptvRepository.getChannelsByCategory(category)
+            iptvRepository.getChannelsByCategory(q.category)
+        }
+        combine(rawFlow, MutableStateFlow(q)) { list, queryInfo ->
+            val hiddenLocked = queryInfo.locked - queryInfo.unlocked
+            if (hiddenLocked.isEmpty()) {
+                list
+            } else {
+                list.filter { !hiddenLocked.contains(it.groupTitle) }
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private data class QuadChannelQuery(
+        val category: String,
+        val query: String,
+        val locked: Set<String>,
+        val unlocked: Set<String>
+    )
 
     private val _currentPlayingChannel = MutableStateFlow<IptvChannel?>(null)
     val currentPlayingChannel: StateFlow<IptvChannel?> = _currentPlayingChannel.asStateFlow()
@@ -112,6 +207,25 @@ class IptvViewModel(
         _searchQuery.value = ""
     }
 
+    fun unlockCategory(category: String) {
+        _sessionUnlockedCategories.value = _sessionUnlockedCategories.value + category
+    }
+
+    fun toggleCategoryLock(category: String) {
+        if (category == "All" || category == "Favorites") return
+        viewModelScope.launch {
+            val isCurrentlyLocked = lockedCategories.value.contains(category)
+            val willLock = !isCurrentlyLocked
+            preferences.setIptvCategoryLocked(category, willLock)
+            if (willLock) {
+                _sessionUnlockedCategories.value = _sessionUnlockedCategories.value - category
+                if (_selectedCategory.value == category) {
+                    _selectedCategory.value = "All"
+                }
+            }
+        }
+    }
+
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
     }
@@ -119,6 +233,17 @@ class IptvViewModel(
     fun playChannel(channel: IptvChannel) {
         _playbackError.value = null
         _currentPlayingChannel.value = channel
+        viewModelScope.launch {
+            preferences.setLastPlayedChannelId(channel.id)
+        }
+    }
+
+    fun resumeLastChannel() {
+        lastPlayedChannel.value?.let { playChannel(it) }
+    }
+
+    fun getChannelEpg(channel: IptvChannel, programsMap: Map<String, List<EpgProgram>>): ChannelEpgInfo {
+        return EpgManager.getChannelNowNext(channel, programsById = programsMap)
     }
 
     fun closePlayer() {

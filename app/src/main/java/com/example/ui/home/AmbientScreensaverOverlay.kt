@@ -201,6 +201,14 @@ fun AmbientScreensaverOverlay(
                 onDismiss = onDismiss
             )
         }
+        "slideshow" -> {
+            // Mode 4: Photo Slideshow with Ken Burns motion, transitions, background music & particle effects
+            SlideshowScreensaver(
+                is24hFormat = is24hFormat,
+                focusRequester = focusRequester,
+                onDismiss = onDismiss
+            )
+        }
         "wallpaper_info" -> {
             // Mode 2: App Wallpaper with clock and subtle info at bottom-right
             WallpaperInfoScreensaver(
@@ -707,7 +715,7 @@ private fun WallpaperInfoScreensaver(
     var greetingStr by remember { mutableStateOf("") }
 
     val effectiveLang = LocaleHelper.getEffectiveLanguage(lang)
-    val isArabic = effectiveLang == "ar"
+    val isArabic = effectiveLang == "ar" || effectiveLang == "ur" || effectiveLang == "fa"
     val dateFont = if (isArabic) CairoFontFamily else FontFamily.Default
 
     val directTextShadow = remember {
@@ -720,13 +728,13 @@ private fun WallpaperInfoScreensaver(
 
     val greetingMode by prefs.greetingModeFlow.collectAsState(initial = "poetic")
     val customGreetingText by prefs.customGreetingTextFlow.collectAsState(initial = "")
+    val dateFormatStyle by prefs.dateFormatStyleFlow.collectAsState(initial = "full")
 
-    LaunchedEffect(is24hFormat, lang, greetingMode, customGreetingText) {
+    LaunchedEffect(is24hFormat, lang, greetingMode, customGreetingText, dateFormatStyle) {
         val pattern = if (is24hFormat) "HH:mm" else "hh:mm"
         val timeFmt = SimpleDateFormat(pattern, Locale.US)
         val secFmt = SimpleDateFormat("ss", Locale.US)
-        val dateLocale = LocaleHelper.getLocale(lang)
-        val dateFmt = SimpleDateFormat("EEEE, d MMMM yyyy", dateLocale)
+        val effectiveDateStyle = if (dateFormatStyle == "full") "full_year" else dateFormatStyle
 
         while (true) {
             val cal = Calendar.getInstance()
@@ -734,7 +742,7 @@ private fun WallpaperInfoScreensaver(
             secondsStr = secFmt.format(cal.time)
             val hourOfDay = cal.get(Calendar.HOUR_OF_DAY)
             amPmStr = if (!is24hFormat) LocaleHelper.getAmPmString(hourOfDay, lang) else ""
-            dateStr = dateFmt.format(cal.time)
+            dateStr = LocaleHelper.formatDate(cal.time, effectiveDateStyle, lang)
             greetingStr = GreetingHelper.getGreeting(hourOfDay, effectiveLang, greetingMode, customGreetingText)
             delay(1000)
         }
@@ -766,6 +774,14 @@ private fun WallpaperInfoScreensaver(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+
+        val wallpaperEffect by prefs.slideshowEffectFlow.collectAsState(initial = "none")
+        if (wallpaperEffect != "none") {
+            AtmosphericParticleOverlay(
+                effect = wallpaperEffect,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Deep black corner shadow anchored flush at the active corner (bottom-left in RTL, bottom-right in LTR)
         // and fading out smoothly behind the clock without unbounded edge washout
@@ -967,18 +983,18 @@ private fun ClockDateScreensaver(
     var greetingStr by remember { mutableStateOf("") }
 
     val effectiveLang = LocaleHelper.getEffectiveLanguage(lang)
-    val isArabic = effectiveLang == "ar"
+    val isArabic = effectiveLang == "ar" || effectiveLang == "ur" || effectiveLang == "fa"
     val dateFont = if (isArabic) CairoFontFamily else FontFamily.Default
 
     val greetingMode by prefs.greetingModeFlow.collectAsState(initial = "poetic")
     val customGreetingText by prefs.customGreetingTextFlow.collectAsState(initial = "")
+    val dateFormatStyle by prefs.dateFormatStyleFlow.collectAsState(initial = "full")
 
-    LaunchedEffect(is24hFormat, lang, greetingMode, customGreetingText) {
+    LaunchedEffect(is24hFormat, lang, greetingMode, customGreetingText, dateFormatStyle) {
         val pattern = if (is24hFormat) "HH:mm" else "hh:mm"
         val timeFmt = SimpleDateFormat(pattern, Locale.US)
         val secFmt = SimpleDateFormat("ss", Locale.US)
-        val dateLocale = LocaleHelper.getLocale(lang)
-        val dateFmt = SimpleDateFormat("EEEE, d MMMM yyyy", dateLocale)
+        val effectiveDateStyle = if (dateFormatStyle == "full") "full_year" else dateFormatStyle
 
         while (true) {
             val cal = Calendar.getInstance()
@@ -986,7 +1002,7 @@ private fun ClockDateScreensaver(
             secondsStr = secFmt.format(cal.time)
             val hourOfDay = cal.get(Calendar.HOUR_OF_DAY)
             amPmStr = if (!is24hFormat) LocaleHelper.getAmPmString(hourOfDay, lang) else ""
-            dateStr = dateFmt.format(cal.time)
+            dateStr = LocaleHelper.formatDate(cal.time, effectiveDateStyle, lang)
             greetingStr = GreetingHelper.getGreeting(hourOfDay, effectiveLang, greetingMode, customGreetingText)
             delay(1000)
         }

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -112,6 +113,8 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.data.EpgManager
+import com.example.data.EpgProgram
 import com.example.data.model.IptvChannel
 import com.example.ui.common.TvFocusableCard
 import com.example.ui.theme.TvAccentBlue
@@ -132,6 +135,7 @@ private val PlayerHudGlassBottom = Color(0xF5070B16)
 fun IptvPlayerOverlay(
     channel: IptvChannel,
     channels: List<IptvChannel> = emptyList(),
+    epgPrograms: Map<String, List<EpgProgram>> = emptyMap(),
     playbackError: String?,
     onNextChannel: () -> Unit,
     onPrevChannel: () -> Unit,
@@ -163,6 +167,8 @@ fun IptvPlayerOverlay(
     var streamQualityBadge by remember { mutableStateOf<String?>(null) }
     var resizeMode by remember { mutableStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
     var sleepTimerMinutes by remember { mutableStateOf(0) }
+    var numericBuffer by remember { mutableStateOf("") }
+    var numericDigitTick by remember { mutableLongStateOf(0L) }
 
     val rootFocusRequester = remember { FocusRequester() }
     // Single-row (10 buttons) deterministic focus array for the Channel Info Menu
@@ -184,6 +190,17 @@ fun IptvPlayerOverlay(
         if (sleepTimerMinutes > 0) {
             delay(sleepTimerMinutes * 60_000L)
             onClose()
+        }
+    }
+
+    LaunchedEffect(numericBuffer, numericDigitTick) {
+        if (numericBuffer.isNotEmpty()) {
+            delay(1300L)
+            val targetIdx = numericBuffer.toIntOrNull()?.minus(1)
+            numericBuffer = ""
+            if (targetIdx != null && targetIdx in channels.indices) {
+                onSelectChannel(channels[targetIdx])
+            }
         }
     }
 
@@ -633,7 +650,36 @@ fun IptvPlayerOverlay(
                         keyCode == 172 ||
                         keyCode == 176
 
+                val digitChar: Char? = when (keyCode) {
+                    KeyEvent.KEYCODE_0, KeyEvent.KEYCODE_NUMPAD_0 -> '0'
+                    KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_NUMPAD_1 -> '1'
+                    KeyEvent.KEYCODE_2, KeyEvent.KEYCODE_NUMPAD_2 -> '2'
+                    KeyEvent.KEYCODE_3, KeyEvent.KEYCODE_NUMPAD_3 -> '3'
+                    KeyEvent.KEYCODE_4, KeyEvent.KEYCODE_NUMPAD_4 -> '4'
+                    KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_NUMPAD_5 -> '5'
+                    KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_NUMPAD_6 -> '6'
+                    KeyEvent.KEYCODE_7, KeyEvent.KEYCODE_NUMPAD_7 -> '7'
+                    KeyEvent.KEYCODE_8, KeyEvent.KEYCODE_NUMPAD_8 -> '8'
+                    KeyEvent.KEYCODE_9, KeyEvent.KEYCODE_NUMPAD_9 -> '9'
+                    else -> null
+                }
+
                 if (nativeEvent.action == KeyEvent.ACTION_DOWN) {
+                    if (digitChar != null) {
+                        if (numericBuffer.length < 4) {
+                            numericBuffer += digitChar
+                            numericDigitTick = System.currentTimeMillis()
+                        }
+                        return@onKeyEvent true
+                    }
+                    if (isCenterKey && numericBuffer.isNotEmpty()) {
+                        val targetIdx = numericBuffer.toIntOrNull()?.minus(1)
+                        numericBuffer = ""
+                        if (targetIdx != null && targetIdx in channels.indices) {
+                            onSelectChannel(channels[targetIdx])
+                        }
+                        return@onKeyEvent true
+                    }
                     if (isMenuKey) {
                         showQuickBar = false
                         showChannelSwitchBanner = false
@@ -1254,6 +1300,65 @@ fun IptvPlayerOverlay(
                             }
                         }
 
+                        val epgInfo = remember(channel.id, channel.tvgId, epgPrograms) {
+                            EpgManager.getChannelNowNext(channel, programsById = epgPrograms)
+                        }
+                        if (epgInfo.current != null || epgInfo.next != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    epgInfo.current?.let { nowProg ->
+                                        Text(
+                                            text = "${stringResource(R.string.iptv_epg_now)}: ${nowProg.title}",
+                                            color = TvTextPrimary,
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text(
+                                            text = epgInfo.formatTimeRange(),
+                                            color = TvAccentGold,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                                if (epgInfo.current != null) {
+                                    LinearProgressIndicator(
+                                        progress = { epgInfo.progressFraction() },
+                                        color = TvAccentGold,
+                                        trackColor = Color.White.copy(alpha = 0.14f),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(3.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                    )
+                                }
+                                epgInfo.next?.let { nextProg ->
+                                    Text(
+                                        text = "${stringResource(R.string.iptv_epg_next)}: ${nextProg.title}",
+                                        color = TvTextSecondary,
+                                        fontSize = 11.5.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Single Horizontal Row of Interactive TV Remote Controls (10 items on 1 line)
@@ -1398,6 +1503,8 @@ fun IptvPlayerOverlay(
                             )
 
                             // [6] Sleep Timer Switcher
+                            val sleepSetTemplate = stringResource(R.string.iptv_sleep_toast_set)
+                            val sleepOffToast = stringResource(R.string.iptv_sleep_toast_off)
                             PlayerControlHudButton(
                                 icon = Icons.Default.Timer,
                                 label = timerLabel,
@@ -1410,7 +1517,13 @@ fun IptvPlayerOverlay(
                                 onClick = {
                                     controlsInteractionTick = System.currentTimeMillis()
                                     val idx = timerOptions.indexOf(sleepTimerMinutes)
-                                    sleepTimerMinutes = timerOptions[(idx + 1) % timerOptions.size]
+                                    val nextVal = timerOptions[(idx + 1) % timerOptions.size]
+                                    sleepTimerMinutes = nextVal
+                                    favoriteToastMessage = if (nextVal > 0) {
+                                        sleepSetTemplate.format(nextVal)
+                                    } else {
+                                        sleepOffToast
+                                    }
                                 },
                                 modifier = Modifier
                                     .weight(1f)
@@ -1696,7 +1809,46 @@ fun IptvPlayerOverlay(
             }
         }
 
-        // Floating Favorite Toast Feedback Overlay
+        // Numeric Channel Zapping OSD Badge (0-9)
+        AnimatedVisibility(
+            visible = numericBuffer.isNotEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(horizontal = 36.dp, vertical = 28.dp)
+        ) {
+            val previewChannel = numericBuffer.toIntOrNull()?.minus(1)?.let { channels.getOrNull(it) }
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(PlayerHudGlassBottom)
+                    .border(1.5.dp, TvAccentGold, RoundedCornerShape(20.dp))
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "CH $numericBuffer",
+                    color = TvAccentGold,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
+                )
+                if (previewChannel != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = previewChannel.name,
+                        color = TvTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        // Floating Favorite / Sleep Timer Toast Feedback Overlay
         AnimatedVisibility(
             visible = favoriteToastMessage != null || audioFallbackNotice != null,
             enter = fadeIn(),

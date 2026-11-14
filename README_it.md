@@ -1,4 +1,4 @@
-[English](README.md) | [العربية](README_ar.md) | [Français](README_fr.md) | **Italiano** | [Русский](README_ru.md) | [Español](README_es.md)
+[English](README.md) | [العربية](README_ar.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | **Italiano** | [Русский](README_ru.md) | [Español](README_es.md) | [Português](README_pt.md) | [Türkçe](README_tr.md) | [Polski](README_pl.md) | [Nederlands](README_nl.md) | [Ελληνικά](README_el.md) | [Bahasa Indonesia](README_id.md) | [Tiếng Việt](README_vi.md) | [ไทย](README_th.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [हिन्दी](README_hi.md) | [اردو](README_ur.md) | [فارسی](README_fa.md)
 
 <div align="center">
 
@@ -50,14 +50,16 @@ La maggior parte dei launcher TV attuali è piena di annunci forzati, pesanti an
   * **Orologio e data**: Grande orologio luminoso con protezione burn-in per pannelli TV.
   * **Sfondo 4K con info in basso**: Gradiente a 45° che risalta orario, data e messaggio di benvenuto.
   * **Video cinematografico a schermo intero**: Camini caldi, chalet innevati o cascate in loop continuo senza pulsanti o finestre fastidiose.
+  * **Presentazione foto (`Slideshow`)**: Mostra le foto da una cartella su memoria/USB, foto selezionate o gallerie 4K con durata regolabile (`5s`–`5m`), movimento **Ken Burns / Zoom delicato / Statico**, 6 transizioni di ingresso, effetti particellari (**Neve ❄️**, **Lucciole ✨**, **Pioggia 🌧️**, **Foglie d'autunno 🍂**, **Sakura 🌸**, **Stelle ⭐**, **Bokeh 🔮**), orologio in angolo e musica rilassante o MP3 personalizzato.
 
 ### 🕒 Personalizzazione totale di orologio, data e saluti
-* **Tipografia multilingue (6 lingue)**: Traduzione completa in **Italiano**, **Arabo (Font Cairo)**, **Inglese**, **Francese**, **Spagnolo** e **Russo**.
+* **Tipografia multilingue (21 lingue)**: Traduzione completa in **Italiano**, **Arabo (Font Cairo)**, **Inglese**, **Tedesco**, **Francese**, **Spagnolo**, **Russo**, **Portoghese**, **Turco**, **Polacco**, **Olandese**, **Greco**, **Indonesiano**, **Vietnamita**, **Thailandese**, **Cinese**, **Giapponese**, **Coreano**, **Hindi**, **Urdu** e **Persiano**.
 * **Opzioni orologio**: Formato 12h / 24h, secondi in tempo reale opzionali e 3 dimensioni (Compatto, Medio, Grande).
-* **Stili data**: Data estesa con giorno, Media, Numerica (`GG/MM/AAAA`) o nascosta.
+* **Formati data USA e internazionali**: USA numerico (`MM/dd/yyyy`), USA esteso (`MMMM d, yyyy`), USA completo (`EEEE, MMMM d, yyyy`), USA compatto (`EEE, MMM d`), Internazionale (`dd/MM/yyyy`), ISO (`yyyy-MM-dd`), Europeo (`dd.MM.yyyy`), Esteso o nascosta.
 * **Stili di saluto**: Saluti poetici orari, calorosi, brevi, testo personalizzato o disattivato.
 
 ### 🎛️ Personalizzazione layout e home screen
+* **Modalità icona barra superiore (Centro di controllo / Impostazioni dirette / Entrambi)**: Scegli se mostrare l'icona del Centro di controllo, saltare il Centro di controllo per aprire direttamente le Impostazioni, o mostrare entrambe le icone insieme sulla schermata Home.
 * **Cursore predefinito su Impostazioni**: All'avvio dell'app il cursore è posizionato direttamente sull'icona delle Impostazioni per una configurazione rapida.
 * **Spostamento verticale delle app verso il basso**: Possibilità di abbassare le righe delle app (da 180dp a 380dp) per dare risalto agli sfondi 4K.
 * **Densità griglia**: Scelta tra 4, 5, 6 o 7 app per riga.
@@ -92,7 +94,8 @@ adb install -r aura-tv-launcher.apk
 | :--- | :--- |
 | **Frecce direzionali (D-Pad)** | Navigazione rapida e fluida tra applicazioni, canali e impostazioni. |
 | **Tasto OK / Centro** | Avvia l'applicazione o riproduce il canale selezionato. |
-| **Pressione prolungata OK / Menu** | Apre le opzioni dell'app (Sposta, Blocca con PIN, Nascondi). |
+| **Pressione prolungata OK / Menu (`☰` Tre linee)** | Apre le opzioni dell'app (Sposta, Blocca con PIN, Nascondi) o salta direttamente alle app dalla barra superiore. |
+| **Tasto Voce / Google Assistant (`🎤`)** | Apre la ricerca vocale integrata per trovare app o canali IPTV. |
 | **Tasto Indietro** | Torna alla schermata precedente o alla home in sicurezza. |
 
 ---

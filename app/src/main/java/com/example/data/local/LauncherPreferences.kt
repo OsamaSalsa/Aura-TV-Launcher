@@ -6,9 +6,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.data.model.WebBookmark
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -51,6 +53,28 @@ class LauncherPreferences(private val context: Context) {
         val KEY_CUSTOM_SCREENSAVER_VIDEOS = stringSetPreferencesKey("custom_screensaver_videos")
         val KEY_DELETED_SCREENSAVER_PRESETS = stringSetPreferencesKey("deleted_screensaver_presets")
         val KEY_AUTO_CHECK_UPDATES = booleanPreferencesKey("auto_check_updates")
+        val KEY_LAST_PLAYED_CHANNEL_ID = longPreferencesKey("last_played_channel_id")
+        val KEY_AUTO_RESUME_LAST_CHANNEL = booleanPreferencesKey("auto_resume_last_channel")
+        val KEY_LOCKED_IPTV_CATEGORIES = stringSetPreferencesKey("locked_iptv_categories")
+        val KEY_EPG_URL_OVERRIDE = stringPreferencesKey("epg_url_override")
+        val KEY_SHOW_RECENT_APPS = booleanPreferencesKey("show_recent_apps_row")
+        val KEY_RECENT_APPS = stringPreferencesKey("recent_app_packages")
+        val KEY_CUSTOM_WEB_BOOKMARKS = stringSetPreferencesKey("custom_web_bookmarks")
+        val KEY_USE_DYNAMIC_COLOR = booleanPreferencesKey("use_dynamic_material_color")
+        val KEY_SLIDESHOW_SOURCE = stringPreferencesKey("slideshow_source")
+        val KEY_SLIDESHOW_FOLDER_URI = stringPreferencesKey("slideshow_folder_uri")
+        val KEY_SLIDESHOW_CUSTOM_PHOTOS = stringSetPreferencesKey("slideshow_custom_photos")
+        val KEY_SLIDESHOW_INTERVAL_SEC = intPreferencesKey("slideshow_interval_sec")
+        val KEY_SLIDESHOW_MOTION = stringPreferencesKey("slideshow_motion")
+        val KEY_SLIDESHOW_TRANSITION = stringPreferencesKey("slideshow_transition")
+        val KEY_SLIDESHOW_EFFECT = stringPreferencesKey("slideshow_visual_effect")
+        val KEY_SLIDESHOW_CLOCK_MODE = stringPreferencesKey("slideshow_clock_mode")
+        val KEY_SLIDESHOW_MUSIC_MODE = stringPreferencesKey("slideshow_music_mode")
+        val KEY_SLIDESHOW_CUSTOM_MUSIC_URI = stringPreferencesKey("slideshow_custom_music_uri")
+        val KEY_SLIDESHOW_MUSIC_VOLUME = intPreferencesKey("slideshow_music_volume")
+        val KEY_SLIDESHOW_SHUFFLE = booleanPreferencesKey("slideshow_shuffle")
+        val KEY_SLIDESHOW_DIM_LEVEL = intPreferencesKey("slideshow_dim_level")
+        val KEY_HEADER_CONTROL_MODE = stringPreferencesKey("header_control_mode")
         val DEFAULT_PRESET_VIDEO_IDS = listOf("EG_g7BFaL5s", "TtLeec_DR-Y", "8xXHeRnLwNQ")
     }
 
@@ -102,7 +126,8 @@ class LauncherPreferences(private val context: Context) {
     }
 
     val customWallpaperUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_CUSTOM_WALLPAPER_URL] ?: "aurora_gradient"
+        val url = prefs[KEY_CUSTOM_WALLPAPER_URL] ?: ""
+        if (url == "aurora_gradient" || url.contains("1543946207")) "" else url
     }
 
     val isClock24h: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -458,4 +483,274 @@ class LauncherPreferences(private val context: Context) {
             prefs[KEY_AUTO_CHECK_UPDATES] = enabled
         }
     }
+
+    val lastPlayedChannelIdFlow: Flow<Long> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LAST_PLAYED_CHANNEL_ID] ?: -1L
+    }
+
+    suspend fun setLastPlayedChannelId(channelId: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LAST_PLAYED_CHANNEL_ID] = channelId
+        }
+    }
+
+    val autoResumeLastChannelFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_RESUME_LAST_CHANNEL] ?: false
+    }
+
+    suspend fun setAutoResumeLastChannel(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_RESUME_LAST_CHANNEL] = enabled
+        }
+    }
+
+    val lockedIptvCategoriesFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LOCKED_IPTV_CATEGORIES] ?: emptySet()
+    }
+
+    suspend fun setIptvCategoryLocked(category: String, locked: Boolean) {
+        val clean = category.trim()
+        if (clean.isBlank() || clean == "Favorites" || clean == "All") return
+        context.dataStore.edit { prefs ->
+            val current = (prefs[KEY_LOCKED_IPTV_CATEGORIES] ?: emptySet()).toMutableSet()
+            if (locked) current.add(clean) else current.remove(clean)
+            prefs[KEY_LOCKED_IPTV_CATEGORIES] = current
+        }
+    }
+
+    val epgUrlOverrideFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_EPG_URL_OVERRIDE] ?: ""
+    }
+
+    suspend fun setEpgUrlOverride(url: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_EPG_URL_OVERRIDE] = url.trim()
+        }
+    }
+
+    val showRecentAppsFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_RECENT_APPS] ?: false
+    }
+
+    suspend fun setShowRecentApps(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_RECENT_APPS] = enabled
+        }
+    }
+
+    val recentAppsFlow: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_RECENT_APPS] ?: ""
+        if (raw.isBlank()) emptyList() else raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    }
+
+    suspend fun recordRecentApp(packageName: String) {
+        val clean = packageName.trim()
+        if (clean.isBlank()) return
+        context.dataStore.edit { prefs ->
+            val current = (prefs[KEY_RECENT_APPS] ?: "")
+                .split(",")
+                .map { it.trim() }
+                .filter { it.isNotBlank() && it != clean }
+            val updated = (listOf(clean) + current).take(6)
+            prefs[KEY_RECENT_APPS] = updated.joinToString(",")
+        }
+    }
+
+    val customWebBookmarksFlow: Flow<List<WebBookmark>> = context.dataStore.data.map { prefs ->
+        val rawSet = prefs[KEY_CUSTOM_WEB_BOOKMARKS] ?: emptySet()
+        rawSet.mapNotNull { entry ->
+            val parts = entry.split("|", limit = 3)
+            if (parts.size == 3 && parts[0].isNotBlank() && parts[1].isNotBlank() && parts[2].isNotBlank()) {
+                WebBookmark(id = parts[0], title = parts[1], url = parts[2])
+            } else null
+        }.sortedBy { it.title.lowercase() }
+    }
+
+    suspend fun addCustomWebBookmark(title: String, url: String) {
+        val cleanTitle = title.trim().replace("|", " ")
+        var cleanUrl = url.trim()
+        if (cleanTitle.isBlank() || cleanUrl.isBlank()) return
+        if (!cleanUrl.startsWith("http://", ignoreCase = true) &&
+            !cleanUrl.startsWith("https://", ignoreCase = true)
+        ) {
+            cleanUrl = "https://$cleanUrl"
+        }
+        val id = System.currentTimeMillis().toString(36)
+        context.dataStore.edit { prefs ->
+            val current = (prefs[KEY_CUSTOM_WEB_BOOKMARKS] ?: emptySet()).toMutableSet()
+            current.add("$id|$cleanTitle|$cleanUrl")
+            prefs[KEY_CUSTOM_WEB_BOOKMARKS] = current
+        }
+    }
+
+    suspend fun removeCustomWebBookmark(id: String) {
+        val cleanId = id.trim()
+        if (cleanId.isBlank()) return
+        context.dataStore.edit { prefs ->
+            val current = (prefs[KEY_CUSTOM_WEB_BOOKMARKS] ?: emptySet()).toMutableSet()
+            current.removeAll { it.substringBefore("|") == cleanId }
+            prefs[KEY_CUSTOM_WEB_BOOKMARKS] = current
+        }
+    }
+
+    val useDynamicColorFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_USE_DYNAMIC_COLOR] ?: false
+    }
+
+    suspend fun setUseDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_USE_DYNAMIC_COLOR] = enabled
+        }
+    }
+
+    // --- Photo Slideshow Screensaver Preferences ---
+
+    val slideshowSourceFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_SOURCE] ?: "online_all"
+    }
+
+    suspend fun setSlideshowSource(source: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_SOURCE] = source
+        }
+    }
+
+    val slideshowFolderUriFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_FOLDER_URI] ?: ""
+    }
+
+    suspend fun setSlideshowFolderUri(uri: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_FOLDER_URI] = uri.trim()
+        }
+    }
+
+    val slideshowCustomPhotosFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_CUSTOM_PHOTOS] ?: emptySet()
+    }
+
+    suspend fun addSlideshowCustomPhotos(uris: Collection<String>) {
+        context.dataStore.edit { prefs ->
+            val current = (prefs[KEY_SLIDESHOW_CUSTOM_PHOTOS] ?: emptySet()).toMutableSet()
+            uris.map { it.trim() }.filter { it.isNotBlank() }.forEach { current.add(it) }
+            prefs[KEY_SLIDESHOW_CUSTOM_PHOTOS] = current
+        }
+    }
+
+    suspend fun clearSlideshowCustomPhotos() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_CUSTOM_PHOTOS] = emptySet()
+        }
+    }
+
+    val slideshowIntervalSecFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_INTERVAL_SEC] ?: 10
+    }
+
+    suspend fun setSlideshowIntervalSec(seconds: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_INTERVAL_SEC] = seconds.coerceIn(3, 600)
+        }
+    }
+
+    val slideshowMotionFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_MOTION] ?: "ken_burns"
+    }
+
+    suspend fun setSlideshowMotion(motion: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_MOTION] = motion
+        }
+    }
+
+    val slideshowTransitionFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_TRANSITION] ?: "crossfade"
+    }
+
+    suspend fun setSlideshowTransition(transition: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_TRANSITION] = transition
+        }
+    }
+
+    val slideshowEffectFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_EFFECT] ?: "snow"
+    }
+
+    suspend fun setSlideshowEffect(effect: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_EFFECT] = effect
+        }
+    }
+
+    val slideshowClockModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_CLOCK_MODE] ?: "corner_full"
+    }
+
+    suspend fun setSlideshowClockMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_CLOCK_MODE] = mode
+        }
+    }
+
+    val slideshowMusicModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_MUSIC_MODE] ?: "off"
+    }
+
+    suspend fun setSlideshowMusicMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_MUSIC_MODE] = mode
+        }
+    }
+
+    val slideshowCustomMusicUriFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_CUSTOM_MUSIC_URI] ?: ""
+    }
+
+    suspend fun setSlideshowCustomMusicUri(uri: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_CUSTOM_MUSIC_URI] = uri.trim()
+        }
+    }
+
+    val slideshowMusicVolumeFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_MUSIC_VOLUME] ?: 50
+    }
+
+    suspend fun setSlideshowMusicVolume(percent: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_MUSIC_VOLUME] = percent.coerceIn(10, 100)
+        }
+    }
+
+    val slideshowShuffleFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_SHUFFLE] ?: true
+    }
+
+    suspend fun setSlideshowShuffle(shuffle: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_SHUFFLE] = shuffle
+        }
+    }
+
+    val slideshowDimLevelFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SLIDESHOW_DIM_LEVEL] ?: 20
+    }
+
+    suspend fun setSlideshowDimLevel(percent: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SLIDESHOW_DIM_LEVEL] = percent.coerceIn(0, 70)
+        }
+    }
+
+    val headerControlModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_HEADER_CONTROL_MODE] ?: "control_center"
+    }
+
+    suspend fun setHeaderControlMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_HEADER_CONTROL_MODE] = mode
+        }
+    }
 }
+
