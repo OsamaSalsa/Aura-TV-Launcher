@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Clean slightly lighter dynamic blue gradient matching StartupBlueSplashScreen -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="315"
+                android:startColor="#2B6BE6"
+                android:centerColor="#1F54C7"
+                android:endColor="#163E99" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,8 @@
+{
+  "name": "Aura TV",
+  "description": "Landscape Android TV launcher with D-pad navigation, live clock \u0026 network, dynamic palette background, IPTV player with M3U parser, and curated Mini YouTube.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
