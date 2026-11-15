@@ -516,6 +516,14 @@ fun LauncherNavigation(
         }
     }
 
+    LaunchedEffect(screensaverMode, screensaverVideo) {
+        if (screensaverMode == "video_stream" && screensaverVideo.isNotBlank()) {
+            try {
+                com.example.util.YouTubeStreamResolver.prefetch(screensaverVideo)
+            } catch (_: Exception) {}
+        }
+    }
+
     val timeoutMinutes = remember(screensaverTimeout) {
         if (screensaverTimeout == "never") 0 else (screensaverTimeout.toIntOrNull() ?: 5)
     }

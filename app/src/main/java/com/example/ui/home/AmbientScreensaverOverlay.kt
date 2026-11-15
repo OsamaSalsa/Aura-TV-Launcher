@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
@@ -82,13 +83,21 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.drm.DrmSessionManager
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MergingMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
@@ -111,6 +120,8 @@ import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
 import com.example.util.GreetingHelper
 import com.example.util.LocaleHelper
+import com.example.util.ResolvedYouTubeStream
+import com.example.util.YouTubeStreamResolver
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -256,11 +267,29 @@ private fun VideoScreensaver(
     val videoId = remember(cleanInput) { extractYouTubeVideoId(cleanInput) }
     val hostView = LocalView.current
     var isVideoReady by remember(cleanInput) { mutableStateOf(false) }
+    var resolvedStream by remember(cleanInput) {
+        mutableStateOf<ResolvedYouTubeStream?>(
+            if (!isDirectStreamUrl) YouTubeStreamResolver.getCached(videoId) else null
+        )
+    }
+    var useWebFallback by remember(cleanInput) { mutableStateOf(false) }
 
-    LaunchedEffect(cleanInput) {
+    LaunchedEffect(cleanInput, isDirectStreamUrl, videoId) {
         isVideoReady = false
-        delay(25_000L)
-        isVideoReady = true
+        useWebFallback = false
+        if (!isDirectStreamUrl) {
+            val cached = YouTubeStreamResolver.getCached(videoId)
+            if (cached != null) {
+                resolvedStream = cached
+            } else {
+                val resolved = YouTubeStreamResolver.resolve(videoId)
+                if (resolved != null) {
+                    resolvedStream = resolved
+                } else {
+                    useWebFallback = true
+                }
+            }
+        }
     }
 
     DisposableEffect(hostView) {
@@ -279,21 +308,37 @@ private fun VideoScreensaver(
         if (isDirectStreamUrl) {
             DirectStreamExoPlayerScreensaver(
                 streamUrl = cleanInput,
-                onFirstFrameRendered = { isVideoReady = true },
+                onVideoActivelyPlaying = { isVideoReady = true },
                 onStreamError = {}
             )
         } else {
-            YouTubeWebScreensaver(
-                videoId = videoId,
-                onVideoReady = { isVideoReady = true }
-            )
+            val activeResolved = resolvedStream
+            if (activeResolved != null && !useWebFallback) {
+                DirectStreamExoPlayerScreensaver(
+                    streamUrl = activeResolved.videoUrl,
+                    audioUrl = activeResolved.audioUrl,
+                    isHls = activeResolved.isHls,
+                    userAgent = activeResolved.userAgent,
+                    onVideoActivelyPlaying = { isVideoReady = true },
+                    onStreamError = {
+                        YouTubeStreamResolver.invalidate(videoId)
+                        isVideoReady = false
+                        useWebFallback = true
+                    }
+                )
+            } else if (useWebFallback) {
+                YouTubeWebScreensaver(
+                    videoId = videoId,
+                    onVideoReady = { isVideoReady = true }
+                )
+            }
         }
 
         // Show Clock screensaver instead of a black screen until the video starts rendering frames
         AnimatedVisibility(
             visible = !isVideoReady,
             enter = fadeIn(),
-            exit = fadeOut(animationSpec = tween(durationMillis = 500)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 400)),
             modifier = Modifier.fillMaxSize()
         ) {
             ClockDateScreensaver(
@@ -326,9 +371,8 @@ private fun VideoScreensaver(
 }
 
 /**
- * Plays YouTube video in pure full screen with fast direct YouTube Embed startup (1-3s)
- * and automatic fallback to lightweight Invidious Embed if embedding is restricted.
- * Notifies [onVideoReady] once the HTML5 `<video>` element begins actively advancing frames.
+ * Fallback WebView YouTube player when direct native ExoPlayer stream extraction fails.
+ * Requests HD (1080p/720p) quality and falls back swiftly if embed playback is blocked.
  */
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
@@ -344,17 +388,22 @@ private fun YouTubeWebScreensaver(
 
     val playerUrl = remember(videoId, useInvidiousFallback) {
         if (!useInvidiousFallback) {
-            "https://www.youtube.com/embed/$videoId?autoplay=1&controls=0&loop=1&playlist=$videoId&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&cc_load_policy=0"
+            "https://www.youtube.com/watch?v=$videoId"
         } else {
-            "https://invidious.tiekoetter.com/embed/$videoId?autoplay=1&loop=1&controls=0&quality=medium"
+            "https://invidious.tiekoetter.com/embed/$videoId?autoplay=1&muted=1&loop=1&controls=0&quality=hd720"
         }
     }
 
     LaunchedEffect(videoId, useInvidiousFallback, hasVideoStarted) {
         if (!useInvidiousFallback && !hasVideoStarted) {
-            delay(9_000L)
+            delay(8_500L)
             if (!hasVideoStarted) {
                 useInvidiousFallback = true
+            }
+        } else if (useInvidiousFallback && !hasVideoStarted) {
+            delay(10_000L)
+            if (!hasVideoStarted) {
+                onVideoReady()
             }
         }
     }
@@ -363,21 +412,36 @@ private fun YouTubeWebScreensaver(
         """
         (function() {
             function notifyIfPlaying(v) {
-                if (v && v.readyState >= 2 && !v.paused && v.videoWidth > 0 && v.currentTime > 0.05) {
+                if (v && v.readyState >= 2 && !v.paused && v.videoWidth > 0 && v.currentTime > 0.15) {
                     if (!window.__auraVideoReadySent) {
                         window.__auraVideoReadySent = true;
                         try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
                     }
                 }
             }
+            function tryDismissConsent() {
+                try {
+                    if (location.hostname && location.hostname.indexOf('consent.') !== -1) {
+                        var btns = document.querySelectorAll('form button, button');
+                        for (var i = 0; i < btns.length; i++) {
+                            var txt = (btns[i].innerText || btns[i].getAttribute('aria-label') || '').toLowerCase();
+                            if (txt.indexOf('reject') !== -1 || txt.indexOf('accept') !== -1 || txt.indexOf('agree') !== -1) {
+                                btns[i].click();
+                                return true;
+                            }
+                        }
+                    }
+                    var dialogBtn = document.querySelector('tp-yt-paper-dialog button[aria-label*="Accept" i], tp-yt-paper-dialog button[aria-label*="Reject" i], .eom-button-row button, ytd-consent-bump-v2-lightbox button[aria-label*="Reject" i], ytd-consent-bump-v2-lightbox button[aria-label*="Accept" i]');
+                    if (dialogBtn) {
+                        dialogBtn.click();
+                        return true;
+                    }
+                } catch (e) {}
+                return false;
+            }
             function applyCleanVideo() {
                 try {
-                    var errEl = document.querySelector('.ytp-error, .ytp-error-content');
-                    if (errEl && errEl.offsetHeight > 0 && !window.__auraEmbedErrorSent) {
-                        window.__auraEmbedErrorSent = true;
-                        try { AuraVideoBridge.onEmbedError(); } catch(e) {}
-                        return;
-                    }
+                    tryDismissConsent();
                     var text = (document.body && document.body.innerText) ? document.body.innerText : '';
                     if (text.indexOf('Making sure') !== -1 || text.indexOf('Anubis') !== -1) {
                         document.documentElement.style.background = '#000';
@@ -391,10 +455,12 @@ private fun YouTubeWebScreensaver(
                         var st = document.createElement('style');
                         st.id = 'ambient-clean-style';
                         st.innerHTML = 'html, body { margin:0 !important; padding:0 !important; background:#000 !important; overflow:hidden !important; width:100vw !important; height:100vh !important; } ' +
-                            '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-show-cards-title, .ytp-title, .ytp-pause-overlay, .ytp-ce-element, .ytp-spinner, .ytp-impression-link, .ytp-bezel, ' +
-                            '.navbar, header, footer, #comments, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box, .vjs-control-bar, .vjs-big-play-button, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .watch-on-invidious { display:none !important; opacity:0 !important; visibility:hidden !important; } ' +
-                            '#player, #player-container, .html5-video-player, .html5-video-container, .video-js { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000 !important; z-index:99999 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
-                            'video, .video-stream, .vjs-tech { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000 !important; z-index:100000 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
+                            '#masthead-container, #secondary, #below, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ' +
+                            '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-show-cards-title, .ytp-title, .ytp-pause-overlay, .ytp-ce-element, .ytp-spinner, .ytp-impression-link, .ytp-bezel, .ytp-cued-thumbnail-overlay, ' +
+                            '.navbar, header, footer, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box, .vjs-control-bar, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .watch-on-invidious { display:none !important; opacity:0 !important; visibility:hidden !important; } ' +
+                            '.vjs-big-play-button, .ytp-large-play-button { opacity:0 !important; } ' +
+                            '#movie_player, #player, #player-container, .html5-video-player, .html5-video-container, .video-js { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000 !important; z-index:999999 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
+                            'video, .video-stream, .vjs-tech { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000 !important; z-index:2147483647 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
                         document.head.appendChild(st);
                     }
                     if (document.body) {
@@ -404,30 +470,50 @@ private fun YouTubeWebScreensaver(
                     if (skipBtn) {
                         try { skipBtn.click(); } catch(e) {}
                     }
+                    var mp = document.getElementById('movie_player');
+                    if (mp && !window.__auraQualityApplied) {
+                        try {
+                            if (mp.setPlaybackQualityRange) { mp.setPlaybackQualityRange('hd720', 'hd1080'); }
+                            if (mp.setPlaybackQuality) { mp.setPlaybackQuality('hd1080'); }
+                            window.__auraQualityApplied = true;
+                        } catch(e) {}
+                    }
                     var v = document.querySelector('video');
                     if (v) {
                         v.loop = true;
                         v.controls = false;
+                        if (mp && mp.classList && mp.classList.contains('ad-showing') && isFinite(v.duration) && v.duration > 0) {
+                            try { v.currentTime = v.duration; } catch(e) {}
+                        }
                         if (!v.__auraBound) {
                             v.__auraBound = true;
                             v.addEventListener('playing', function() { notifyIfPlaying(v); });
                             v.addEventListener('timeupdate', function() { notifyIfPlaying(v); });
                         }
                         if (v.paused) {
-                            v.muted = false;
-                            v.volume = 1.0;
-                            v.play().catch(function() {
-                                v.muted = true;
-                                v.play().catch(function() {
-                                    var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button');
-                                    if (playBtn) { try { playBtn.click(); } catch(e) {} }
-                                });
+                            v.muted = true;
+                            v.play().then(function() {
+                                if (!window.__auraUnmuteScheduled) {
+                                    window.__auraUnmuteScheduled = true;
+                                    setTimeout(function() {
+                                        try {
+                                            v.muted = false;
+                                            v.volume = 1.0;
+                                            setTimeout(function() {
+                                                if (v.paused) {
+                                                    v.muted = true;
+                                                    v.play().catch(function(){});
+                                                }
+                                            }, 300);
+                                        } catch(e) {}
+                                    }, 500);
+                                }
+                            }).catch(function() {
+                                var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button, .vjs-big-play-button');
+                                if (playBtn) { try { playBtn.click(); } catch(e) {} }
                             });
                         }
                         notifyIfPlaying(v);
-                    } else {
-                        var bigPlay = document.querySelector('.ytp-large-play-button');
-                        if (bigPlay) { try { bigPlay.click(); } catch(e) {} }
                     }
                 } catch (e) {}
             }
@@ -551,22 +637,14 @@ private fun YouTubeWebScreensaver(
                                 }
                             }
 
-                            if (!useInvidiousFallback) {
-                                loadUrl(playerUrl, mapOf("Referer" to "https://www.youtube.com/"))
-                            } else {
-                                loadUrl(playerUrl)
-                            }
+                            loadUrl(playerUrl)
                             webViewRef = this
                         }
                     },
                     update = { webView ->
                         webViewRef = webView
                         if (!isWebViewDestroyed(webView) && webView.url == null) {
-                            if (!useInvidiousFallback) {
-                                webView.loadUrl(playerUrl, mapOf("Referer" to "https://www.youtube.com/"))
-                            } else {
-                                webView.loadUrl(playerUrl)
-                            }
+                            webView.loadUrl(playerUrl)
                         }
                     },
                     onRelease = { webView ->
@@ -590,53 +668,243 @@ private fun YouTubeWebScreensaver(
 }
 
 @OptIn(UnstableApi::class)
+private class ChunkedHttpDataSource(
+    private val upstream: HttpDataSource,
+    private val chunkSizeBytes: Long = 2L * 1024L * 1024L
+) : DataSource {
+    private var currentDataSpec: DataSpec? = null
+    private var currentPosition: Long = 0L
+    private var bytesRemainingTotal: Long = C.LENGTH_UNSET.toLong()
+    private var bytesRemainingInChunk: Long = 0L
+    private var openedChunk: Boolean = false
+
+    override fun addTransferListener(transferListener: TransferListener) {
+        upstream.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        currentDataSpec = dataSpec
+        currentPosition = dataSpec.position
+        bytesRemainingTotal = if (dataSpec.length != C.LENGTH_UNSET.toLong()) {
+            dataSpec.length
+        } else {
+            C.LENGTH_UNSET.toLong()
+        }
+        openNextChunk(initial = true)
+        return bytesRemainingTotal
+    }
+
+    private fun openNextChunk(initial: Boolean): Boolean {
+        val base = currentDataSpec ?: return false
+        if (bytesRemainingTotal == 0L) return false
+
+        val toRequest = if (bytesRemainingTotal != C.LENGTH_UNSET.toLong()) {
+            minOf(chunkSizeBytes, bytesRemainingTotal)
+        } else {
+            chunkSizeBytes
+        }
+
+        val chunkSpec = base.buildUpon()
+            .setPosition(currentPosition)
+            .setLength(toRequest)
+            .build()
+
+        val openedLen = upstream.open(chunkSpec)
+        openedChunk = true
+
+        if (initial && bytesRemainingTotal == C.LENGTH_UNSET.toLong()) {
+            val contentRange = upstream.responseHeaders["Content-Range"]?.firstOrNull()
+                ?: upstream.responseHeaders["content-range"]?.firstOrNull()
+            val totalSize = contentRange?.substringAfterLast("/")?.toLongOrNull()
+            if (totalSize != null && totalSize > currentPosition) {
+                bytesRemainingTotal = totalSize - currentPosition
+            }
+        }
+
+        bytesRemainingInChunk = if (openedLen != C.LENGTH_UNSET.toLong()) openedLen else toRequest
+        return bytesRemainingInChunk != 0L
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+        if (length == 0) return 0
+        if (bytesRemainingTotal == 0L) return C.RESULT_END_OF_INPUT
+
+        if (bytesRemainingInChunk == 0L) {
+            closeUpstreamQuietly()
+            if (!openNextChunk(initial = false)) {
+                return C.RESULT_END_OF_INPUT
+            }
+        }
+
+        val maxToRead = if (bytesRemainingInChunk > 0L) {
+            minOf(length.toLong(), bytesRemainingInChunk).toInt()
+        } else {
+            length
+        }
+
+        val read = upstream.read(buffer, offset, maxToRead)
+        if (read == C.RESULT_END_OF_INPUT) {
+            if (bytesRemainingTotal == C.LENGTH_UNSET.toLong() || bytesRemainingTotal > 0L) {
+                if (bytesRemainingInChunk > 0L && bytesRemainingTotal == C.LENGTH_UNSET.toLong()) {
+                    bytesRemainingTotal = 0L
+                    return C.RESULT_END_OF_INPUT
+                }
+                closeUpstreamQuietly()
+                if (!openNextChunk(initial = false)) {
+                    return C.RESULT_END_OF_INPUT
+                }
+                return read(buffer, offset, length)
+            }
+            return C.RESULT_END_OF_INPUT
+        }
+
+        if (read > 0) {
+            currentPosition += read
+            if (bytesRemainingTotal != C.LENGTH_UNSET.toLong()) {
+                bytesRemainingTotal = (bytesRemainingTotal - read).coerceAtLeast(0L)
+            }
+            if (bytesRemainingInChunk > 0L) {
+                bytesRemainingInChunk = (bytesRemainingInChunk - read).coerceAtLeast(0L)
+            }
+        }
+        return read
+    }
+
+    override fun getUri(): Uri? = upstream.uri ?: currentDataSpec?.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> = upstream.responseHeaders
+
+    override fun close() {
+        currentDataSpec = null
+        closeUpstreamQuietly()
+    }
+
+    private fun closeUpstreamQuietly() {
+        if (openedChunk) {
+            openedChunk = false
+            try { upstream.close() } catch (_: Exception) {}
+        }
+    }
+}
+
+@OptIn(UnstableApi::class)
 @Composable
 private fun DirectStreamExoPlayerScreensaver(
     streamUrl: String,
-    onFirstFrameRendered: () -> Unit = {},
+    audioUrl: String? = null,
+    isHls: Boolean = false,
+    userAgent: String = STREAM_USER_AGENT,
+    onVideoActivelyPlaying: () -> Unit = {},
     onStreamError: () -> Unit
 ) {
     val context = LocalContext.current
     var stoppedByLifecycle by remember { mutableStateOf(false) }
-    var retryCount by remember(streamUrl) { mutableStateOf(0) }
+    var retryCount by remember(streamUrl, audioUrl) { mutableStateOf(0) }
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+    var firstFrameRendered by remember(streamUrl, audioUrl) { mutableStateOf(false) }
+    var activePlaybackConfirmed by remember(streamUrl, audioUrl) { mutableStateOf(false) }
+    var stallReported by remember(streamUrl, audioUrl) { mutableStateOf(false) }
 
-    val exoPlayer: ExoPlayer = remember(streamUrl) {
+    val exoPlayer: ExoPlayer = remember(streamUrl, audioUrl, isHls, userAgent) {
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent(STREAM_USER_AGENT)
+            .setUserAgent(userAgent)
             .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(12000)
-            .setReadTimeoutMs(12000)
+            .setConnectTimeoutMs(8000)
+            .setReadTimeoutMs(10000)
+
+        val effectiveUpstreamFactory = if (!isHls && streamUrl.contains("googlevideo.com", ignoreCase = true)) {
+            DataSource.Factory { ChunkedHttpDataSource(httpDataSourceFactory.createDataSource()) }
+        } else {
+            httpDataSourceFactory
+        }
+
+        val dataSourceFactory = DefaultDataSource.Factory(context, effectiveUpstreamFactory)
 
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
-            .setDataSourceFactory(DefaultDataSource.Factory(context, httpDataSourceFactory))
+            .setDataSourceFactory(dataSourceFactory)
             .setDrmSessionManagerProvider { DrmSessionManager.DRM_UNSUPPORTED }
 
         val renderersFactory = DefaultRenderersFactory(context)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
             .setEnableDecoderFallback(true)
 
+        val trackSelector = DefaultTrackSelector(context).apply {
+            parameters = buildUponParameters()
+                .setMaxVideoSize(1920, 1080)
+                .setPreferredVideoMimeTypes("video/avc", "video/hevc", "video/x-vnd.on2.vp9")
+                .setForceHighestSupportedBitrate(true)
+                .build()
+        }
+
+        val bandwidthMeter = DefaultBandwidthMeter.Builder(context)
+            .setInitialBitrateEstimate(10_000_000L)
+            .build()
+
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                1500,  // minBufferMs
-                15000, // maxBufferMs
-                400,   // bufferForPlaybackMs (fast start)
-                1000   // bufferForPlaybackAfterRebufferMs
+                2000,  // minBufferMs
+                25000, // maxBufferMs
+                250,   // bufferForPlaybackMs (near-instant start)
+                800    // bufferForPlaybackAfterRebufferMs
             )
             .build()
 
+        val mediaSource = when {
+            isHls || streamUrl.contains(".m3u8", ignoreCase = true) -> {
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(MediaItem.fromUri(streamUrl))
+            }
+            !audioUrl.isNullOrBlank() -> {
+                val videoSource = mediaSourceFactory.createMediaSource(MediaItem.fromUri(streamUrl))
+                val audioSource = mediaSourceFactory.createMediaSource(MediaItem.fromUri(audioUrl))
+                MergingMediaSource(true, true, videoSource, audioSource)
+            }
+            else -> {
+                mediaSourceFactory.createMediaSource(MediaItem.fromUri(streamUrl))
+            }
+        }
+
         ExoPlayer.Builder(context, renderersFactory)
+            .setTrackSelector(trackSelector)
+            .setBandwidthMeter(bandwidthMeter)
             .setMediaSourceFactory(mediaSourceFactory)
             .setLoadControl(loadControl)
             .build()
             .apply {
                 videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
                 repeatMode = Player.REPEAT_MODE_ONE
-                setMediaItem(MediaItem.fromUri(streamUrl))
+                setMediaSource(mediaSource)
                 prepare()
                 playWhenReady = true
                 volume = 1f
             }
+    }
+
+    // Confirm real frame advancement before hiding clock overlay, and recover automatically if stalled
+    LaunchedEffect(exoPlayer) {
+        var lastPos = exoPlayer.currentPosition
+        var stalledMs = 0L
+        while (!stallReported) {
+            delay(300L)
+            if (stoppedByLifecycle) continue
+            val currentPos = exoPlayer.currentPosition
+            val isAdvancing = currentPos > lastPos || (exoPlayer.isPlaying && exoPlayer.playbackState == Player.STATE_READY && currentPos > 100L)
+            if (isAdvancing) {
+                stalledMs = 0L
+                if (firstFrameRendered && !activePlaybackConfirmed) {
+                    activePlaybackConfirmed = true
+                    onVideoActivelyPlaying()
+                }
+            } else {
+                stalledMs += 300L
+                if (stalledMs >= 4500L && !activePlaybackConfirmed) {
+                    stallReported = true
+                    onStreamError()
+                    break
+                }
+            }
+            lastPos = currentPos
+        }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -681,13 +949,17 @@ private fun DirectStreamExoPlayerScreensaver(
             }
 
             override fun onRenderedFirstFrame() {
-                onFirstFrameRendered()
+                firstFrameRendered = true
+                if (exoPlayer.currentPosition > 80L && !activePlaybackConfirmed) {
+                    activePlaybackConfirmed = true
+                    onVideoActivelyPlaying()
+                }
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                if (!stoppedByLifecycle && retryCount < 2) {
+                if (!stoppedByLifecycle && retryCount < 1) {
                     retryCount++
-                    postOnMain(350L) {
+                    postOnMain(300L) {
                         if (!stoppedByLifecycle) {
                             try {
                                 exoPlayer.stop()
@@ -696,7 +968,8 @@ private fun DirectStreamExoPlayerScreensaver(
                             } catch (_: Exception) {}
                         }
                     }
-                } else {
+                } else if (!stallReported) {
+                    stallReported = true
                     onStreamError()
                 }
             }
@@ -716,7 +989,7 @@ private fun DirectStreamExoPlayerScreensaver(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
             val view = LayoutInflater.from(ctx)
-                .inflate(R.layout.layout_iptv_player, null) as PlayerView
+                .inflate(R.layout.layout_screensaver_player, null) as PlayerView
             view.apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -725,7 +998,7 @@ private fun DirectStreamExoPlayerScreensaver(
                 keepScreenOn = true
                 useController = false
                 player = exoPlayer
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 setEnableComposeSurfaceSyncWorkaround(true)
                 playerViewRef = this
             }
@@ -734,7 +1007,7 @@ private fun DirectStreamExoPlayerScreensaver(
             view.keepScreenOn = true
             view.useController = false
             view.player = exoPlayer
-            view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+            view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
             playerViewRef = view
         },
         onRelease = { view ->
