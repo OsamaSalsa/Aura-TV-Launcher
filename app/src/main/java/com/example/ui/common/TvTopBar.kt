@@ -98,6 +98,7 @@ fun TvTopBar(
     onNonAppFocused: (() -> Unit)? = null,
     onRequestFocusDown: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
+    canFocusButtons: Boolean = true,
     glassOpacity: Int = 75,
     modifier: Modifier = Modifier
 ) {
@@ -412,6 +413,7 @@ fun TvTopBar(
                     onClick = onOpenSearch,
                     onFocused = onNonAppFocused,
                     onRequestFocusDown = onRequestFocusDown,
+                    canFocus = canFocusButtons,
                     glassOpacity = glassOpacity,
                     showText = false
                 )
@@ -433,6 +435,7 @@ fun TvTopBar(
                 }, 
                 onFocused = onNonAppFocused,
                 onRequestFocusDown = onRequestFocusDown,
+                canFocus = canFocusButtons,
                 glassOpacity = glassOpacity,
                 showText = false
             )
@@ -445,6 +448,7 @@ fun TvTopBar(
                 onLongClick = onOpenSettings, // Long click on TV shows settings/menu
                 onFocused = onNonAppFocused,
                 onRequestFocusDown = onRequestFocusDown,
+                canFocus = canFocusButtons,
                 glassOpacity = glassOpacity,
                 showText = false
             )
@@ -458,6 +462,7 @@ fun TvTopBar(
                     onClick = onToggleEditMode,
                     onFocused = onNonAppFocused,
                     onRequestFocusDown = onRequestFocusDown,
+                    canFocus = canFocusButtons,
                     glassOpacity = glassOpacity,
                     showText = false
                 )
@@ -475,6 +480,7 @@ fun TvTopBar(
                         onFocused = onNonAppFocused,
                         onRequestFocusDown = onRequestFocusDown,
                         focusRequester = focusRequester,
+                        canFocus = canFocusButtons,
                         glassOpacity = glassOpacity,
                         showText = false
                     )
@@ -490,6 +496,7 @@ fun TvTopBar(
                             onLongClick = onOpenSettings,
                             onFocused = onNonAppFocused,
                             onRequestFocusDown = onRequestFocusDown,
+                            canFocus = canFocusButtons,
                             glassOpacity = glassOpacity,
                             showText = false
                         )
@@ -503,6 +510,7 @@ fun TvTopBar(
                         onFocused = onNonAppFocused,
                         onRequestFocusDown = onRequestFocusDown,
                         focusRequester = focusRequester,
+                        canFocus = canFocusButtons,
                         glassOpacity = glassOpacity,
                         showText = false
                     )
@@ -518,6 +526,7 @@ fun TvTopBar(
                         onFocused = onNonAppFocused,
                         onRequestFocusDown = onRequestFocusDown,
                         focusRequester = focusRequester,
+                        canFocus = canFocusButtons,
                         glassOpacity = glassOpacity,
                         showText = false
                     )
@@ -536,6 +545,7 @@ fun TvActionButton(
     onFocused: (() -> Unit)? = null,
     onRequestFocusDown: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
+    canFocus: Boolean = true,
     glassOpacity: Int = 75,
     showText: Boolean = true,
     contentDescription: String? = null
@@ -545,6 +555,7 @@ fun TvActionButton(
         onLongClick = onLongClick,
         onFocused = onFocused,
         focusRequester = focusRequester ?: remember { FocusRequester() },
+        canFocus = canFocus,
         scaleUpRatio = 1.05f,
         useDefaultBorder = false,
         elevation = 0.dp,

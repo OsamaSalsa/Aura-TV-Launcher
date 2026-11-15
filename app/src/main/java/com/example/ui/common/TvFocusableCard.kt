@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,7 @@ fun TvFocusableCard(
     cardBackgroundColor: Color? = null,
     useDefaultBorder: Boolean = true,
     focusBorderColor: Color = TvAccentGold,
+    canFocus: Boolean = true,
     content: @Composable BoxScope.(isFocused: Boolean) -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -139,6 +141,9 @@ fun TvFocusableCard(
                 false
             }
             .focusRequester(focusRequester)
+            .focusProperties {
+                this.canFocus = canFocus
+            }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick

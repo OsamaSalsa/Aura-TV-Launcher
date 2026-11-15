@@ -20,6 +20,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.scale
@@ -516,30 +517,11 @@ fun HomeScreen(
     
     val displayChannels = channelReorderState?.items ?: favoriteChannels
     val activeReorderChannelId = channelReorderState?.selectedChannelId
+    val isReorderingActive = reorderState != null || channelReorderState != null
     
     val focusRequesters = remember { mutableMapOf<String, androidx.compose.ui.focus.FocusRequester>() }
     val channelFocusRequesters = remember { mutableMapOf<Long, androidx.compose.ui.focus.FocusRequester>() }
     val channelsRowState = androidx.compose.foundation.lazy.rememberLazyListState()
-
-    LaunchedEffect(activeReorderPkg, activeReorderChannelId, displayApps, displayChannels) {
-        activeReorderPkg?.let { pkg ->
-            try {
-                focusRequesters[pkg]?.requestFocus()
-            } catch (_: Exception) {}
-        }
-        activeReorderChannelId?.let { id ->
-            val idx = displayChannels.indexOfFirst { it.id == id }
-            if (idx != -1) {
-                try {
-                    channelsRowState.scrollToItem((idx - 1).coerceAtLeast(0))
-                } catch (_: Exception) {}
-                kotlinx.coroutines.delay(40)
-                try {
-                    channelFocusRequesters[id]?.requestFocus()
-                } catch (_: Exception) {}
-            }
-        }
-    }
 
     val clampedAppsPerRow = appsPerRow.coerceIn(4, 7)
     val nonGameApps = remember(displayApps) { displayApps.filter { !it.isGame } }
@@ -555,6 +537,84 @@ fun HomeScreen(
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val density = androidx.compose.ui.platform.LocalDensity.current
+
+    LaunchedEffect(activeReorderPkg, activeReorderChannelId, displayApps, displayChannels) {
+        activeReorderPkg?.let { pkg ->
+            isStartupParked = false
+            // Compute exact LazyColumn item index containing the moved app
+            var cursor = 1 // index 0 is top_anchor_spacer
+            if (favoriteChannels.isNotEmpty()) cursor++
+            if (showRecentApps && recentApps.isNotEmpty() && reorderState == null) cursor++
+            var targetListIndex: Int? = null
+            if (nonGameApps.isNotEmpty()) {
+                cursor++ // apps_header
+                val rowIdx = nonGameRows.indexOfFirst { row -> row.any { it.packageName == pkg } }
+                if (rowIdx != -1) {
+                    targetListIndex = cursor + rowIdx
+                }
+                cursor += nonGameRows.size
+            }
+            if (targetListIndex == null && gameApps.isNotEmpty()) {
+                cursor++ // games_header
+                val rowIdx = gameRows.indexOfFirst { row -> row.any { it.packageName == pkg } }
+                if (rowIdx != -1) {
+                    targetListIndex = cursor + rowIdx
+                }
+            }
+
+            if (targetListIndex != null) {
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                val targetVisible = visibleItems.find { it.index == targetListIndex }
+                val viewportEnd = listState.layoutInfo.viewportEndOffset
+                val topClearancePx = with(density) { 96.dp.roundToPx() }
+                val bottomClearancePx = with(density) { 56.dp.roundToPx() }
+                if (targetVisible != null) {
+                    val dy = when {
+                        targetVisible.offset < topClearancePx -> (targetVisible.offset - topClearancePx).toFloat()
+                        targetVisible.offset + targetVisible.size > viewportEnd - bottomClearancePx ->
+                            (targetVisible.offset + targetVisible.size - (viewportEnd - bottomClearancePx)).toFloat()
+                        else -> 0f
+                    }
+                    if (dy != 0f) {
+                        try {
+                            listState.animateScrollBy(dy)
+                        } catch (_: Exception) {}
+                    }
+                } else {
+                    try {
+                        listState.scrollToItem((targetListIndex - 1).coerceAtLeast(1), 0)
+                    } catch (_: Exception) {}
+                }
+            }
+
+            kotlinx.coroutines.yield()
+            val focused = try {
+                focusRequesters[pkg]?.requestFocus()
+                true
+            } catch (_: Exception) {
+                false
+            }
+            if (!focused) {
+                kotlinx.coroutines.delay(45)
+                try {
+                    focusRequesters[pkg]?.requestFocus()
+                } catch (_: Exception) {}
+            }
+        }
+        activeReorderChannelId?.let { id ->
+            isStartupParked = false
+            val idx = displayChannels.indexOfFirst { it.id == id }
+            if (idx != -1) {
+                try {
+                    channelsRowState.scrollToItem((idx - 1).coerceAtLeast(0))
+                } catch (_: Exception) {}
+                kotlinx.coroutines.delay(40)
+                try {
+                    channelFocusRequesters[id]?.requestFocus()
+                } catch (_: Exception) {}
+            }
+        }
+    }
     val shrinkThresholdPx = remember(density) { with(density) { 240.dp.toPx() } }
     // Shrink the clock as soon as the top of the first apps/channels section reaches <= 240dp from the top of the screen
     val isScrolled by remember(shrinkThresholdPx, appsTopOffset) {
@@ -731,7 +791,7 @@ fun HomeScreen(
                     .size(1.dp)
                     .align(Alignment.TopCenter)
                     .focusRequester(startupParkFocusRequester)
-                    .focusable()
+                    .focusable(enabled = isStartupParked && !isReorderingActive)
                     .onKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown) {
                             when (event.key) {
@@ -823,14 +883,18 @@ fun HomeScreen(
                                         itemsIndexed(displayChannels, key = { _, channel -> channel.id }) { index, channel ->
                                             val isBeingReordered = channel.id == activeReorderChannelId
                                             val defaultFr = channelFocusRequesters.getOrPut(channel.id) { androidx.compose.ui.focus.FocusRequester() }
-                                            val fr = if (index == 0 && activeReorderChannelId == null) firstItemFocusRequester else defaultFr
                                             
                                             FavoriteChannelCard(
                                                 channel = channel,
                                                 cardSize = cardHeight.coerceAtLeast(100.dp),
                                                 opacityPercent = glassOpacity,
                                                 isHighlighted = isBeingReordered,
-                                                focusRequester = fr,
+                                                focusRequester = defaultFr,
+                                                modifier = if (index == 0 && activeReorderChannelId == null) {
+                                                    Modifier.focusRequester(firstItemFocusRequester)
+                                                } else {
+                                                    Modifier
+                                                },
                                                 onClick = { 
                                                     if (currentChannelReorder != null) {
                                                         viewModel.showChannelMenu(channel)
@@ -849,12 +913,14 @@ fun HomeScreen(
                                                 },
                                                 onMoveLeft = { if (isRtl) viewModel.moveChannelRight() else viewModel.moveChannelLeft() },
                                                 onMoveRight = { if (isRtl) viewModel.moveChannelLeft() else viewModel.moveChannelRight() },
-                                                onRequestFocusUp = {
-                                                    scrollHomeToBottomIdle()
-                                                    try {
-                                                        topBarFocusRequester.requestFocus()
-                                                    } catch (_: Exception) {}
-                                                }
+                                                onRequestFocusUp = if (!isReorderingActive) {
+                                                    {
+                                                        scrollHomeToBottomIdle()
+                                                        try {
+                                                            topBarFocusRequester.requestFocus()
+                                                        } catch (_: Exception) {}
+                                                    }
+                                                } else null
                                             )
                                         }
                                     }
@@ -931,7 +997,7 @@ fun HomeScreen(
 
                         itemsIndexed(
                             items = nonGameRows,
-                            key = { rowIndex, rowApps -> "app_row_${rowIndex}_${rowApps.firstOrNull()?.packageName.orEmpty()}" }
+                            key = { rowIndex, _ -> "app_row_$rowIndex" }
                         ) { rowIndex, rowApps ->
                             Row(
                                 modifier = Modifier
@@ -943,13 +1009,15 @@ fun HomeScreen(
                                     androidx.compose.runtime.key(app.packageName) {
                                         val isBeingReordered = app.packageName == activeReorderPkg
                                         val defaultFr = focusRequesters.getOrPut(app.packageName) { androidx.compose.ui.focus.FocusRequester() }
-                                        val fr = if (isAppsFirstSection && rowIndex == 0 && colIndex == 0) firstItemFocusRequester else defaultFr
+                                        val isFirstAppItem = isAppsFirstSection && rowIndex == 0 && colIndex == 0
                                         AppItemCard(
                                             app = app,
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .then(if (isFirstAppItem) Modifier.focusRequester(firstItemFocusRequester) else Modifier),
                                             isHighlighted = isBeingReordered,
-                                            focusRequester = fr,
-                                            onRequestFocusUp = if (isAppsFirstSection && rowIndex == 0) {
+                                            focusRequester = defaultFr,
+                                            onRequestFocusUp = if (isAppsFirstSection && rowIndex == 0 && !isReorderingActive) {
                                                 {
                                                     scrollHomeToBottomIdle()
                                                     try {
@@ -1016,26 +1084,37 @@ fun HomeScreen(
                             }
                         }
 
+                        val isGamesFirstSection = isAppsFirstSection && nonGameApps.isEmpty()
                         itemsIndexed(
                             items = gameRows,
-                            key = { rowIndex, rowGames -> "game_row_${rowIndex}_${rowGames.firstOrNull()?.packageName.orEmpty()}" }
-                        ) { _, rowGames ->
+                            key = { rowIndex, _ -> "game_row_$rowIndex" }
+                        ) { rowIndex, rowGames ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 48.dp),
                                 horizontalArrangement = Arrangement.spacedBy(18.dp)
                             ) {
-                                rowGames.forEach { app ->
+                                rowGames.forEachIndexed { colIndex, app ->
                                     androidx.compose.runtime.key(app.packageName) {
                                         val isBeingReordered = app.packageName == activeReorderPkg
                                         val defaultFr = focusRequesters.getOrPut(app.packageName) { androidx.compose.ui.focus.FocusRequester() }
-                                        val fr = if (favoriteChannels.isEmpty() && nonGameApps.isEmpty() && app == gameApps.firstOrNull()) firstItemFocusRequester else defaultFr
+                                        val isFirstGameItem = isGamesFirstSection && rowIndex == 0 && colIndex == 0
                                         AppItemCard(
                                             app = app,
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .then(if (isFirstGameItem) Modifier.focusRequester(firstItemFocusRequester) else Modifier),
                                             isHighlighted = isBeingReordered,
-                                            focusRequester = fr,
+                                            focusRequester = defaultFr,
+                                            onRequestFocusUp = if (isGamesFirstSection && rowIndex == 0 && !isReorderingActive) {
+                                                {
+                                                    scrollHomeToBottomIdle()
+                                                    try {
+                                                        topBarFocusRequester.requestFocus()
+                                                    } catch (_: Exception) {}
+                                                }
+                                            } else null,
                                             opacityPercent = glassOpacity,
                                             onClick = { 
                                                 when (editingMode) {
@@ -1223,15 +1302,18 @@ fun HomeScreen(
                     }
                 },
                 onNonAppFocused = {
-                    viewModel.onNonAppFocused()
-                    if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0) {
-                        scrollHomeToBottomIdle()
+                    if (!isReorderingActive) {
+                        viewModel.onNonAppFocused()
+                        if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0) {
+                            scrollHomeToBottomIdle()
+                        }
                     }
                 },
                 onRequestFocusDown = {
                     focusFirstContentItem()
                 },
                 focusRequester = topBarFocusRequester,
+                canFocusButtons = !isReorderingActive,
                 glassOpacity = glassOpacity,
                 modifier = Modifier.align(Alignment.TopCenter)
             )

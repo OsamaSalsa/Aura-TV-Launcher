@@ -356,9 +356,13 @@ class HomeViewModel(
         if (!currentItem.isGame) {
             val nonGames = state.items.filter { !it.isGame }.toMutableList()
             val idx = nonGames.indexOfFirst { it.packageName == targetPkg }
-            if (idx != -1 && idx + step < nonGames.size) {
+            if (idx == -1) return
+            val currentRow = idx / step
+            val lastRow = (nonGames.size - 1) / step
+            if (currentRow < lastRow) {
+                val targetIdx = (idx + step).coerceAtMost(nonGames.lastIndex)
                 val item = nonGames.removeAt(idx)
-                nonGames.add(idx + step, item)
+                nonGames.add(targetIdx, item)
                 val newItems = nonGames + state.items.filter { it.isGame }
                 _reorderState.value = ReorderState(selectedPackage = targetPkg, items = newItems)
             } else {
@@ -373,9 +377,13 @@ class HomeViewModel(
         } else {
             val games = state.items.filter { it.isGame }.toMutableList()
             val idx = games.indexOfFirst { it.packageName == targetPkg }
-            if (idx != -1 && idx + step < games.size) {
+            if (idx == -1) return
+            val currentRow = idx / step
+            val lastRow = (games.size - 1) / step
+            if (currentRow < lastRow) {
+                val targetIdx = (idx + step).coerceAtMost(games.lastIndex)
                 val item = games.removeAt(idx)
-                games.add(idx + step, item)
+                games.add(targetIdx, item)
                 val newItems = state.items.filter { !it.isGame } + games
                 _reorderState.value = ReorderState(selectedPackage = targetPkg, items = newItems)
             }
