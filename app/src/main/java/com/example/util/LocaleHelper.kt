@@ -40,8 +40,25 @@ object LocaleHelper {
         return if (effective == "id") Locale("in") else Locale(effective)
     }
 
-    private fun applyConfigIfNeeded(resources: android.content.res.Resources?, locale: Locale) {
+    fun isRtlLanguage(languageCode: String): Boolean {
+        val code = languageCode.lowercase().trim()
+        val effective = getEffectiveLanguage(code)
+        return code == "ar_rtl" ||
+            effective in setOf("ur", "fa") ||
+            (code == "system" && effective in setOf("ar", "ur", "fa"))
+    }
+
+    private fun applyConfigIfNeeded(
+        resources: android.content.res.Resources?,
+        locale: Locale,
+        useRtlDirection: Boolean
+    ) {
         if (resources == null) return
+        val desiredDirection = if (useRtlDirection) {
+            android.util.LayoutDirection.RTL
+        } else {
+            android.util.LayoutDirection.LTR
+        }
         val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (!resources.configuration.locales.isEmpty) resources.configuration.locales[0] else null
         } else {
@@ -49,13 +66,13 @@ object LocaleHelper {
             resources.configuration.locale
         }
         if (currentLocale?.language == locale.language &&
-            resources.configuration.layoutDirection == android.text.TextUtils.getLayoutDirectionFromLocale(locale)
+            resources.configuration.layoutDirection == desiredDirection
         ) {
             return
         }
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
-        config.setLayoutDirection(locale)
+        config.setLayoutDirection(if (useRtlDirection) locale else Locale.ENGLISH)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val localeList = LocaleList(locale)
             LocaleList.setDefault(localeList)
@@ -69,13 +86,14 @@ object LocaleHelper {
 
     fun setLocale(context: Context, languageCode: String): Context {
         val locale = getLocale(languageCode)
+        val useRtl = isRtlLanguage(languageCode)
         if (Locale.getDefault().language != locale.language) {
             Locale.setDefault(locale)
         }
 
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
-        config.setLayoutDirection(locale)
+        config.setLayoutDirection(if (useRtl) locale else Locale.ENGLISH)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val localeList = LocaleList(locale)
@@ -83,19 +101,20 @@ object LocaleHelper {
             config.setLocales(localeList)
         }
 
-        applyConfigIfNeeded(context.resources, locale)
-        applyConfigIfNeeded(context.applicationContext?.resources, locale)
+        applyConfigIfNeeded(context.resources, locale, useRtl)
+        applyConfigIfNeeded(context.applicationContext?.resources, locale, useRtl)
 
         return context.createConfigurationContext(config)
     }
 
     fun applyLocaleToActivity(activity: android.app.Activity, languageCode: String) {
         val locale = getLocale(languageCode)
+        val useRtl = isRtlLanguage(languageCode)
         if (Locale.getDefault().language != locale.language) {
             Locale.setDefault(locale)
         }
-        applyConfigIfNeeded(activity.resources, locale)
-        applyConfigIfNeeded(activity.applicationContext?.resources, locale)
+        applyConfigIfNeeded(activity.resources, locale, useRtl)
+        applyConfigIfNeeded(activity.applicationContext?.resources, locale, useRtl)
     }
 
     fun getAmPmString(hourOfDay: Int, languageCode: String): String {

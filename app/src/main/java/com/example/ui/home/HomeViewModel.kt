@@ -124,10 +124,7 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val isRtl: StateFlow<Boolean> = preferences.languageFlow
-        .map { lang ->
-            val effective = LocaleHelper.getEffectiveLanguage(lang)
-            lang == "ar_rtl" || effective in setOf("ur", "fa") || (lang == "system" && effective in setOf("ar", "ur", "fa"))
-        }
+        .map { lang -> LocaleHelper.isRtlLanguage(lang) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _focusedColor = MutableStateFlow<Int?>(null)

@@ -185,7 +185,7 @@ class MainActivity : ComponentActivity() {
             val effectiveLang = remember(currentLang) {
                 LocaleHelper.getEffectiveLanguage(currentLang)
             }
-            val isRtl = currentLang == "ar_rtl" || effectiveLang in setOf("ur", "fa") || (currentLang == "system" && effectiveLang in setOf("ar", "ur", "fa"))
+            val isRtl = LocaleHelper.isRtlLanguage(currentLang)
             val isArabic = effectiveLang in setOf("ar", "ur", "fa")
             isRtlLayout = isRtl
 
@@ -385,8 +385,7 @@ class MainActivity : ComponentActivity() {
                 )
             ) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    val isRtl = isRtlLayout || vm.isRtl.value ||
-                            resources.configuration.layoutDirection == android.util.LayoutDirection.RTL
+                    val isRtl = isRtlLayout && vm.isRtl.value
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
                             if (isRtl) {

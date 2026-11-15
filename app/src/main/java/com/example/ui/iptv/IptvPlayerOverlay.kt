@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -1472,9 +1473,11 @@ fun IptvPlayerOverlay(
                                             text = channel.name,
                                             color = TvTextPrimary,
                                             fontSize = 16.5.sp,
+                                            lineHeight = 19.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
                                         )
                                         if (channel.isFavorite) {
                                             Icon(
@@ -1643,8 +1646,8 @@ fun IptvPlayerOverlay(
                                     val pillShape = RoundedCornerShape(11.dp)
                                     Row(
                                         modifier = Modifier
-                                            .width(136.dp)
-                                            .height(44.dp)
+                                            .widthIn(min = 148.dp, max = 280.dp)
+                                            .height(50.dp)
                                             .clip(pillShape)
                                             .focusProperties { canFocus = false }
                                             .clickable {
@@ -1662,9 +1665,9 @@ fun IptvPlayerOverlay(
                                                 color = if (isCurrent) TvAccentGold else Color.White.copy(alpha = 0.12f),
                                                 shape = pillShape
                                             )
-                                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                                            .padding(horizontal = 9.dp, vertical = 5.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -1692,7 +1695,7 @@ fun IptvPlayerOverlay(
                                         }
 
                                         Column(
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier.widthIn(max = 225.dp),
                                             verticalArrangement = Arrangement.Center
                                         ) {
                                             Row(
@@ -1718,8 +1721,9 @@ fun IptvPlayerOverlay(
                                                 text = ch.name,
                                                 color = if (isCurrent) Color.White else TvTextPrimary,
                                                 fontSize = 11.sp,
+                                                lineHeight = 12.5.sp,
                                                 fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                                maxLines = 1,
+                                                maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis
                                             )
                                         }
@@ -2148,8 +2152,8 @@ fun IptvPlayerOverlay(
                             cardBackgroundColor = Color.Transparent,
                             useDefaultBorder = false,
                             modifier = Modifier
-                                .width(155.dp)
-                                .height(108.dp)
+                                .width(180.dp)
+                                .height(114.dp)
                                 .focusProperties {
                                     up = itemFr
                                     down = itemFr
@@ -2224,7 +2228,7 @@ fun IptvPlayerOverlay(
                                             model = ch.logoUrl,
                                             contentDescription = ch.name,
                                             modifier = Modifier
-                                                .size(44.dp)
+                                                .size(38.dp)
                                                 .clip(RoundedCornerShape(8.dp)),
                                             contentScale = ContentScale.Fit
                                         )
@@ -2233,18 +2237,19 @@ fun IptvPlayerOverlay(
                                             imageVector = Icons.Default.LiveTv,
                                             contentDescription = null,
                                             tint = if (isCurrent || isFocused) TvAccentGold else TvTextPrimary,
-                                            modifier = Modifier.size(32.dp)
+                                            modifier = Modifier.size(30.dp)
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(5.dp))
 
                                     Text(
                                         text = ch.name,
                                         color = if (isCurrent || isFocused) Color.White else TvTextSecondary,
                                         fontSize = 11.5.sp,
+                                        lineHeight = 13.5.sp,
                                         fontWeight = if (isCurrent || isFocused) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                        maxLines = 1,
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
                                     )
