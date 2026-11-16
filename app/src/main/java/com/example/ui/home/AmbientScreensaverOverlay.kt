@@ -120,8 +120,6 @@ import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
 import com.example.util.GreetingHelper
 import com.example.util.LocaleHelper
-import com.example.util.ResolvedYouTubeStream
-import com.example.util.YouTubeStreamResolver
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -334,9 +332,23 @@ private fun VideoScreensaver(
     }
 }
 
+@androidx.annotation.Keep
+class ScreensaverVideoBridge(
+    private val mainHandler: android.os.Handler,
+    private val onStarted: () -> Unit
+) {
+    @android.webkit.JavascriptInterface
+    fun onVideoStarted() {
+        mainHandler.post {
+            onStarted()
+        }
+    }
+}
+
 /**
- * Fallback WebView YouTube player when direct native ExoPlayer stream extraction fails.
- * Requests HD (1080p/720p) quality and falls back swiftly if embed playback is blocked.
+ * WebView YouTube screensaver player.
+ * Uses desktop watch page with CSS isolation and 3-way playback detection so the clock
+ * hides the instant playback starts and never interrupts active video playback on TV.
  */
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
@@ -346,35 +358,54 @@ private fun YouTubeWebScreensaver(
 ) {
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var crashCount by remember(videoId) { mutableStateOf(0) }
-    var useInvidiousFallback by remember(videoId) { mutableStateOf(false) }
     var hasVideoStarted by remember(videoId) { mutableStateOf(false) }
     val mainHandler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
 
-    val playerUrl = remember(videoId, useInvidiousFallback) {
-        if (!useInvidiousFallback) {
-            "https://www.youtube.com/watch?v=$videoId"
-        } else {
-            "https://invidious.tiekoetter.com/embed/$videoId?autoplay=1&muted=1&loop=1&controls=0&quality=hd720"
-        }
+    val playerUrl = remember(videoId) {
+        "https://www.youtube.com/watch?v=$videoId"
     }
 
-    LaunchedEffect(videoId, useInvidiousFallback, hasVideoStarted) {
-        if (!useInvidiousFallback && !hasVideoStarted) {
-            delay(14_000L)
+    val markVideoStarted = remember(videoId) {
+        {
             if (!hasVideoStarted) {
-                useInvidiousFallback = true
+                hasVideoStarted = true
+                onVideoReady()
             }
         }
     }
 
-    val cleanFullscreenScript = remember(useInvidiousFallback) {
+    // Kotlin-side direct JS return-value polling every 300ms so we never depend solely on @JavascriptInterface reflection
+    LaunchedEffect(webViewRef, hasVideoStarted) {
+        val wv = webViewRef ?: return@LaunchedEffect
+        while (!hasVideoStarted && !isWebViewDestroyed(wv)) {
+            try {
+                wv.evaluateJavascript(
+                    "(function(){try{var v=document.querySelector('video');var mp=document.getElementById('movie_player');return Boolean((v&&!v.paused&&(v.currentTime>0.02||v.readyState>=3))||(mp&&typeof mp.getPlayerState==='function'&&mp.getPlayerState()===1));}catch(e){return false;}})()"
+                ) { result ->
+                    if (result == "true") {
+                        markVideoStarted()
+                    }
+                }
+            } catch (_: Exception) {}
+            delay(300L)
+        }
+    }
+
+    val cleanFullscreenScript = remember(videoId) {
         """
         (function() {
-            function notifyIfPlaying(v) {
-                if (v && v.readyState >= 2 && !v.paused && v.videoWidth > 0 && v.currentTime > 0.05) {
-                    if (!window.__auraVideoReadySent) {
-                        window.__auraVideoReadySent = true;
-                        try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
+            try {
+                Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });
+                Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });
+            } catch(e) {}
+            function notifyIfPlaying(v, mp) {
+                var videoPlaying = v && !v.paused && (v.currentTime > 0.02 || v.readyState >= 3);
+                var playerPlaying = mp && typeof mp.getPlayerState === 'function' && mp.getPlayerState() === 1;
+                if (videoPlaying || playerPlaying) {
+                    try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
+                    if (!window.__auraConsoleReadySent) {
+                        window.__auraConsoleReadySent = true;
+                        try { console.log('AURA_VIDEO_STARTED'); } catch(e) {}
                     }
                 }
             }
@@ -395,31 +426,27 @@ private fun YouTubeWebScreensaver(
                         dialogBtn.click();
                         return true;
                     }
+                    // Dismiss any non-consent YouTube popup dialogs that auto-pause playback after a few seconds
+                    var popups = document.querySelectorAll('ytd-popup-container tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop');
+                    for (var j = 0; j < popups.length; j++) {
+                        try { popups[j].remove(); } catch(e) {}
+                    }
                 } catch (e) {}
                 return false;
             }
             function applyCleanVideo() {
                 try {
                     tryDismissConsent();
-                    var text = (document.body && document.body.innerText) ? document.body.innerText : '';
-                    if (text.indexOf('Making sure') !== -1 || text.indexOf('Anubis') !== -1) {
-                        document.documentElement.style.background = '#000';
-                        if (document.body) {
-                            document.body.style.background = '#000';
-                            document.body.style.opacity = '0';
-                        }
-                        return;
-                    }
                     if (!document.getElementById('ambient-clean-style') && document.head) {
                         var st = document.createElement('style');
                         st.id = 'ambient-clean-style';
                         st.innerHTML = 'html, body { margin:0 !important; padding:0 !important; background:#000 !important; overflow:hidden !important; width:100vw !important; height:100vh !important; } ' +
-                            '#masthead-container, #secondary, #below, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ' +
+                            '#masthead-container, #secondary, #below, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ytd-popup-container, tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop, ' +
                             '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-show-cards-title, .ytp-title, .ytp-pause-overlay, .ytp-ce-element, .ytp-spinner, .ytp-impression-link, .ytp-bezel, .ytp-cued-thumbnail-overlay, ' +
-                            '.navbar, header, footer, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box, .vjs-control-bar, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .watch-on-invidious { display:none !important; opacity:0 !important; visibility:hidden !important; } ' +
-                            '.vjs-big-play-button, .ytp-large-play-button { opacity:0 !important; } ' +
-                            '#movie_player, #player, #player-container, .html5-video-player, .html5-video-container, .video-js { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000 !important; z-index:999999 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
-                            'video, .video-stream, .vjs-tech { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000 !important; z-index:2147483647 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
+                            '.navbar, header, footer, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box { display:none !important; opacity:0 !important; visibility:hidden !important; pointer-events:none !important; } ' +
+                            '.ytp-large-play-button { opacity:0 !important; } ' +
+                            '#movie_player, #player, #player-container, .html5-video-player, .html5-video-container { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000 !important; z-index:999999 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
+                            'video, .video-stream { position:fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000 !important; z-index:2147483647 !important; border:none !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
                         document.head.appendChild(st);
                     }
                     if (document.body) {
@@ -446,46 +473,53 @@ private fun YouTubeWebScreensaver(
                         }
                         if (!v.__auraBound) {
                             v.__auraBound = true;
-                            v.addEventListener('loadeddata', function() { notifyIfPlaying(v); });
-                            v.addEventListener('playing', function() { notifyIfPlaying(v); });
-                            v.addEventListener('timeupdate', function() { notifyIfPlaying(v); });
+                            v.addEventListener('loadeddata', function() { notifyIfPlaying(v, mp); });
+                            v.addEventListener('playing', function() { notifyIfPlaying(v, mp); });
+                            v.addEventListener('timeupdate', function() { notifyIfPlaying(v, mp); });
                         }
                         var now = Date.now();
-                        if (v.paused && !v.__auraPlayPending && (now - (window.__auraLastPlayAttempt || 0) > 1000)) {
+                        if (v.paused && (now - (window.__auraLastPlayAttempt || 0) > 900)) {
                             window.__auraLastPlayAttempt = now;
-                            v.__auraPlayPending = true;
-                            v.muted = true;
+                            if (!window.__auraUnmuteDone) {
+                                v.muted = true;
+                            }
                             if (mp && typeof mp.playVideo === 'function') {
                                 try { mp.playVideo(); } catch(e) {}
                             }
-                            v.play().then(function() {
-                                v.__auraPlayPending = false;
-                                notifyIfPlaying(v);
-                                if (!window.__auraUnmuteScheduled) {
-                                    window.__auraUnmuteScheduled = true;
-                                    setTimeout(function() {
-                                        try {
-                                            v.muted = false;
-                                            v.volume = 1.0;
-                                            if (mp && typeof mp.unMute === 'function') {
-                                                try { mp.unMute(); mp.setVolume(100); } catch(e) {}
-                                            }
-                                            setTimeout(function() {
-                                                if (v.paused) {
-                                                    v.muted = true;
-                                                    v.play().catch(function(){});
+                            var playPromise = v.play();
+                            if (playPromise && typeof playPromise.then === 'function') {
+                                playPromise.then(function() {
+                                    notifyIfPlaying(v, mp);
+                                    if (!window.__auraUnmuteScheduled) {
+                                        window.__auraUnmuteScheduled = true;
+                                        setTimeout(function() {
+                                            try {
+                                                window.__auraUnmuteDone = true;
+                                                v.muted = false;
+                                                v.volume = 1.0;
+                                                if (mp && typeof mp.unMute === 'function') {
+                                                    try { mp.unMute(); mp.setVolume(100); } catch(e) {}
                                                 }
-                                            }, 300);
-                                        } catch(e) {}
-                                    }, 500);
-                                }
-                            }).catch(function() {
-                                v.__auraPlayPending = false;
-                                var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button, .vjs-big-play-button');
-                                if (playBtn) { try { playBtn.click(); } catch(e) {} }
-                            });
+                                                setTimeout(function() {
+                                                    if (v.paused) {
+                                                        v.muted = true;
+                                                        if (mp && typeof mp.playVideo === 'function') {
+                                                            try { mp.playVideo(); } catch(e) {}
+                                                        }
+                                                        v.play().catch(function(){});
+                                                    }
+                                                }, 250);
+                                            } catch(e) {}
+                                        }, 400);
+                                    }
+                                }).catch(function() {
+                                    v.muted = true;
+                                    var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button');
+                                    if (playBtn) { try { playBtn.click(); } catch(e) {} }
+                                });
+                            }
                         }
-                        notifyIfPlaying(v);
+                        notifyIfPlaying(v, mp);
                     }
                 } catch (e) {}
             }
@@ -503,7 +537,7 @@ private fun YouTubeWebScreensaver(
             .background(Color.Black)
     ) {
         if (crashCount <= 1) {
-            androidx.compose.runtime.key(videoId, useInvidiousFallback, crashCount) {
+            androidx.compose.runtime.key(videoId, crashCount) {
                 AndroidView(
                     factory = { ctx ->
                         WebView(ctx.findActivityContext()).apply {
@@ -533,24 +567,10 @@ private fun YouTubeWebScreensaver(
                             hardenWebView(this)
 
                             addJavascriptInterface(
-                                object {
-                                    @android.webkit.JavascriptInterface
-                                    fun onVideoStarted() {
-                                        mainHandler.post {
-                                            hasVideoStarted = true
-                                            onVideoReady()
-                                        }
-                                    }
-
-                                    @android.webkit.JavascriptInterface
-                                    fun onEmbedError() {
-                                        mainHandler.post {
-                                            if (!useInvidiousFallback && !hasVideoStarted) {
-                                                useInvidiousFallback = true
-                                            }
-                                        }
-                                    }
-                                },
+                                ScreensaverVideoBridge(
+                                    mainHandler = mainHandler,
+                                    onStarted = markVideoStarted
+                                ),
                                 "AuraVideoBridge"
                             )
 
@@ -563,6 +583,14 @@ private fun YouTubeWebScreensaver(
                             webChromeClient = object : WebChromeClient() {
                                 override fun onPermissionRequest(request: PermissionRequest?) {
                                     grantSafeWebPermissions(request)
+                                }
+
+                                override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
+                                    val msg = consoleMessage?.message() ?: ""
+                                    if (msg.contains("AURA_VIDEO_STARTED")) {
+                                        mainHandler.post { markVideoStarted() }
+                                    }
+                                    return super.onConsoleMessage(consoleMessage)
                                 }
                             }
 
@@ -583,6 +611,7 @@ private fun YouTubeWebScreensaver(
                                     super.onPageCommitVisible(view, url)
                                     if (!isWebViewDestroyed(view)) {
                                         injectWebViewStabilityShim(view, disableWebGl = true)
+                                        view?.evaluateJavascript(cleanFullscreenScript, null)
                                     }
                                 }
 
