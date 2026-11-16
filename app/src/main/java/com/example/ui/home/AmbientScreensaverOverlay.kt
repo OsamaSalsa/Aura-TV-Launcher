@@ -267,29 +267,9 @@ private fun VideoScreensaver(
     val videoId = remember(cleanInput) { extractYouTubeVideoId(cleanInput) }
     val hostView = LocalView.current
     var isVideoReady by remember(cleanInput) { mutableStateOf(false) }
-    var resolvedStream by remember(cleanInput) {
-        mutableStateOf<ResolvedYouTubeStream?>(
-            if (!isDirectStreamUrl) YouTubeStreamResolver.getCached(videoId) else null
-        )
-    }
-    var useWebFallback by remember(cleanInput) { mutableStateOf(false) }
 
-    LaunchedEffect(cleanInput, isDirectStreamUrl, videoId) {
+    LaunchedEffect(cleanInput) {
         isVideoReady = false
-        useWebFallback = false
-        if (!isDirectStreamUrl) {
-            val cached = YouTubeStreamResolver.getCached(videoId)
-            if (cached != null) {
-                resolvedStream = cached
-            } else {
-                val resolved = YouTubeStreamResolver.resolve(videoId)
-                if (resolved != null) {
-                    resolvedStream = resolved
-                } else {
-                    useWebFallback = true
-                }
-            }
-        }
     }
 
     DisposableEffect(hostView) {
@@ -312,26 +292,10 @@ private fun VideoScreensaver(
                 onStreamError = {}
             )
         } else {
-            val activeResolved = resolvedStream
-            if (activeResolved != null && !useWebFallback) {
-                DirectStreamExoPlayerScreensaver(
-                    streamUrl = activeResolved.videoUrl,
-                    audioUrl = activeResolved.audioUrl,
-                    isHls = activeResolved.isHls,
-                    userAgent = activeResolved.userAgent,
-                    onVideoActivelyPlaying = { isVideoReady = true },
-                    onStreamError = {
-                        YouTubeStreamResolver.invalidate(videoId)
-                        isVideoReady = false
-                        useWebFallback = true
-                    }
-                )
-            } else if (useWebFallback) {
-                YouTubeWebScreensaver(
-                    videoId = videoId,
-                    onVideoReady = { isVideoReady = true }
-                )
-            }
+            YouTubeWebScreensaver(
+                videoId = videoId,
+                onVideoReady = { isVideoReady = true }
+            )
         }
 
         // Show Clock screensaver instead of a black screen until the video starts rendering frames
@@ -396,14 +360,9 @@ private fun YouTubeWebScreensaver(
 
     LaunchedEffect(videoId, useInvidiousFallback, hasVideoStarted) {
         if (!useInvidiousFallback && !hasVideoStarted) {
-            delay(8_500L)
+            delay(14_000L)
             if (!hasVideoStarted) {
                 useInvidiousFallback = true
-            }
-        } else if (useInvidiousFallback && !hasVideoStarted) {
-            delay(10_000L)
-            if (!hasVideoStarted) {
-                onVideoReady()
             }
         }
     }
@@ -412,7 +371,7 @@ private fun YouTubeWebScreensaver(
         """
         (function() {
             function notifyIfPlaying(v) {
-                if (v && v.readyState >= 2 && !v.paused && v.videoWidth > 0 && v.currentTime > 0.15) {
+                if (v && v.readyState >= 2 && !v.paused && v.videoWidth > 0 && v.currentTime > 0.05) {
                     if (!window.__auraVideoReadySent) {
                         window.__auraVideoReadySent = true;
                         try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
@@ -473,8 +432,8 @@ private fun YouTubeWebScreensaver(
                     var mp = document.getElementById('movie_player');
                     if (mp && !window.__auraQualityApplied) {
                         try {
-                            if (mp.setPlaybackQualityRange) { mp.setPlaybackQualityRange('hd720', 'hd1080'); }
-                            if (mp.setPlaybackQuality) { mp.setPlaybackQuality('hd1080'); }
+                            if (mp.setPlaybackQualityRange) { mp.setPlaybackQualityRange('large', 'hd720'); }
+                            if (mp.setPlaybackQuality) { mp.setPlaybackQuality('hd720'); }
                             window.__auraQualityApplied = true;
                         } catch(e) {}
                     }
@@ -487,18 +446,30 @@ private fun YouTubeWebScreensaver(
                         }
                         if (!v.__auraBound) {
                             v.__auraBound = true;
+                            v.addEventListener('loadeddata', function() { notifyIfPlaying(v); });
                             v.addEventListener('playing', function() { notifyIfPlaying(v); });
                             v.addEventListener('timeupdate', function() { notifyIfPlaying(v); });
                         }
-                        if (v.paused) {
+                        var now = Date.now();
+                        if (v.paused && !v.__auraPlayPending && (now - (window.__auraLastPlayAttempt || 0) > 1000)) {
+                            window.__auraLastPlayAttempt = now;
+                            v.__auraPlayPending = true;
                             v.muted = true;
+                            if (mp && typeof mp.playVideo === 'function') {
+                                try { mp.playVideo(); } catch(e) {}
+                            }
                             v.play().then(function() {
+                                v.__auraPlayPending = false;
+                                notifyIfPlaying(v);
                                 if (!window.__auraUnmuteScheduled) {
                                     window.__auraUnmuteScheduled = true;
                                     setTimeout(function() {
                                         try {
                                             v.muted = false;
                                             v.volume = 1.0;
+                                            if (mp && typeof mp.unMute === 'function') {
+                                                try { mp.unMute(); mp.setVolume(100); } catch(e) {}
+                                            }
                                             setTimeout(function() {
                                                 if (v.paused) {
                                                     v.muted = true;
@@ -509,6 +480,7 @@ private fun YouTubeWebScreensaver(
                                     }, 500);
                                 }
                             }).catch(function() {
+                                v.__auraPlayPending = false;
                                 var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button, .vjs-big-play-button');
                                 if (playBtn) { try { playBtn.click(); } catch(e) {} }
                             });
