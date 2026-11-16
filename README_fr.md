@@ -49,7 +49,7 @@ La plupart des lanceurs Android TV actuels sont saturés de publicités imposée
 * **Écran de veille immersif intégré (`Activé`)** : En sélectionnant un délai d'inactivité (2, 5, 10, 15 ou 30 min), le lanceur maintient l'écran allumé et propose trois styles :
   * **Horloge et date** : Heure lumineuse avec protection anti-brûlure de dalle.
   * **Fond 4K avec infos en coin** : Dégradé à 45° mettant en valeur l'heure, la date et le message d'accueil.
-  * **Vidéo cinématique plein écran** : Ambiance feu de cheminée, chalet d'hiver ou cascades en boucle sans boutons ni bannières.
+  * **Vidéo cinématique plein écran & flux personnalisés** : Ambiance feu de cheminée, chalet d'hiver ou cascades en boucle sans boutons ni bannières, avec possibilité d'**ajouter vos propres vidéos YouTube**, de restaurer les présélections et de lancer un **aperçu immédiat** depuis les Paramètres.
   * **Diaporama photo (`Slideshow`)** : Affichez les photos d'un dossier local/USB, des photos sélectionnées ou des galeries 4K avec durée réglable (`5s` à `5m`), mouvement **Ken Burns / Zoom doux / Statique**, 6 transitions d'entrée, effets atmosphériques (**Neige ❄️**, **Lucioles ✨**, **Pluie 🌧️**, **Feuilles d'automne 🍂**, **Sakura 🌸**, **Étoiles ⭐**, **Bokeh 🔮**), horloge en coin et musique d'ambiance ou MP3 personnalisé.
 
 ### 🕒 Personnalisation complète de l'horloge, date et salutation
@@ -61,18 +61,25 @@ La plupart des lanceurs Android TV actuels sont saturés de publicités imposée
 ### 🎛️ Personnalisation de l'affichage d'accueil
 * **Icône de la barre supérieure (Centre de contrôle / Paramètres directs / Les deux)** : Choisissez d'afficher le Centre de contrôle rapide, d'aller directement aux Paramètres en ignorant le Centre de contrôle, ou d'afficher les deux icônes ensemble sur l'écran d'accueil.
 * **Curseur par défaut sur les paramètres** : Dès le lancement, la télécommande se positionne sur l'icône Paramètres pour une configuration rapide.
-* **Décalage vertical des applications vers le bas** : Possibilité d'abaisser les rangées d'applications (de 180dp à 380dp) pour admirer les fonds d'écran 4K.
+* **Décalage vertical des applications vers le bas** : Possibilité d'abaisser les rangées d'applications (6 niveaux nommés, `450` par défaut) pour admirer les fonds d'écran 4K.
 * **Densité de la grille** : Choix entre 4, 5, 6 ou 7 applications par rangée.
-* **Opacité de l'effet verre** : Ajustement de la transparence des tuiles de 10% à 100%.
+* **Opacité de l'effet verre & couleurs dynamiques Material You** : Ajustement de la transparence des tuiles de 10% à 100% et activation optionnelle des **couleurs dynamiques Material You**.
+* **Affichage des applications mobiles (Sideloaded APKs)** : Basculez entre l'affichage des applications TV uniquement ou de **toutes les applications Android installées** (y compris les APK mobiles), avec restauration des applications masquées ou réinitialisation de l'ordre en 1 clic.
 
-### 🎙️ Recherche Vocale Universelle, Centre de Contrôle & Barre Info IPTV Interactive
+### 🎙️ Recherche Vocale Universelle, Assistant Vocal Système & IPTV Interactif
 * **Recherche Vocale et Instantanée (`🎤`)** : Recherchez simultanément parmi vos applications TV, vos chaînes IPTV en direct et sur le Web/YouTube via le microphone de la télécommande.
+* **Assistant vocal numérique par défaut du système** : Services système intégrés (`AuraVoiceInteractionService` et `AuraRecognitionService`) permettant de définir **Aura TV** comme assistant vocal par défaut du téléviseur pour utiliser le bouton micro de la télécommande nativement.
 * **Centre de Contrôle Rapide (`Control Center`)** : Panneau d'accès rapide pour basculer l'horloge 12h/24h, le fond dynamique, lancer l'écran de veille immédiatement, ouvrir la recherche vocale ou accéder au Wi-Fi et aux Paramètres.
-* **Barre d'Infos IPTV Tactile & Touche `OK` avec Bandeau de Chaînes** : En regardant une chaîne IPTV, toucher l'écran ou appuyer sur `OK` affiche la barre d'informations avec un **carrousel horizontal de chaînes** intégré pour changer de chaîne directement, avec guide EPG, minuterie de veille et verrouillage PIN.
+* **Gestionnaire multi-listes IPTV & Barre d'Infos Interactive** : Ajoutez, permutez, actualisez ou supprimez **plusieurs listes M3U** et URL EPG XMLTV. En regardant une chaîne IPTV, toucher l'écran ou appuyer sur `OK` affiche la barre d'informations avec un **carrousel horizontal de chaînes (`◀ / ▶`)**, guide EPG, minuterie de veille, format d'image, verrouillage PIN par catégorie et reprise automatique de la dernière chaîne.
 * **Démarrage Épuré en Bas d'Écran & Horloge Intelligente (240dp)** : Démarre avec les applications et chaînes en bas (6 niveaux nommés, `450` par défaut), sans curseur visible au lancement, et l'horloge se réduit dès que les icônes atteignent `240dp` du haut.
+* **Favoris Web intelligents (Icônes HD & mode YouTube TV)** : Extraction automatique des icônes haute résolution des sites ajoutés, et ouverture des favoris YouTube directement dans l'interface **YouTube TV Leanback** adaptée à la télécommande.
+* **Barre d'applications récentes & mise à jour OTA GitHub** : Rangée optionnelle des applications récentes et vérification/installation des mises à jour OTA depuis GitHub en 1 clic.
 
-### 🔒 Sécurité, verrouillage PIN et organisation
-* **Verrouillage par code PIN** : Sécurisation des applications privées avec un code à 4 chiffres.
+### 🔒 Sécurité, Gestionnaire de Stockage, DNS Familial et Organisation
+* **Gestionnaire de stockage et d'applications intégré** : Consultez toutes les applications installées triées par taille (`Mo`), ouvrez les informations système ou **désinstallez des applications directement** pour libérer de l'espace.
+* **Grille de 8 raccourcis système rapides** : Accès direct au **Wi-Fi**, **Ethernet**, **Affichage**, **Son**, **Date et heure**, **Paramètres système**, **Infos de l'application** et **Gestionnaire de stockage**.
+* **Bouclier DNS double mode (AdBlock & Protection Familiale)** : Choisissez entre le **blocage des publicités et traqueurs** ou le **mode Protection Familiale** (bloque également les sites pour adultes sur tout le système).
+* **Verrouillage par code PIN** : Sécurisation des applications privées et catégories IPTV avec un code à 4 chiffres.
 * **Gestion des applications** : Déplacement, classement (Applications vs Jeux) ou masquage des applications système.
 * **Sécurité du bouton Retour** : Empêche la fermeture accidentelle du lanceur vers le bureau Android.
 

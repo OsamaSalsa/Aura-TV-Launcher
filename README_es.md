@@ -49,7 +49,7 @@ La mayoría de los lanzadores de Smart TV actuales están llenos de anuncios for
 * **Salvapantallas integrado inteligente (`Activado`)**: Al seleccionar un tiempo de reposo (2, 5, 10, 15 o 30 min), el televisor se mantiene activo y muestra el estilo seleccionado:
   * **Reloj y fecha**: Hora brillante central con protección contra quemado de panel.
   * **Fondo 4K con información en esquina**: Gradiente a 45° que resalta la hora, fecha y saludo de forma elegante.
-  * **Vídeo cinemático a pantalla completa**: Chimeneas cálidas, cabañas nevadas o cascadas en bucle continuo sin botones ni ventanas molestas.
+  * **Vídeo cinemático a pantalla completa y vídeos personalizados**: Chimeneas cálidas, cabañas nevadas o cascadas en bucle continuo sin botones ni ventanas molestas, con opción de **añadir tus propios vídeos de YouTube**, restaurar preajustes y lanzar una **vista previa instantánea** desde Ajustes.
   * **Presentación de fotos (`Slideshow`)**: Muestra fotos desde una carpeta de tu dispositivo/USB, fotos seleccionadas o galerías 4K con duración ajustable (`5s` a `5m`), movimiento **Ken Burns / Zoom suave / Estático**, 6 transiciones de entrada, efectos atmosféricos (**Nieve ❄️**, **Luciérnagas ✨**, **Lluvia 🌧️**, **Hojas de otoño 🍂**, **Sakura 🌸**, **Estrellas ⭐**, **Bokeh 🔮**), reloj en esquina y música ambiental o MP3 personalizado.
 
 ### 🕒 Personalización completa de reloj, fecha y saludo
@@ -61,18 +61,25 @@ La mayoría de los lanzadores de Smart TV actuales están llenos de anuncios for
 ### 🎛️ Personalización del diseño y pantalla de inicio
 * **Modo de icono superior (Centro de control / Ajustes directos / Ambos)**: Elige mostrar el icono del Centro de control rápido, omitir el Centro de control e ir directamente a Ajustes, o mostrar ambos iconos juntos en la pantalla de inicio.
 * **Foco predeterminado en Ajustes**: Al iniciar, el cursor se ubica directamente sobre el icono de Ajustes para una configuración ágil.
-* **Desplazamiento vertical de aplicaciones hacia abajo**: Ajuste para bajar las filas de apps (de 180dp a 380dp) para lucir los fondos 4K y la iluminación.
+* **Desplazamiento vertical de aplicaciones hacia abajo**: Ajuste para bajar las filas de apps (6 niveles por nombre, predeterminado `450`) para lucir los fondos 4K y la iluminación.
 * **Densidad de cuadrícula**: Elección entre 4, 5, 6 o 7 aplicaciones por fila.
-* **Control de opacidad de cristal**: Ajuste del nivel de transparencia de las tarjetas de 10% a 100%.
+* **Control de opacidad de cristal y colores dinámicos Material You**: Ajuste de transparencia de 10% a 100% y opción de activar **colores dinámicos Material You**.
+* **Filtro de aplicaciones móviles instaladas (Sideloaded APKs)**: Alterna entre mostrar solo aplicaciones de TV o **todas las aplicaciones Android instaladas** (incluidas APKs de móvil), con botones para restaurar apps ocultas o restablecer el orden en 1 clic.
 
-### 🎙️ Búsqueda por Voz Universal, Centro de Control y Barra IPTV Interactiva
+### 🎙️ Búsqueda por Voz Universal, Asistente de Voz del Sistema y Barra IPTV Interactiva
 * **Búsqueda Universal por Voz y Texto (`🎤`)**: Busca simultáneamente en todas tus aplicaciones instaladas, canales IPTV en vivo y la web/YouTube usando el micrófono del control remoto.
+* **Asistente de voz digital predeterminado del sistema**: Servicios integrados (`AuraVoiceInteractionService` y `AuraRecognitionService`) que permiten configurar **Aura TV** como el asistente de voz predeterminado del televisor para usar el botón de micrófono del mando de forma nativa.
 * **Centro de Control Rápido (`Control Center`)**: Panel rápido para alternar formato 12h/24h, fondo dinámico, activar el salvapantallas al instante, abrir la búsqueda por voz o ir a Wi-Fi y Ajustes.
-* **Barra de Información IPTV por Toque y Botón `OK`**: Mientras ves un canal IPTV, tocar la pantalla (en dispositivos táctiles) o pulsar `OK` en el mando abre la barra de información con un **carrusel horizontal de canales** integrado para cambiar de canal directamente, además de guía EPG, temporizador de apagado y bloqueo PIN.
+* **Gestor Multi-Lista IPTV y Barra de Información Interactiva**: Añade, cambia, actualiza o elimina **múltiples listas M3U** y enlaces XMLTV EPG. Mientras ves IPTV, tocar la pantalla o pulsar `OK` abre la barra de información con **carrusel horizontal de canales (`◀ / ▶`)**, guía EPG, temporizador de apagado, relación de aspecto, bloqueo PIN por categoría y reanudación automática del último canal.
 * **Inicio Limpio en la Parte Inferior y Reloj Inteligente (240dp)**: Inicia con las filas abajo (6 niveles por nombre, predeterminado `450`), sin cursor resaltado al arrancar, y el reloj grande se reduce automáticamente cuando los iconos llegan a `240dp` del borde superior.
+* **Marcadores Web inteligentes (Iconos HD y modo YouTube TV)**: Extracción automática de iconos en alta resolución para tus sitios web, y apertura de marcadores de YouTube directamente en la interfaz **YouTube TV Leanback** optimizada para el mando.
+* **Fila de aplicaciones recientes y actualizador OTA desde GitHub**: Barra opcional de aplicaciones recientes y comprobación/instalación de actualizaciones OTA en 1 clic.
 
-### 🔒 Privacidad, bloqueo con PIN y organización
-* **Bloqueo con PIN de 4 dígitos**: Protege aplicaciones privadas de accesos no autorizados.
+### 🔒 Privacidad, Gestor de Almacenamiento, DNS Familiar y Organización
+* **Gestor de almacenamiento y aplicaciones integrado**: Revisa todas las aplicaciones instaladas ordenadas por su tamaño (`MB`), abre la información del sistema o **desinstala aplicaciones directamente** para liberar espacio.
+* **Cuadrícula de 8 accesos directos del sistema**: Acceso en 1 clic a **Wi-Fi**, **Ethernet**, **Pantalla**, **Sonido**, **Fecha y hora**, **Ajustes del sistema**, **Información de la app** y **Gestor de almacenamiento**.
+* **Escudo DNS de doble modo (AdBlock y Protección Familiar)**: Elige entre **Bloqueo de anuncios y rastreadores** o **Modo de Protección Familiar** (bloquea también sitios para adultos en todo el sistema).
+* **Bloqueo con PIN de 4 dígitos**: Protege aplicaciones privadas y categorías IPTV de accesos no autorizados.
 * **Organización de apps**: Mueve, clasifica (Apps vs Juegos) u oculta aplicaciones de sistema no deseadas.
 * **Botón Atrás seguro**: Evita salidas accidentales al escritorio de Android TV al pulsar la tecla Volver en la pantalla principal.
 

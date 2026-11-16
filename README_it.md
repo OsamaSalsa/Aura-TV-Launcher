@@ -49,7 +49,7 @@ La maggior parte dei launcher TV attuali è piena di annunci forzati, pesanti an
 * **Salvaschermo integrato immersivo (`Attivo`)**: Con timer a 2, 5, 10, 15 o 30 minuti, offre tre stili distinti:
   * **Orologio e data**: Grande orologio luminoso con protezione burn-in per pannelli TV.
   * **Sfondo 4K con info in basso**: Gradiente a 45° che risalta orario, data e messaggio di benvenuto.
-  * **Video cinematografico a schermo intero**: Camini caldi, chalet innevati o cascate in loop continuo senza pulsanti o finestre fastidiose.
+  * **Video cinematografico a schermo intero e video personalizzati**: Camini caldi, chalet innevati o cascate in loop continuo senza pulsanti, con possibilità di **aggiungere video YouTube personalizzati**, ripristinare i preset e avviare un'**anteprima immediata** dalle Impostazioni.
   * **Presentazione foto (`Slideshow`)**: Mostra le foto da una cartella su memoria/USB, foto selezionate o gallerie 4K con durata regolabile (`5s`–`5m`), movimento **Ken Burns / Zoom delicato / Statico**, 6 transizioni di ingresso, effetti particellari (**Neve ❄️**, **Lucciole ✨**, **Pioggia 🌧️**, **Foglie d'autunno 🍂**, **Sakura 🌸**, **Stelle ⭐**, **Bokeh 🔮**), orologio in angolo e musica rilassante o MP3 personalizzato.
 
 ### 🕒 Personalizzazione totale di orologio, data e saluti
@@ -61,18 +61,25 @@ La maggior parte dei launcher TV attuali è piena di annunci forzati, pesanti an
 ### 🎛️ Personalizzazione layout e home screen
 * **Modalità icona barra superiore (Centro di controllo / Impostazioni dirette / Entrambi)**: Scegli se mostrare l'icona del Centro di controllo, saltare il Centro di controllo per aprire direttamente le Impostazioni, o mostrare entrambe le icone insieme sulla schermata Home.
 * **Cursore predefinito su Impostazioni**: All'avvio dell'app il cursore è posizionato direttamente sull'icona delle Impostazioni per una configurazione rapida.
-* **Spostamento verticale delle app verso il basso**: Possibilità di abbassare le righe delle app (da 180dp a 380dp) per dare risalto agli sfondi 4K.
+* **Spostamento verticale delle app verso il basso**: Possibilità di abbassare le righe delle app (6 livelli per nome, predefinito `450`) per dare risalto agli sfondi 4K.
 * **Densità griglia**: Scelta tra 4, 5, 6 o 7 app per riga.
-* **Opacità effetto vetro**: Regolazione della trasparenza delle schede da 10% a 100%.
+* **Opacità effetto vetro e Colori Dinamici Material You**: Regolazione della trasparenza delle schede da 10% a 100% e attivazione opzionale dei **Colori Dinamici Material You**.
+* **Mostra tutte le app Android (Sideloaded APKs)**: Passa dalla visualizzazione delle sole app TV a **tutte le app Android installate** (incluse le APK mobili), con pulsanti rapidi per ripristinare le app nascoste o reimpostare l'ordine.
 
-### 🎙️ Ricerca Vocale Universale, Centro di Controllo e Barra Info IPTV Interattiva
+### 🎙️ Ricerca Vocale Universale, Assistente Vocale di Sistema e IPTV Interattivo
 * **Ricerca Vocale e Istantanea (`🎤`)**: Cerca simultaneamente tra le app installate, i canali IPTV in diretta e sul Web/YouTube usando il microfono del telecomando.
+* **Assistente vocale digitale predefinito di sistema**: Servizi integrati (`AuraVoiceInteractionService` e `AuraRecognitionService`) per impostare **Aura TV** come assistente vocale predefinito del TV e usare nativamente il tasto microfono del telecomando.
 * **Centro di Controllo Rapido (`Control Center`)**: Pannello rapido per cambiare formato 12h/24h, sfondo dinamico, avviare subito il salvaschermo, aprire la ricerca vocale o le impostazioni Wi-Fi.
-* **Barra Info IPTV Touch e Tasto `OK` con Striscia Canali**: Durante la visione IPTV, toccando lo schermo o premendo `OK` sul telecomando si apre la barra informazioni con **carosello canali orizzontale** integrato per cambiare canale direttamente, guida EPG e timer di spegnimento.
+* **Gestore Multi-Playlist IPTV e Barra Info Interattiva**: Aggiungi, cambia, aggiorna o elimina **più playlist M3U** e URL XMLTV EPG. Durante la visione IPTV, toccando lo schermo o premendo `OK` si apre la barra informazioni con **carosello canali orizzontale (`◀ / ▶`)**, guida EPG, timer di spegnimento, proporzioni schermo, blocco PIN per categoria e ripresa automatica dell'ultimo canale.
 * **Avvio Pulito in Basso e Orologio Smart (240dp)**: Avvio con app e canali in basso (6 livelli per nome, predefinito `450`), nessun cursore selezionato all'avvio e riduzione automatica dell'orologio quando le icone raggiungono `240dp` dall'alto.
+* **Segnalibri Web intelligenti (Icone HD e modalità YouTube TV)**: Estrazione automatica delle icone ad alta risoluzione per i siti web salvati, e apertura dei segnalibri YouTube direttamente nell'interfaccia **YouTube TV Leanback** ottimizzata per il telecomando.
+* **Riga App Recenti e Aggiornamento OTA da GitHub**: Riga opzionale per le app aperte di recente e controllo/installazione degli aggiornamenti OTA da GitHub con un clic.
 
-### 🔒 Privacy, blocco PIN e gestione app
-* **Blocco app con codice PIN a 4 cifre**: Protezione sicura per le applicazioni riservate.
+### 🔒 Privacy, Gestione Archiviazione, DNS Famiglia e Gestione App
+* **Gestore archiviazione e app integrato**: Visualizza tutte le app installate ordinate per dimensione (`MB`), apri le informazioni di sistema o **disinstalla le app direttamente** per liberare spazio sul TV.
+* **Griglia con 8 scorciatoie di sistema**: Accesso rapido a **Wi-Fi**, **Ethernet**, **Schermo**, **Audio**, **Data e ora**, **Tutte le impostazioni**, **Info app** e **Gestione archiviazione**.
+* **Scudo DNS a doppia modalità (AdBlock e Protezione Famiglia)**: Scegli tra **Blocco pubblicità e tracker** o **Modalità Protezione Famiglia** (blocca anche i siti per adulti su tutto il sistema).
+* **Blocco app con codice PIN a 4 cifre**: Protezione sicura per le applicazioni riservate e categorie IPTV.
 * **Gestione app**: Sposta, classifica (App vs Giochi) o nascondi le app di sistema non necessarie.
 * **Pulsante Indietro sicuro**: Previene l'uscita involontaria alla schermata di sistema del televisore.
 

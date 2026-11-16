@@ -49,7 +49,7 @@ Most smart TV launchers today are cluttered with forced ads, heavy video preview
 * **Built-in Ambient Sleep Mode (`Enabled`)**: When enabled (2, 5, 10, 15, or 30 mins), it keeps the TV awake and triggers the built-in screensaver:
   * **Clock & Date Mode**: Luminous time and date with drift protection.
   * **4K Wallpaper & Info Mode**: 45-degree corner gradient with clock, date, and live greeting.
-  * **Cinematic Video Screensaver**: Fullscreen relaxing fireplace, winter cabin, or tropical waterfall streams without intrusive banners or sign-in prompts.
+  * **Cinematic Video Screensaver & Custom Streams**: Fullscreen relaxing fireplace, winter cabin, or tropical waterfall streams without intrusive banners or sign-in prompts, plus the ability to **add custom YouTube video IDs/URLs**, delete or restore presets, and trigger an instant **Live Screensaver Preview** from Settings.
   * **Photo Slideshow Screensaver (`Slideshow`)**: Turn your TV into a living gallery using a custom folder from device storage/USB, selected photos, or curated 4K collections:
     * **Slide Duration & Shuffle**: Configurable interval per photo (`5s`, `10s`, `15s`, `30s`, `1m`, `5m`) with optional shuffle order.
     * **Photo Motion**: Choose **Ken Burns (Pan & Zoom)**, **Gentle Zoom**, or **Static**.
@@ -68,17 +68,23 @@ Most smart TV launchers today are cluttered with forced ads, heavy video preview
 * **Default Focus on Settings**: Launcher boots with the cursor focused directly on the top-right Settings / Control Center icon for rapid TV configuration.
 * **Vertical Apps Top Offset**: Shift app rows downward (6 named levels from High to Ultra Low, default 450) to showcase high-resolution 4K wallpapers and dynamic background aurora effects.
 * **Custom Grid Density**: Choose between 4, 5, 6, or 7 apps per row to match your display size and viewing distance.
-* **Glassmorphic Opacity Control**: Adjust frosted glass card translucency from 10% to 100%.
+* **Glassmorphic Opacity & Material You Dynamic Colors**: Adjust frosted glass card translucency from 10% to 100%, and optionally enable **Material You Dynamic Colors** to adapt accent tones to your system palette.
+* **Sideloaded / Non-TV Apps Toggle**: Switch between showing **TV-Optimized Apps Only** or **All Installed Android Apps** (including sideloaded mobile APKs), with 1-click options to restore all hidden apps or reset app order.
 
-### 🎙️ Universal Voice Search, Quick Control Center & Interactive IPTV Info Bar
+### 🎙️ Universal Voice Search, System Voice Assistant & Interactive IPTV
 * **Universal Voice & Instant Search (`🎤`)**: Search across all installed TV apps, live IPTV channels, and web/YouTube queries simultaneously using your TV remote microphone or on-screen keyboard.
+* **System-Level Default Digital Voice Assistant**: Built-in `AuraVoiceInteractionService` and `AuraRecognitionService` allow setting **Aura TV** as your Android TV's default system voice assistant so the remote's microphone button works natively.
 * **Quick Control Center (`Control Center`)**: Glassmorphic quick-access panel to toggle 12h/24h clock format, toggle dynamic background, start the Ambient Screensaver immediately, launch Voice Search, or open Wi-Fi & full Settings (with the option to skip Control Center for Direct Settings or show both icons).
-* **Touch & Remote `OK` IPTV Info Bar with Channel Strip**: While watching live IPTV, touching the screen (on touch devices) or pressing `OK` on the TV remote opens the Cinema Info Bar with an embedded horizontal **Channel Carousel Strip** and `◀ / ▶` steppers for switching channels directly from the info bar, alongside live XMLTV EPG, Sleep Timer, Aspect Ratio (`Fit`/`Fill`/`Zoom`), Category PIN Lock, and Auto-Resume Last Channel.
+* **Multi-Playlist IPTV Manager & Interactive Info Bar**: Add, switch between, refresh, or delete **multiple M3U playlists** and custom XMLTV EPG URLs. While watching live IPTV, touching the screen or pressing `OK` on the remote opens the Cinema Info Bar with an embedded horizontal **Channel Carousel Strip** (`◀ / ▶`), live EPG, Sleep Timer, Aspect Ratio (`Fit`/`Fill`/`Zoom`), Category PIN Lock, and Auto-Resume Last Channel.
 * **Clean Startup Showcase & Smart 240dp Clock Header**: Launches with apps and channels positioned at the bottom (6 named levels from *High* to *Ultra Low*, default `450`), an unobtrusive parked cursor (no button highlighted until you press a key), and a full-size clock that automatically shrinks into a compact header as soon as rows scroll within `240dp` of the top.
-* **Recent Apps Row, Web Bookmarks & GitHub OTA Updater**: Optional horizontal Recent Apps bar, custom website shortcuts on the Home Screen, and 1-click GitHub OTA update checking.
+* **Smart Web Bookmarks (High-Res Icons & YouTube TV Mode)**: Custom website shortcuts automatically extract and cache high-resolution Touch/Favicon artwork, and any YouTube bookmark opens directly in the full **YouTube TV Leanback** remote-friendly interface.
+* **Recent Apps Row & GitHub OTA Updater**: Optional horizontal Recent Apps bar and 1-click GitHub OTA update checking with automatic APK verification.
 
-### 🔒 Privacy, App Lock & Organization
-* **PIN-Protected App Lock**: Lock sensitive apps with a 4-digit PIN code.
+### 🔒 Privacy, App Storage Manager, Family DNS & Organization
+* **Built-in App Storage Manager**: Inspect all installed user apps sorted by APK size (`MB`), open system App Info, or **uninstall apps directly** from Settings to free up TV storage.
+* **8 Quick System Shortcuts Grid**: One-click access to **Wi-Fi**, **Ethernet**, **Display**, **Sound**, **Date & Time**, **All System Settings**, **App Info**, and **App Storage Manager**.
+* **Dual-Mode DNS Shield (AdBlock & Family Protection)**: Choose between **Ads & Trackers Blocking** or **Family Protection Mode** (blocks ads, trackers, and adult websites system-wide).
+* **PIN-Protected App Lock**: Lock sensitive apps and IPTV categories with a 4-digit PIN code.
 * **App Reordering & Hiding**: Move, categorize (Apps vs. Games), or hide pre-installed system apps from the launcher grid.
 * **Safe Remote Navigation**: Prevents accidental exits to system desktop when pressing the Back key on the Home screen.
 

@@ -49,7 +49,7 @@ Die meisten Smart-TV-Launcher sind heute mit erzwungener Werbung, schweren Video
 * **Integrierter Ambient-Ruhemodus (`Aktiviert`)**: Bei Aktivierung (2, 5, 10, 15 oder 30 Min.) hält der Launcher das Display wach und startet den integrierten Bildschirmschoner:
   * **Uhr & Datum**: Leuchtende Zeitanzeige und Datum mit Einbrennschutz (Drift-Protection).
   * **4K-Hintergrundbild & Info-Modus**: 45-Grad-Eckenverlauf mit Uhr, Datum und dynamischer Begrüßung.
-  * **Kinoreifer Video-Bildschirmschoner**: Vollbild-Kaminfeuer, Winterhütte oder tropische Wasserfälle ohne störende Banner oder Anmeldeaufforderungen.
+  * **Kinoreifer Video-Bildschirmschoner & Eigene Streams**: Vollbild-Kaminfeuer, Winterhütte oder tropische Wasserfälle ohne störende Banner, plus die Möglichkeit, **eigene YouTube-Video-IDs/URLs hinzuzufügen**, Vorlagen zu löschen/wiederherstellen und eine **Live-Vorschau** direkt in den Einstellungen zu starten.
   * **Foto-Diashow-Bildschirmschoner (`Slideshow`)**: Verwandeln Sie Ihren Fernseher in eine lebendige Fotogalerie aus einem eigenen Ordner (Gerät/USB), ausgewählten Fotos oder kuratierten 4K-Galerien:
     * **Anzeigedauer & Zufallswiedergabe**: Einstellbares Intervall pro Foto (`5s`, `10s`, `15s`, `30s`, `1m`, `5m`) und optionaler Zufallsmodus.
     * **Fotobewegung**: **Ken Burns (Schwenken & Zoomen)**, **Sanfter Zoom** oder **Statisch**.
@@ -66,18 +66,25 @@ Die meisten Smart-TV-Launcher sind heute mit erzwungener Werbung, schweren Video
 ### 🎛️ Anpassung von Launcher & Startbildschirm-Layout
 * **Kopfzeilen-Modus (Kontrollzentrum / Direkte Einstellungen / Beide)**: Wählen Sie, ob oben auf dem Startbildschirm das **Schnell-Kontrollzentrum**, direkt das **Einstellungen-Symbol** (Kontrollzentrum überspringen) oder **beide Symbole gleichzeitig** angezeigt werden.
 * **Standardfokus auf Einstellungen**: Der Launcher startet mit dem Cursor direkt auf dem Symbol oben rechts für eine schnelle Einrichtung.
-* **Vertikaler App-Versatz nach unten**: Verschieben Sie App-Reihen nach unten (180dp bis 380dp), um hochauflösende 4K-Hintergründe und Aurora-Lichteffekte optimal zur Geltung zu bringen.
+* **Vertikaler App-Versatz nach unten**: Verschieben Sie App-Reihen nach unten (6 benannte Stufen, Standard 450), um hochauflösende 4K-Hintergründe und Aurora-Lichteffekte optimal zur Geltung zu bringen.
 * **Benutzerdefinierte Rasterdichte**: Wählen Sie zwischen 4, 5, 6 oder 7 Apps pro Zeile passend zu Ihrem Fernseher.
-* **Glasmorphismus-Transparenz**: Passen Sie die Durchsichtigkeit der Kacheln stufenlos von 10 % bis 100 % an.
+* **Glasmorphismus-Transparenz & Dynamische Material-You-Farben**: Passen Sie die Durchsichtigkeit der Kacheln von 10 % bis 100 % an und aktivieren Sie optional **Dynamische Material-You-Farben**.
+* **Sideload- / Nicht-TV-Apps umschalten**: Wechseln Sie zwischen **Nur TV-Apps** oder **Alle installierten Android-Apps** (einschließlich per APK installierter Mobil-Apps), inklusive 1-Klick-Optionen zum Wiederherstellen ausgeblendeter Apps oder Zurücksetzen der Sortierung.
 
-### 🎙️ Universelle Sprachsuche, Kontrollzentrum & Interaktive IPTV-Infoleiste
+### 🎙️ Universelle Sprachsuche, System-Sprachassistent & Interaktives IPTV
 * **Universelle Sprach- & Sofortsuche (`🎤`)**: Durchsuchen Sie alle installierten TV-Apps, Live-IPTV-Kanäle und Web-/YouTube-Anfragen gleichzeitig per Sprachbefehl über das Fernbedienungsmikrofon oder die Bildschirmtastatur.
+* **Standard-Sprachassistent auf Systemebene**: Integrierter `AuraVoiceInteractionService` und `AuraRecognitionService` ermöglichen es, **Aura TV** als Standard-Sprachassistenten des Android-TVs festzulegen, sodass die Mikrofontaste der Fernbedienung nativ funktioniert.
 * **Schnelles Kontrollzentrum (`Control Center`)**: Glasmorphe Schnellzugriffsleiste zum Umschalten des 12h/24h-Formats, des dynamischen Hintergrunds, zum sofortigen Starten des Bildschirmschoners, der Sprachsuche sowie der WLAN- und Systemeinstellungen.
-* **Touch- & Fernbedienungs-`OK` IPTV-Infoleiste mit Kanalleiste**: Beim IPTV-Schauen öffnet ein Tippen auf den Touchscreen oder die `OK`-Taste der Fernbedienung die Infoleiste inklusive horizontaler **Kanalleiste** zum direkten Umschalten der Kanäle, Live-EPG, Sleep-Timer, Seitenverhältnis und Kategorie-PIN-Sperre.
+* **Multi-Playlist IPTV-Manager & Interaktive Infoleiste**: Mehrere **M3U-Wiedergabelisten** und eigene XMLTV-EPG-URLs verwalten, wechseln oder aktualisieren. Beim IPTV-Schauen öffnet ein Tippen auf den Touchscreen oder die `OK`-Taste die Infoleiste inklusive horizontaler **Kanalleiste (`◀ / ▶`)**, Live-EPG, Sleep-Timer, Seitenverhältnis, Kategorie-PIN-Sperre und automatischer Fortsetzung des letzten Kanals.
 * **Sauberer Startbildschirm & Intelligente 240dp-Uhr-Verkleinerung**: Apps und Kanäle starten unten am Bildschirmrand (6 benannte Stufen, Standard `450`) ohne störende Cursor-Markierung beim Start; die große Uhr verkleinert sich automatisch, sobald die App-Reihen `240dp` vom oberen Rand erreichen.
+* **Intelligente Web-Lesezeichen (HD-Icons & YouTube-TV-Modus)**: Eigene Webseiten-Kacheln laden automatisch hochauflösende Favicons/Touch-Icons, und YouTube-Lesezeichen öffnen sich direkt in der fernbedienungsfreundlichen **YouTube-TV-Leanback**-Oberfläche.
+* **Zuletzt verwendete Apps & GitHub OTA-Updater**: Optionale Leiste für zuletzt geöffnete Apps sowie 1-Klick-OTA-Updates direkt über GitHub.
 
-### 🔒 Datenschutz, App-Sperre & Organisation
-* **PIN-geschützte App-Sperre**: Schützen Sie sensible Apps mit einem 4-stelligen PIN-Code.
+### 🔒 Datenschutz, App-Speichermanager, Familien-DNS & Organisation
+* **Integrierter App-Speichermanager**: Zeigt alle installierten Apps sortiert nach Größe (`MB`) an, öffnet die System-App-Infos oder **deinstalliert Apps direkt** zur Speicherfreigabe.
+* **8 Schnellzugriffe auf Systemeinstellungen**: Direkter Zugriff auf **WLAN**, **Ethernet**, **Anzeige**, **Ton**, **Datum & Uhrzeit**, **Alle Systemeinstellungen**, **App-Info** und **Speichermanager**.
+* **Dual-Modus DNS-Schutz (Werbeblocker & Familienschutz)**: Wählen Sie zwischen **Werbung & Tracker blockieren** oder dem **Familienschutz-Modus** (blockiert zusätzlich jugendgefährdende Webseiten systemweit).
+* **PIN-geschützte App-Sperre**: Schützen Sie sensible Apps und IPTV-Kategorien mit einem 4-stelligen PIN-Code.
 * **Apps neu anordnen & ausblenden**: Verschieben, kategorisieren (Apps vs. Spiele) oder verstecken Sie unerwünschte System-Apps.
 * **Sichere Zurück-Navigation**: Verhindert versehentliches Beenden auf den System-Desktop beim Drücken der Zurück-Taste auf dem Startbildschirm.
 
