@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.annotation.OptIn
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -134,7 +135,7 @@ fun loadSlideshowFolderImages(context: Context, folderUriOrPath: String): List<S
     // Case 1: SAF Document Tree URI (content://...)
     if (clean.startsWith("content://")) {
         return try {
-            val treeUri = Uri.parse(clean)
+            val treeUri = clean.toUri()
             val docId = DocumentsContract.getTreeDocumentId(treeUri)
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
             val result = mutableListOf<String>()
@@ -166,7 +167,7 @@ fun loadSlideshowFolderImages(context: Context, folderUriOrPath: String): List<S
 
     // Case 2: Local filesystem directory path (/storage/... or file://...)
     return try {
-        val path = if (clean.startsWith("file://")) Uri.parse(clean).path ?: clean else clean
+        val path = if (clean.startsWith("file://")) clean.toUri().path ?: clean else clean
         val dir = File(path)
         if (!dir.exists() || !dir.isDirectory) return emptyList()
         dir.listFiles()

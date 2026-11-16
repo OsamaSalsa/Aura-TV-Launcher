@@ -59,12 +59,7 @@ object LocaleHelper {
         } else {
             android.util.LayoutDirection.LTR
         }
-        val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            if (!resources.configuration.locales.isEmpty) resources.configuration.locales[0] else null
-        } else {
-            @Suppress("DEPRECATION")
-            resources.configuration.locale
-        }
+        val currentLocale = if (!resources.configuration.locales.isEmpty) resources.configuration.locales[0] else null
         if (currentLocale?.language == locale.language &&
             resources.configuration.layoutDirection == desiredDirection
         ) {
@@ -73,11 +68,9 @@ object LocaleHelper {
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
         config.setLayoutDirection(if (useRtlDirection) locale else Locale.ENGLISH)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val localeList = LocaleList(locale)
-            LocaleList.setDefault(localeList)
-            config.setLocales(localeList)
-        }
+        val localeList = LocaleList(locale)
+        LocaleList.setDefault(localeList)
+        config.setLocales(localeList)
         try {
             @Suppress("DEPRECATION")
             resources.updateConfiguration(config, resources.displayMetrics)
@@ -95,11 +88,9 @@ object LocaleHelper {
         config.setLocale(locale)
         config.setLayoutDirection(if (useRtl) locale else Locale.ENGLISH)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val localeList = LocaleList(locale)
-            LocaleList.setDefault(localeList)
-            config.setLocales(localeList)
-        }
+        val localeList = LocaleList(locale)
+        LocaleList.setDefault(localeList)
+        config.setLocales(localeList)
 
         applyConfigIfNeeded(context.resources, locale, useRtl)
         applyConfigIfNeeded(context.applicationContext?.resources, locale, useRtl)

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppRepository
@@ -476,13 +477,13 @@ class HomeViewModel(
 
     fun openPlayStoreGames(context: Context) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/category/GAME")).apply {
+            val intent = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/category/GAME".toUri()).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
         } catch (_: Exception) {
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=games")).apply {
+                val intent = Intent(Intent.ACTION_VIEW, "market://search?q=games".toUri()).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
@@ -512,7 +513,7 @@ class HomeViewModel(
         dismissAppMenu()
         try {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:${app.packageName}")
+                data = "package:${app.packageName}".toUri()
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -523,7 +524,7 @@ class HomeViewModel(
         dismissAppMenu()
         try {
             val intent = Intent(Intent.ACTION_DELETE).apply {
-                data = Uri.parse("package:${app.packageName}")
+                data = "package:${app.packageName}".toUri()
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)

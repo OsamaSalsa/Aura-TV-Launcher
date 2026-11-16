@@ -3,14 +3,8 @@
     <string name="title_favorite_channels">Favorite Channels</string>
     <string name="title_apps">Apps</string>
     <string name="title_games">Games</string>
-    <string name="no_games_installed">No games installed yet</string>
-    <string name="no_games_desc">Install games from Google Play, or long-press any app to move it to Games</string>
-    <string name="open_play_store_games">Browse TV Games</string>
-    <string name="title_media_hub">Entertainment Hub</string>
     <string name="iptv_title">IPTV Live</string>
     <string name="iptv_subtitle">Stream global live TV channels</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">Full Smart TV experience</string>
     <string name="settings_title">Settings</string>
 
     <!-- Top Bar -->
@@ -29,7 +23,6 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
     <string name="action_reset">Reset</string>
-    <string name="action_add">Add</string>
     <string name="action_delete">Delete</string>
     <string name="action_play">Play</string>
     <string name="action_retry">Retry</string>
@@ -44,44 +37,12 @@
     <string name="iptv_empty">No channels found in this group</string>
     <string name="iptv_loading">Loading playlist channels…</string>
     <string name="iptv_error_playback">Stream playback error. Click retry or choose another channel.</string>
-    <string name="iptv_channel_up_down_hint">Use Up/Down remote buttons to change channels</string>
     <string name="iptv_quick_channels">Quick Channels</string>
-    <string name="iptv_quick_channels_hint">Use Left/Right to browse • Press OK to switch</string>
     <string name="iptv_toggle_favorite">Favorite</string>
     <string name="iptv_added_to_favorites">Added to Favorites ★</string>
     <string name="iptv_removed_from_favorites">Removed from Favorites</string>
-    <string name="iptv_playlist_updated">Playlist successfully updated</string>
     <string name="iptv_no_playlist">No IPTV playlist configured yet. Enter your M3U playlist URL in Settings.</string>
     <string name="settings_open_iptv_settings">Open IPTV Settings</string>
-    <string name="settings_clear_playlist">Clear Playlist</string>
-
-    <!-- YouTube -->
-    <string name="youtube_curated_only">Private Channels Only</string>
-    <string name="youtube_no_channels">No private channels added yet. Add your trusted private channels to watch distraction-free.</string>
-    <string name="youtube_loading_feed">Fetching latest video feeds…</string>
-    <string name="youtube_feed_error">Could not load channel feed</string>
-    <string name="youtube_add_channel_title">Add Private Channel</string>
-    <string name="youtube_channel_name">Channel Name (Optional)</string>
-    <string name="youtube_channel_id_or_url">Channel ID (UCxxxx), Handle (@name), or URL</string>
-    <string name="youtube_video_player">Video Player</string>
-    <string name="youtube_player_hint">Press Back button on remote to return to channel rows</string>
-    <string name="youtube_add_channel_button">Add Private Channel</string>
-    <string name="youtube_delete_channel">Delete Channel</string>
-    <string name="youtube_delete_channel_confirm">Are you sure you want to remove this channel from private list?</string>
-    <string name="youtube_private_notice">MiniTube only displays videos from channels explicitly approved by you.</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">Private Channels</string>
-    <string name="youtube_tv_exit">Exit to Launcher</string>
-    <string name="youtube_tv_reload">Reload</string>
-    <string name="youtube_tv_press_back_again">Press Back again to exit to Launcher</string>
-    <string name="youtube_play_on_tv">Play on YouTube.com/tv</string>
-    <string name="youtube_open_channel_on_tv">Open on YouTube.com/tv</string>
-    <string name="youtube_back_to_channels">Back to Channels</string>
-    <string name="youtube_running_on_tv_badge">YouTube.com/tv Player</string>
-    <string name="settings_youtube_default_mode">Default View Mode</string>
-    <string name="settings_youtube_default_mode_desc">Choose between YouTube.com/tv (Smart TV Leanback) or Private Channels</string>
-    <string name="settings_youtube_clear_cache">Clear YouTube TV Cache &amp; Cookies</string>
-    <string name="settings_youtube_cache_cleared">YouTube TV cache &amp; cookies cleared</string>
 
     <!-- Settings -->
     <string name="settings_category_network">Network &amp; Internet</string>
@@ -91,7 +52,6 @@
     <string name="settings_open_display">Display &amp; Screen</string>
     <string name="settings_open_sound">Sound &amp; Audio</string>
     <string name="settings_open_datetime">Date &amp; Time</string>
-    <string name="settings_open_apps">System Installed Apps</string>
     <string name="settings_open_all_settings">All Android TV Settings</string>
 
     <string name="settings_category_launcher">Launcher Customization</string>
@@ -100,13 +60,8 @@
     <string name="settings_wallpaper_dynamic">Dynamic Palette Color</string>
     <string name="settings_wallpaper_custom">Custom Image / Photo</string>
     <string name="settings_wallpaper_default">Default Dark Theme</string>
-    <string name="settings_wallpaper_url_label">Custom Wallpaper Image URL</string>
-    <string name="settings_wallpaper_apply">Apply Wallpaper</string>
     <string name="settings_wallpaper_presets">4K Preset Wallpapers</string>
     <string name="settings_wallpaper_pick_device">Choose Photo from Device</string>
-    <string name="settings_dynamic_bg">Dynamic Palette Wallpaper</string>
-    <string name="settings_dynamic_bg_desc">Extract vibrant colors from highlighted app icons</string>
-    <string name="settings_clock_24h">24-Hour Clock Format</string>
     <string name="settings_apps_per_row">Apps Per Row</string>
     <string name="settings_apps_per_row_desc">Number of app cards displayed in each line on the home screen</string>
     <string name="settings_glass_opacity">Channels Glass Opacity</string>
@@ -130,33 +85,19 @@
     <string name="settings_open_app_info">App Info (Settings)</string>
     <string name="settings_open_app_info_desc">Open Aura TV application details in Android system settings</string>
     <string name="settings_category_iptv">IPTV Configuration</string>
-    <string name="settings_m3u_url">M3U / M3U8 Playlist URL</string>
-    <string name="settings_reload_m3u">Reload / Sync Playlist</string>
-    <string name="settings_load_sample_m3u">Load Default Free TV Playlist</string>
 
-    <string name="settings_category_youtube">Mini YouTube Channels</string>
-    <string name="settings_manage_channels">Manage Allowed Channels</string>
-    <string name="settings_clear_all_yt">Clear All Allowed Channels</string>
     <string name="settings_language">Language / اللغة</string>
     <string name="launcher_prompt_title">Set as default launcher</string>
     <string name="launcher_prompt_desc">To enjoy the full cinematic experience, please set Aura TV as your default home screen.</string>
     <string name="action_set_default">Set as default</string>
     <string name="action_later">Later</string>
-    <string name="action_move_apps">Move Apps</string>
-    <string name="action_delete_apps">Delete Apps</string>
-    <string name="action_hide_apps">Hide Apps</string>
     <string name="action_edit">Edit</string>
-    <string name="action_edit_options">Edit</string>
     <string name="action_stop_editing">Done</string>
     <string name="edit_mode_move_hint">Click an app or channel to move, or choose options</string>
-    <string name="edit_mode_delete_hint">Click an app to uninstall it</string>
-    <string name="edit_mode_hide_hint">Click an app to hide it</string>
-    <string name="edit_mode_options_hint">Select any item to move or customize</string>
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">Mini Downloader</string>
     <string name="mini_downloader_subtitle">Enter download code or URL to install apps</string>
-    <string name="mini_downloader_enter_code">Enter Code (e.g. 123456)</string>
     <string name="mini_downloader_go">GO / Enter</string>
     <string name="mini_downloader_delete_prompt_title">Download Complete</string>
     <string name="mini_downloader_delete_prompt_desc">Do you want to delete the downloaded APK file to save device storage?</string>
@@ -170,7 +111,6 @@
     <string name="mini_downloader_download_error">Download Error</string>
     <string name="mini_downloader_open_in_browser">Open in Browser</string>
     <string name="mini_downloader_file_deleted">File deleted</string>
-    <string name="mini_downloader_requires_browser">The page requires browser interaction</string>
     <string name="mini_downloader_downloads_title">Downloaded Files</string>
     <string name="mini_downloader_downloads_subtitle">Review downloaded APKs, install them, re-download, or delete to free up storage</string>
     <string name="mini_downloader_downloads_btn">Downloads</string>
@@ -178,12 +118,10 @@
     <string name="mini_downloader_no_files_desc">Files and APKs downloaded through Mini Downloader will appear here for easy management.</string>
     <string name="mini_downloader_install_now">Install</string>
     <string name="mini_downloader_redownload">Re-download</string>
-    <string name="mini_downloader_delete">Delete</string>
     <string name="mini_downloader_clear_all">Clear All</string>
     <string name="mini_downloader_all_cleared">All downloaded files removed</string>
     <string name="mini_downloader_redownloading">Starting re-download…</string>
     <string name="mini_downloader_view_downloads">View Downloads</string>
-    <string name="aurastore_title">Aura Store</string>
     <string name="aurastore_downloads_btn">Downloads</string>
     <string name="aurastore_downloading">Downloading app…</string>
     <string name="aurastore_connecting">Connecting to link…</string>
@@ -210,8 +148,6 @@
     <string name="aurastore_delete">Delete</string>
     <string name="aurastore_ok">OK</string>
     <string name="settings_language_system">System Default</string>
-    <string name="settings_reset_default_launcher">Clear Old TV Launcher &amp; Set Default</string>
-    <string name="settings_reset_default_launcher_desc">Clear existing default launcher preferences (Launcher Manager method) and prompt Aura TV as default</string>
 
     <!-- Privacy -->
     <string name="settings_privacy_title">Privacy</string>
@@ -226,29 +162,29 @@
     <string name="settings_items_count">Items Count</string>
     <string name="settings_opacity_level">Opacity Level</string>
     <string name="settings_display_preference">Display Preference</string>
-    <string name="settings_status">Status</string>
-    <string name="settings_enabled">Enabled</string>
-    <string name="settings_disabled">Disabled</string>
     <string name="settings_apps_suffix">Apps</string>
 
     <!-- IPTV Management -->
     <string name="settings_iptv_add_new">Add New IPTV Playlist</string>
     <string name="settings_iptv_name_placeholder">Playlist Name (e.g. Arabic, Sports)</string>
-    <string name="settings_iptv_url_placeholder">M3U / M3U8 URL (https://...)</string>
+    <string name="settings_iptv_url_placeholder">M3U / M3U8 URL (https://…)</string>
     <string name="settings_iptv_add_button">Add Playlist</string>
     <string name="settings_iptv_load_presets">Load All Presets</string>
     <string name="settings_iptv_saved_header">Saved IPTV Playlists (%d)</string>
     <string name="settings_iptv_no_saved">No saved playlists. Add an M3U playlist link above.</string>
-    <string name="settings_iptv_channels_count">%d channels</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="one">%d channel</item>
+        <item quantity="other">%d channels</item>
+    </plurals>
     <string name="settings_iptv_active_tag">Active</string>
     <string name="settings_iptv_activate_button">Activate</string>
     <string name="settings_iptv_sync_button">Sync</string>
 
     <!-- Extra UI -->
-    <string name="action_options_ok">Options (OK)</string>
-    <string name="reorder_move_hint_remote">Use D-Pad arrows to move • Press OK for options</string>
-    <string name="state_moving">MOVING</string>
-    <string name="iptv_channels_plural">%d Channels</string>
+    <plurals name="iptv_channels_plural">
+        <item quantity="one">%d Channel</item>
+        <item quantity="other">%d Channels</item>
+    </plurals>
     <string name="youtube_renderer_crash">YouTube renderer crashed. Reloading…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">%.1f MB downloaded</string>
@@ -256,7 +192,10 @@
     <string name="mini_downloader_browser_crash">Browser renderer crashed. Reloading…</string>
 
     <!-- Status Messages -->
-    <string name="status_apps_per_row_updated">Updated to %d apps per row</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="one">Updated to %d app per row</item>
+        <item quantity="other">Updated to %d apps per row</item>
+    </plurals>
     <string name="status_wallpaper_style_updated">Wallpaper style updated</string>
     <string name="status_custom_wallpaper_applied">Custom wallpaper applied</string>
     <string name="status_language_saved">Language preference saved</string>
@@ -267,11 +206,23 @@
     <string name="status_app_unhidden">App unhidden</string>
     <string name="status_all_apps_restored">All apps restored</string>
     <string name="status_app_order_reset">App order reset to default</string>
-    <string name="status_playlist_added">Playlist added: %d channels loaded</string>
-    <string name="status_playlist_switch_success">Switched active playlist: %d channels</string>
-    <string name="status_playlist_synced">Synced playlist: %d channels updated</string>
+    <plurals name="status_playlist_added">
+        <item quantity="one">Playlist added: %d channel loaded</item>
+        <item quantity="other">Playlist added: %d channels loaded</item>
+    </plurals>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="one">Switched active playlist: %d channel</item>
+        <item quantity="other">Switched active playlist: %d channels</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="one">Synced playlist: %d channel updated</item>
+        <item quantity="other">Synced playlist: %d channels updated</item>
+    </plurals>
     <string name="status_playlist_removed">Playlist removed</string>
-    <string name="status_presets_loaded">Loaded %d preset playlists</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="one">Loaded %d preset playlist</item>
+        <item quantity="other">Loaded %d preset playlists</item>
+    </plurals>
     <string name="status_presets_already_loaded">All preset playlists already loaded</string>
     <string name="status_select_default_launcher">Select Aura TV as Default Launcher</string>
     <string name="status_already_default_launcher">Aura TV is already your default launcher</string>
@@ -301,24 +252,14 @@
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
     <string name="control_center_title">Launcher Control Center</string>
     <string name="control_center_subtitle">Quick access to all launcher layout, clock, wallpaper &amp; screensaver settings</string>
-    <string name="control_center_ram">RAM Memory</string>
     <string name="control_center_storage">Internal Storage</string>
     <string name="control_center_boost_btn">Boost &amp; Clean Cache</string>
     <string name="control_center_boost_desc">Free up RAM &amp; clear temporary cache</string>
     <string name="control_center_boosting">Optimizing TV…</string>
     <string name="control_center_boost_done">Optimized (+%d MB)</string>
-    <string name="control_center_quick_actions">Quick Actions &amp; Shortcuts</string>
-    <string name="control_center_ambient">Ambient Mode</string>
-    <string name="control_center_ambient_sub">Cinema Screensaver</string>
     <string name="control_center_search">Universal Search</string>
     <string name="control_center_search_sub">Apps, Games &amp; Live TV</string>
-    <string name="control_center_display_sub">HDMI / Resolution</string>
-    <string name="control_center_audio_sub">Audio / Output</string>
-    <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">Appearance &amp; Home Layout</string>
-    <string name="control_center_section_clock">Clock, Date &amp; Display</string>
-    <string name="control_center_section_experience">Greeting, Screensaver &amp; Apps</string>
 
     <string name="universal_search_hint">Search apps, games, and live TV channels…</string>
     <string name="universal_search_all">All</string>
@@ -361,12 +302,6 @@
     <string name="timeout_15min">15 Minutes</string>
     <string name="timeout_30min">30 Minutes</string>
     <string name="timeout_never">Disabled / Never</string>
-    <string name="settings_screensaver_wallpaper_choice">Screensaver Wallpaper Source</string>
-    <string name="screensaver_wallpaper_current">Current Launcher Wallpaper</string>
-    <string name="screensaver_wallpaper_presets">Choose from 4K Gallery</string>
-    <string name="screensaver_wallpaper_device">Choose Photo from Device</string>
-    <string name="screensaver_video_info_title">Cinematic Video Ambient</string>
-    <string name="screensaver_video_info_desc">Plays relaxing videos in fullscreen without text or buttons. Wakes up immediately upon remote input.</string>
     <string name="screensaver_video_choice">Ambient Video Selection</string>
     <string name="screensaver_video_choice_desc">Choose your preferred relaxing video for sleep mode, or enter a custom YouTube link</string>
     <string name="screensaver_video_rain_fireplace">Cozy Fireplace Ambience 4K</string>
@@ -390,11 +325,9 @@
     <string name="settings_clock_settings">Clock Display Settings</string>
     <string name="settings_clock_settings_desc">Customize time format, seconds, and clock size</string>
     <string name="settings_clock_seconds">Show Seconds</string>
-    <string name="settings_clock_seconds_desc">Display live ticking seconds with the time</string>
     <string name="settings_seconds_disabled">Disabled</string>
     <string name="settings_seconds_enabled">Enabled</string>
     <string name="settings_clock_size">Clock Size</string>
-    <string name="settings_clock_size_desc">Choose the display size of the clock on the home screen</string>
     <string name="settings_clock_size_large">Large (60sp)</string>
     <string name="settings_clock_size_medium">Medium (48sp)</string>
     <string name="settings_clock_size_compact">Compact (36sp)</string>
@@ -458,10 +391,6 @@
     <string name="status_update_check_failed">Could not check for updates: %1$s</string>
     <string name="action_pause">Pause</string>
     <string name="iptv_paused_tag">PAUSED</string>
-    <string name="iptv_hint_menu_cursor">Navigate Menu</string>
-    <string name="iptv_hint_change_channels">Switch Channels</string>
-    <string name="iptv_hint_select">Select</string>
-    <string name="iptv_hint_hide">Hide</string>
     <string name="iptv_hide_menu">Hide Menu</string>
     <string name="iptv_audio_unsupported_codec">Channel audio (%1$s) unsupported — playing video only</string>
     <string name="iptv_audio_unsupported_generic">Channel audio is unsupported on this device — playing video only</string>
@@ -517,7 +446,6 @@
     <string name="iptv_lock_category">Lock Category (PIN)</string>
     <string name="iptv_unlock_category">Unlock Category</string>
     <string name="iptv_resume_last">Resume Last</string>
-    <string name="iptv_epg_now">Now</string>
     <string name="iptv_epg_next">Next</string>
     <string name="iptv_sleep_toast_set">Sleep timer set: %d min</string>
     <string name="iptv_sleep_toast_off">Sleep timer disabled</string>

@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -158,6 +159,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        installKeyInterceptionCallback()
 
         val app = application as AuraTvApp
 
@@ -219,7 +221,7 @@ class MainActivity : ComponentActivity() {
                             runOnUiThread {
                                 try {
                                     window.setBackgroundDrawable(
-                                        android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK)
+                                        android.graphics.Color.BLACK.toDrawable()
                                     )
                                 } catch (_: Exception) {}
                             }
@@ -246,7 +248,7 @@ class MainActivity : ComponentActivity() {
                                             runOnUiThread {
                                                 try {
                                                     window.setBackgroundDrawable(
-                                                        android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK)
+                                                        android.graphics.Color.BLACK.toDrawable()
                                                     )
                                                 } catch (_: Exception) {}
                                             }
@@ -287,6 +289,9 @@ class MainActivity : ComponentActivity() {
         isForegroundResumed = false
         if (activeInstanceRef?.get() === this) {
             activeInstanceRef = null
+        }
+        if (isFinishing && !isChangingConfigurations) {
+            (application as? AuraTvApp)?.releaseWebViewKeepAliveAnchor()
         }
         super.onDestroy()
     }
@@ -335,11 +340,23 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * TV Remote D-pad key dispatch:
-     * Dispatches key events BEFORE Compose focus navigation when reordering apps,
-     * and intercepts remote Voice Search / Search / Assist buttons to open in-app Voice Search.
+     * Wraps Window.Callback so TV Remote D-pad reorder keys and Voice Search / Assist buttons
+     * are intercepted before Compose focus traversal without overriding ComponentActivity.dispatchKeyEvent
+     * (@RestrictTo) or intercepting KEYCODE_BACK (handled by OnBackPressedDispatcher / BackHandler).
      */
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    private fun installKeyInterceptionCallback() {
+        val baseCallback = window.callback ?: return
+        window.callback = object : android.view.Window.Callback by baseCallback {
+            override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+                if (handleInterceptedKeyEvent(event)) {
+                    return true
+                }
+                return baseCallback.dispatchKeyEvent(event)
+            }
+        }
+    }
+
+    private fun handleInterceptedKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             _onUserActivity.tryEmit(System.currentTimeMillis())
         }
@@ -366,23 +383,19 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
-        val vm = homeVmRef ?: return super.dispatchKeyEvent(event)
-        
+        val vm = homeVmRef ?: return false
         val appState = vm.reorderState.value
         val channelState = vm.channelReorderState.value
-        
+
         if (appState != null || channelState != null) {
             val keyCode = event.keyCode
-            if (keyCode in listOf(
-                    KeyEvent.KEYCODE_DPAD_LEFT,
-                    KeyEvent.KEYCODE_DPAD_RIGHT,
-                    KeyEvent.KEYCODE_DPAD_UP,
-                    KeyEvent.KEYCODE_DPAD_DOWN,
-                    KeyEvent.KEYCODE_DPAD_CENTER,
-                    KeyEvent.KEYCODE_ENTER,
-                    KeyEvent.KEYCODE_NUMPAD_ENTER,
-                    KeyEvent.KEYCODE_BACK
-                )
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+                keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                keyCode == KeyEvent.KEYCODE_ENTER ||
+                keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
             ) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     val isRtl = isRtlLayout && vm.isRtl.value
@@ -407,10 +420,9 @@ class MainActivity : ComponentActivity() {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (appState != null) vm.moveAppDown()
                         }
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                            if (appState != null) vm.confirmReorder() else vm.confirmChannelReorder()
-                        }
-                        KeyEvent.KEYCODE_BACK -> {
+                        KeyEvent.KEYCODE_DPAD_CENTER,
+                        KeyEvent.KEYCODE_ENTER,
+                        KeyEvent.KEYCODE_NUMPAD_ENTER -> {
                             if (appState != null) vm.confirmReorder() else vm.confirmChannelReorder()
                         }
                     }
@@ -418,7 +430,7 @@ class MainActivity : ComponentActivity() {
                 return true
             }
         }
-        return super.dispatchKeyEvent(event)
+        return false
     }
 }
 
@@ -572,7 +584,7 @@ fun LauncherNavigation(
                     val intent = Intent(app, com.example.service.DnsBlockerService::class.java).apply {
                         putExtra(com.example.service.DnsBlockerService.EXTRA_MODE, mode)
                     }
-                    app.startService(intent)
+                    androidx.core.content.ContextCompat.startForegroundService(app, intent)
                 } catch (_: Exception) {}
             }
         }

@@ -3,14 +3,8 @@
     <string name="title_favorite_channels">Canales Favoritos</string>
     <string name="title_apps">Aplicaciones</string>
     <string name="title_games">Juegos</string>
-    <string name="no_games_installed">No hay juegos instalados</string>
-    <string name="no_games_desc">Instala juegos desde Play Store o mantén pulsada una app para moverla a Juegos</string>
-    <string name="open_play_store_games">Explorar juegos de TV</string>
-    <string name="title_media_hub">Centro de Entretenimiento</string>
     <string name="iptv_title">IPTV en Vivo</string>
     <string name="iptv_subtitle">Mira canales de televisión en vivo</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">Experiencia TV sin distracciones</string>
     <string name="settings_title">Ajustes</string>
 
     <!-- Top Bar -->
@@ -29,7 +23,6 @@
     <string name="action_cancel">Cancelar</string>
     <string name="action_save">Guardar</string>
     <string name="action_reset">Restablecer</string>
-    <string name="action_add">Añadir</string>
     <string name="action_delete">Eliminar</string>
     <string name="action_play">Reproducir</string>
     <string name="action_retry">Reintentar</string>
@@ -44,44 +37,12 @@
     <string name="iptv_empty">No se encontraron canales en este grupo</string>
     <string name="iptv_loading">Cargando canales de IPTV…</string>
     <string name="iptv_error_playback">Error al reproducir la transmisión. Haz clic en Reintentar o elige otro canal.</string>
-    <string name="iptv_channel_up_down_hint">Usa Arriba/Abajo en el mando para cambiar de canal</string>
     <string name="iptv_quick_channels">Canales rápidos</string>
-    <string name="iptv_quick_channels_hint">Usa Izquierda/Derecha para explorar • Pulsa OK para cambiar</string>
     <string name="iptv_toggle_favorite">Favorito</string>
     <string name="iptv_added_to_favorites">Añadido a Favoritos ★</string>
     <string name="iptv_removed_from_favorites">Eliminado de Favoritos</string>
-    <string name="iptv_playlist_updated">Lista de reproducción actualizada con éxito</string>
     <string name="iptv_no_playlist">No hay lista IPTV configurada. Introduce la URL de tu lista M3U en Ajustes.</string>
     <string name="settings_open_iptv_settings">Ajustes de IPTV</string>
-    <string name="settings_clear_playlist">Borrar lista de reproducción</string>
-
-    <!-- YouTube -->
-    <string name="youtube_curated_only">Solo Canales Privados</string>
-    <string name="youtube_no_channels">No hay canales privados añadidos.</string>
-    <string name="youtube_loading_feed">Cargando vídeos…</string>
-    <string name="youtube_feed_error">No se pudo cargar el canal</string>
-    <string name="youtube_add_channel_title">Añadir Canal Privado</string>
-    <string name="youtube_channel_name">Nombre del canal (Opcional)</string>
-    <string name="youtube_channel_id_or_url">ID del canal (UCxxxx), usuario (@nombre) o URL</string>
-    <string name="youtube_video_player">Reproductor de Vídeo</string>
-    <string name="youtube_player_hint">Pulsa Atrás en el mando para volver a los canales</string>
-    <string name="youtube_add_channel_button">Añadir Canal</string>
-    <string name="youtube_delete_channel">Eliminar Canal</string>
-    <string name="youtube_delete_channel_confirm">¿Seguro que quieres eliminar este canal?</string>
-    <string name="youtube_private_notice">MiniTube solo muestra vídeos de canales aprobados por ti.</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">Canales Privados</string>
-    <string name="youtube_tv_exit">Salir al Inicio</string>
-    <string name="youtube_tv_reload">Recargar</string>
-    <string name="youtube_tv_press_back_again">Pulsa Atrás de nuevo para salir al Inicio</string>
-    <string name="youtube_play_on_tv">Reproducir en YouTube.com/tv</string>
-    <string name="youtube_open_channel_on_tv">Abrir en YouTube.com/tv</string>
-    <string name="youtube_back_to_channels">Volver a los canales</string>
-    <string name="youtube_running_on_tv_badge">Reproductor YouTube.com/tv</string>
-    <string name="settings_youtube_default_mode">Modo de vista predeterminado</string>
-    <string name="settings_youtube_default_mode_desc">Elige entre YouTube.com/tv o tus Canales Privados</string>
-    <string name="settings_youtube_clear_cache">Borrar caché de YouTube TV</string>
-    <string name="settings_youtube_cache_cleared">Caché y cookies de YouTube borradas</string>
 
     <!-- Settings -->
     <string name="settings_category_network">Red e Internet</string>
@@ -91,7 +52,6 @@
     <string name="settings_open_display">Pantalla y Pantalla</string>
     <string name="settings_open_sound">Sonido y Audio</string>
     <string name="settings_open_datetime">Fecha y Hora</string>
-    <string name="settings_open_apps">Aplicaciones Instaladas</string>
     <string name="settings_open_all_settings">Todos los Ajustes de Android TV</string>
 
     <string name="settings_category_launcher">Personalización del Launcher</string>
@@ -100,12 +60,7 @@
     <string name="settings_wallpaper_dynamic">Paleta dinámica</string>
     <string name="settings_wallpaper_custom">Imagen personalizada</string>
     <string name="settings_wallpaper_default">Tema oscuro predeterminado</string>
-    <string name="settings_wallpaper_url_label">URL de la imagen de fondo personalizada</string>
-    <string name="settings_wallpaper_apply">Aplicar fondo</string>
     <string name="settings_wallpaper_presets">Fondos 4K predefinidos</string>
-    <string name="settings_dynamic_bg">Fondo de color dinámico</string>
-    <string name="settings_dynamic_bg_desc">Extrae colores según el icono seleccionado</string>
-    <string name="settings_clock_24h">Formato de reloj 24 horas</string>
     <string name="settings_apps_per_row">Aplicaciones por fila</string>
     <string name="settings_apps_per_row_desc">Número de tarjetas de app en cada fila de la pantalla de inicio</string>
     <string name="settings_glass_opacity">Transparencia de tarjetas de canales</string>
@@ -129,25 +84,14 @@
     <string name="settings_open_app_info">Info de la app (Sistema)</string>
     <string name="settings_open_app_info_desc">Abrir detalles de la aplicación en los ajustes del sistema Android</string>
     <string name="settings_category_iptv">Configuración de IPTV</string>
-    <string name="settings_m3u_url">URL de la lista M3U / M3U8</string>
-    <string name="settings_reload_m3u">Recargar / Sincronizar Lista</string>
-    <string name="settings_load_sample_m3u">Cargar lista Free TV predeterminada</string>
 
-    <string name="settings_category_youtube">Canales Mini YouTube</string>
-    <string name="settings_manage_channels">Gestionar canales permitidos</string>
-    <string name="settings_clear_all_yt">Borrar todos los canales</string>
     <string name="settings_language">Idioma / Language</string>
-    <string name="action_move_apps">Mover apps</string>
-    <string name="action_delete_apps">Eliminar apps</string>
-    <string name="action_hide_apps">Ocultar apps</string>
     <string name="action_edit">Editar</string>
-    <string name="action_edit_options">Editar</string>
     <string name="action_stop_editing">Hecho</string>
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">Mini Downloader</string>
     <string name="mini_downloader_subtitle">Introduce un código de descarga o URL para instalar aplicaciones</string>
-    <string name="mini_downloader_enter_code">Introduce el código (ej: 123456)</string>
     <string name="mini_downloader_go">GO / Descargar</string>
     <string name="mini_downloader_delete_prompt_title">Descarga Completada</string>
     <string name="mini_downloader_delete_prompt_desc">¿Quieres eliminar el archivo APK descargado para ahorrar espacio?</string>
@@ -161,9 +105,6 @@
     <string name="mini_downloader_download_error">Error de descarga</string>
     <string name="mini_downloader_open_in_browser">Abrir en el navegador</string>
     <string name="mini_downloader_file_deleted">Archivo eliminado</string>
-    <string name="mini_downloader_requires_browser">La página requiere interacción en el navegador</string>
-    <string name="settings_reset_default_launcher">Restablecer launcher predeterminado</string>
-    <string name="settings_reset_default_launcher_desc">Restablecer las preferencias anteriores y asignar Aura TV</string>
 
     <!-- Privacy -->
     <string name="settings_privacy_title">Privacidad</string>
@@ -178,34 +119,35 @@
     <string name="settings_items_count">Cantidad de elementos</string>
     <string name="settings_opacity_level">Nivel de opacidad</string>
     <string name="settings_display_preference">Preferencia de pantalla</string>
-    <string name="settings_status">Estado</string>
-    <string name="settings_enabled">Activado</string>
-    <string name="settings_disabled">Desactivado</string>
     <string name="settings_apps_suffix">Apps</string>
 
     <!-- IPTV Management -->
     <string name="settings_iptv_add_new">Añadir nueva lista IPTV</string>
     <string name="settings_iptv_name_placeholder">Nombre (ej: Deportes, España)</string>
-    <string name="settings_iptv_url_placeholder">URL M3U / M3U8 (https://...)</string>
+    <string name="settings_iptv_url_placeholder">URL M3U / M3U8 (https://…)</string>
     <string name="settings_iptv_add_button">Añadir lista</string>
     <string name="settings_iptv_load_presets">Cargar ajustes previos</string>
     <string name="settings_iptv_saved_header">Listas IPTV guardadas (%d)</string>
     <string name="settings_iptv_no_saved">No hay listas guardadas. Añade un enlace arriba.</string>
-    <string name="settings_iptv_channels_count">%d canales</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="one">%d canal</item>
+        <item quantity="many">%d canales</item>
+        <item quantity="other">%d canales</item>
+    </plurals>
     <string name="settings_iptv_active_tag">Activa</string>
     <string name="settings_iptv_activate_button">Activar</string>
     <string name="settings_iptv_sync_button">Sincro</string>
 
     <!-- Extra UI -->
-    <string name="action_options_ok">Opciones (OK)</string>
-    <string name="reorder_move_hint_remote">Flechas para mover • OK para opciones</string>
-    <string name="state_moving">MOVIENDO</string>
-    <string name="iptv_channels_plural">%d Canales</string>
+    <plurals name="iptv_channels_plural">
+        <item quantity="one">%d Canal</item>
+        <item quantity="many">%d Canales</item>
+        <item quantity="other">%d Canales</item>
+    </plurals>
     <string name="youtube_renderer_crash">El motor de YouTube falló. Recargando…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">%.1f MB descargados</string>
     <string name="mini_downloader_error_installer">No se pudo abrir el instalador: %s</string>
-    <string name="aurastore_title">Aura Store</string>
     <string name="aurastore_downloads_btn">Descargas</string>
     <string name="aurastore_downloading">Descargando aplicación…</string>
     <string name="aurastore_connecting">Conectando al enlace…</string>
@@ -242,10 +184,7 @@
     <string name="action_grant_permission">Conceder permiso</string>
     <string name="action_later">Más tarde</string>
     <string name="action_set_default">Establecer por defecto</string>
-    <string name="edit_mode_delete_hint">Haz clic en una aplicación para desinstalarla</string>
-    <string name="edit_mode_hide_hint">Haz clic en una aplicación para ocultarla</string>
     <string name="edit_mode_move_hint">Haz clic en una aplicación o canal para mover, o mantén presionado para opciones</string>
-    <string name="edit_mode_options_hint">Selecciona cualquier elemento para mover o personalizar</string>
     <string name="iptv_error_403">Acceso a la transmisión prohibido (HTTP 403)</string>
     <string name="iptv_error_404">Transmisión no disponible (HTTP 404)</string>
     <string name="iptv_error_generic">Error en la reproducción de la transmisión</string>
@@ -257,8 +196,7 @@
     <string name="launcher_prompt_title">Establecer como lanzador predeterminado</string>
     <string name="mini_downloader_all_cleared">Todos los archivos descargados han sido eliminados</string>
     <string name="mini_downloader_clear_all">Borrar todo</string>
-    <string name="mini_downloader_delete">Eliminar</string>
-    <string name="mini_downloader_downloads_btn">Archivos descargados (%d)</string>
+    <string name="mini_downloader_downloads_btn">Archivos descargados</string>
     <string name="mini_downloader_downloads_subtitle">Gestiona o instala los paquetes APK descargados</string>
     <string name="mini_downloader_downloads_title">Descargas y APKs</string>
     <string name="mini_downloader_install_now">Instalar ahora</string>
@@ -268,7 +206,11 @@
     <string name="status_already_default_launcher">Aura TV ya es tu lanzador predeterminado</string>
     <string name="status_app_order_reset">Orden de aplicaciones restablecido</string>
     <string name="status_app_unhidden">Aplicación visible de nuevo</string>
-    <string name="status_apps_per_row_updated">Actualizado a %d aplicaciones por fila</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="one">Actualizado a %d aplicación por fila</item>
+        <item quantity="many">Actualizado a %d aplicaciones por fila</item>
+        <item quantity="other">Actualizado a %d aplicaciones por fila</item>
+    </plurals>
     <string name="status_cleared_defaults">Valores predeterminados antiguos borrados. Selecciona Aura TV</string>
     <string name="status_custom_wallpaper_applied">Fondo de pantalla personalizado aplicado</string>
     <string name="status_family_protection_enabled">Protección familiar activada</string>
@@ -278,12 +220,28 @@
     <string name="status_opening_default_apps">Abriendo ajustes de aplicaciones predeterminadas…</string>
     <string name="status_opening_home_settings">Abriendo ajustes de inicio…</string>
     <string name="status_opening_system_settings">Abriendo ajustes del sistema…</string>
-    <string name="status_playlist_added">Lista agregada: %d canales cargados</string>
+    <plurals name="status_playlist_added">
+        <item quantity="one">Lista agregada: %d canal cargado</item>
+        <item quantity="many">Lista agregada: %d canales cargados</item>
+        <item quantity="other">Lista agregada: %d canales cargados</item>
+    </plurals>
     <string name="status_playlist_removed">Lista de reproducción eliminada</string>
-    <string name="status_playlist_switch_success">Lista activa cambiada: %d canales</string>
-    <string name="status_playlist_synced">Lista sincronizada: %d canales actualizados</string>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="one">Lista activa cambiada: %d canal</item>
+        <item quantity="many">Lista activa cambiada: %d canales</item>
+        <item quantity="other">Lista activa cambiada: %d canales</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="one">Lista sincronizada: %d canal actualizado</item>
+        <item quantity="many">Lista sincronizada: %d canales actualizados</item>
+        <item quantity="other">Lista sincronizada: %d canales actualizados</item>
+    </plurals>
     <string name="status_presets_already_loaded">Todas las listas predefinidas ya están cargadas</string>
-    <string name="status_presets_loaded">Se cargaron %d listas predefinidas</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="one">Se cargó %d lista predefinida</item>
+        <item quantity="many">Se cargaron %d listas predefinidas</item>
+        <item quantity="other">Se cargaron %d listas predefinidas</item>
+    </plurals>
     <string name="status_protection_disabled">Protección desactivada</string>
     <string name="status_select_default_launcher">Selecciona Aura TV como lanzador predeterminado</string>
     <string name="status_select_from_list">Selecciona Aura TV de la lista</string>
@@ -299,24 +257,14 @@
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Voice Search -->
     <string name="control_center_title">Centro de Control y Monitor</string>
     <string name="control_center_subtitle">Telemetría en vivo y controles rápidos</string>
-    <string name="control_center_ram">Memoria RAM</string>
     <string name="control_center_storage">Almacenamiento interno</string>
     <string name="control_center_boost_btn">Acelerar y limpiar caché</string>
     <string name="control_center_boost_desc">Libera RAM y limpia archivos temporales</string>
     <string name="control_center_boosting">Optimizando TV…</string>
     <string name="control_center_boost_done">Optimizado (+%d MB)</string>
-    <string name="control_center_quick_actions">Acciones rápidas y accesos</string>
-    <string name="control_center_ambient">Modo Ambiente</string>
-    <string name="control_center_ambient_sub">Salvapantallas de cine</string>
     <string name="control_center_search">Búsqueda universal</string>
     <string name="control_center_search_sub">Apps, juegos y TV en vivo</string>
-    <string name="control_center_display_sub">Pantalla y resolución</string>
-    <string name="control_center_audio_sub">Sonido y audio</string>
-    <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">Apariencia y diseño</string>
-    <string name="control_center_section_clock">Reloj, fecha y pantalla</string>
-    <string name="control_center_section_experience">Saludo, salvapantallas y apps</string>
 
     <string name="universal_search_hint">Buscar apps, juegos y canales de TV…</string>
     <string name="universal_search_all">Todo</string>
@@ -359,12 +307,6 @@
     <string name="timeout_15min">15 Minutos</string>
     <string name="timeout_30min">30 Minutos</string>
     <string name="timeout_never">Desactivado / Nunca</string>
-    <string name="settings_screensaver_wallpaper_choice">Fuente de fondo del protector</string>
-    <string name="screensaver_wallpaper_current">Fondo actual del launcher</string>
-    <string name="screensaver_wallpaper_presets">Elegir de galería 4K</string>
-    <string name="screensaver_wallpaper_device">Elegir foto del dispositivo</string>
-    <string name="screensaver_video_info_title">Video cinematográfico ambiental</string>
-    <string name="screensaver_video_info_desc">Reproduce videos relajantes a pantalla completa sin texto ni controles. Se reactiva al pulsar cualquier tecla.</string>
     <string name="screensaver_video_choice">Selección de video ambiental</string>
     <string name="screensaver_video_choice_desc">Elige tu video relajante preferido o introduce un enlace de YouTube</string>
     <string name="screensaver_video_rain_fireplace">Ambiente de Chimenea Acogedora 4K</string>
@@ -388,11 +330,9 @@
     <string name="settings_clock_settings">Ajustes del reloj</string>
     <string name="settings_clock_settings_desc">Personaliza el formato de hora, segundos y tamaño</string>
     <string name="settings_clock_seconds">Mostrar segundos</string>
-    <string name="settings_clock_seconds_desc">Muestra los segundos en tiempo real junto a la hora</string>
     <string name="settings_seconds_disabled">Desactivado</string>
     <string name="settings_seconds_enabled">Activado</string>
     <string name="settings_clock_size">Tamaño del reloj</string>
-    <string name="settings_clock_size_desc">Selecciona el tamaño de visualización del reloj</string>
     <string name="settings_clock_size_large">Grande (60sp)</string>
     <string name="settings_clock_size_medium">Mediano (48sp)</string>
     <string name="settings_clock_size_compact">Compacto (36sp)</string>
@@ -456,10 +396,6 @@
     <string name="status_update_check_failed">No se pudieron buscar actualizaciones: %1$s</string>
     <string name="action_pause">Pausar</string>
     <string name="iptv_paused_tag">PAUSADO</string>
-    <string name="iptv_hint_menu_cursor">Navegar menú</string>
-    <string name="iptv_hint_change_channels">Cambiar canales</string>
-    <string name="iptv_hint_select">Seleccionar</string>
-    <string name="iptv_hint_hide">Ocultar</string>
     <string name="iptv_hide_menu">Ocultar menú</string>
     <string name="iptv_audio_unsupported_codec">Audio del canal (%1$s) no compatible — reproduciendo solo video</string>
     <string name="iptv_audio_unsupported_generic">El audio del canal no es compatible en este dispositivo — reproduciendo solo video</string>
@@ -515,7 +451,6 @@
     <string name="iptv_lock_category">Bloquear (PIN)</string>
     <string name="iptv_unlock_category">Desbloquear categoría</string>
     <string name="iptv_resume_last">Reanudar último</string>
-    <string name="iptv_epg_now">Ahora</string>
     <string name="iptv_epg_next">Siguiente</string>
     <string name="iptv_sleep_toast_set">Temporizador: %d min</string>
     <string name="iptv_sleep_toast_off">Temporizador desactivado</string>

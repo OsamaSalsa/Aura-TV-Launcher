@@ -555,9 +555,7 @@ private fun YouTubeWebScreensaver(
                                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                                 cacheMode = WebSettings.LOAD_DEFAULT
                                 userAgentString = STREAM_USER_AGENT
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                    safeBrowsingEnabled = false
-                                }
+                                safeBrowsingEnabled = false
                             }
 
                             hardenWebView(this)
@@ -989,7 +987,7 @@ private fun DirectStreamExoPlayerScreensaver(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
             val view = LayoutInflater.from(ctx)
-                .inflate(R.layout.layout_screensaver_player, null) as PlayerView
+                .inflate(R.layout.layout_screensaver_player, android.widget.FrameLayout(ctx), false) as PlayerView
             view.apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,

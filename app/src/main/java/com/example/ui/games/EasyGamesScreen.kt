@@ -105,9 +105,7 @@ class EasyGamesWebView(
             javaScriptCanOpenWindowsAutomatically = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_NO_CACHE
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = false
-            }
+            safeBrowsingEnabled = false
         }
 
         hardenWebView(this)
@@ -120,9 +118,7 @@ class EasyGamesWebView(
         webViewClient = object : WebViewClient() {
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
                 safeDestroyWebView(view, rendererGone = true)
-                val didCrash = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    detail?.didCrash() == true
-                } else false
+                val didCrash = detail?.didCrash() == true
                 postOnMain(300L) {
                     onRendererCrashed?.invoke(didCrash)
                 }

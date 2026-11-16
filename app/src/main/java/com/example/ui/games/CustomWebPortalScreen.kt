@@ -79,9 +79,7 @@ import com.example.ui.downloader.VirtualMousePointer
 import com.example.ui.theme.TvAccentGold
 import com.example.ui.theme.TvTextPrimary
 import com.example.ui.theme.TvTextSecondary
-
-private const val BOOKMARK_DESKTOP_USER_AGENT =
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+import com.example.ui.youtube.YOUTUBE_TV_USER_AGENT
 
 @SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
 class CustomBookmarkWebView(
@@ -111,7 +109,7 @@ class CustomBookmarkWebView(
             domStorageEnabled = true
             databaseEnabled = true
             mediaPlaybackRequiresUserGesture = false
-            userAgentString = BOOKMARK_DESKTOP_USER_AGENT
+            userAgentString = YOUTUBE_TV_USER_AGENT
             useWideViewPort = true
             loadWithOverviewMode = true
             setSupportZoom(true)
@@ -121,9 +119,7 @@ class CustomBookmarkWebView(
             allowContentAccess = true
             javaScriptCanOpenWindowsAutomatically = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = false
-            }
+            safeBrowsingEnabled = false
         }
 
         hardenWebView(this)

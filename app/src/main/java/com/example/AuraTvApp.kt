@@ -28,7 +28,6 @@ class AuraTvApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             val processName = getProcessName()
@@ -51,6 +50,27 @@ class AuraTvApp : Application() {
         }
     }
 
+    internal var webViewKeepAliveAnchor: android.webkit.WebView? = null
+
+    fun ensureWebViewKeepAliveAnchor() {
+        if (webViewKeepAliveAnchor != null) return
+        try {
+            webViewKeepAliveAnchor = android.webkit.WebView(this).apply {
+                webViewClient = com.example.ui.common.createSafeParkedWebViewClient()
+                loadUrl("about:blank")
+                onPause()
+            }
+        } catch (_: Exception) {
+            webViewKeepAliveAnchor = null
+        }
+    }
+
+    fun releaseWebViewKeepAliveAnchor() {
+        val anchor = webViewKeepAliveAnchor ?: return
+        webViewKeepAliveAnchor = null
+        com.example.ui.common.destroyWebViewImmediately(anchor)
+    }
+
     @Suppress("DEPRECATION")
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
@@ -59,10 +79,8 @@ class AuraTvApp : Application() {
                 coil.Coil.imageLoader(this).memoryCache?.clear()
             } catch (_: Exception) {}
         }
-    }
-
-    companion object {
-        lateinit var instance: AuraTvApp
-            private set
+        if (level >= TRIM_MEMORY_UI_HIDDEN) {
+            releaseWebViewKeepAliveAnchor()
+        }
     }
 }

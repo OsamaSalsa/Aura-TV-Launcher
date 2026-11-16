@@ -548,9 +548,7 @@ fun AuraStoreScreen(
                                         allowContentAccess = true
                                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                                         userAgentString = AURA_STORE_USER_AGENT
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            safeBrowsingEnabled = false
-                                        }
+                                        safeBrowsingEnabled = false
                                     }
 
                                     CookieManager.getInstance().let { cm ->

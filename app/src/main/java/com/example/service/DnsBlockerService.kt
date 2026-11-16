@@ -6,11 +6,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.example.MainActivity
 
 class DnsBlockerService : VpnService() {
@@ -21,7 +23,7 @@ class DnsBlockerService : VpnService() {
         private const val TAG = "DnsBlockerService"
         private const val CHANNEL_ID = "dns_blocker_channel"
         private const val NOTIFICATION_ID = 1001
-        
+
         const val EXTRA_MODE = "blocker_mode"
         const val MODE_ADS = "ads"
         const val MODE_FAMILY = "family"
@@ -49,6 +51,12 @@ class DnsBlockerService : VpnService() {
         return START_STICKY
     }
 
+    override fun onRevoke() {
+        stopVpn()
+        stopSelf()
+        super.onRevoke()
+    }
+
     override fun onDestroy() {
         stopVpn()
         super.onDestroy()
@@ -56,55 +64,57 @@ class DnsBlockerService : VpnService() {
 
     private fun startVpn(mode: String) {
         if (vpnInterface != null) {
-            // If already running, we might need to restart if mode changed
-            // For simplicity, we'll just stop and restart if mode differs
-            // but here we check if vpnInterface is not null
             stopVpn()
         }
 
         createNotificationChannel()
         val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, foregroundType)
 
         try {
+            if (prepare(this) != null) {
+                Log.w(TAG, "VPN permission is not granted; stopping service")
+                stopVpn()
+                stopSelf()
+                return
+            }
+
             val builder = Builder()
                 .setSession(if (mode == MODE_FAMILY) "Aura TV Family Protection" else "Aura TV Ads Blocker")
                 .setMtu(1500)
                 .setBlocking(false)
 
             val servers = if (mode == MODE_FAMILY) FAMILY_DNS_SERVERS else ADS_DNS_SERVERS
-            // Add AdGuard DNS servers
             for (dns in servers) {
                 builder.addDnsServer(dns)
             }
 
-            // In some Android versions, to force DNS we might need to add a dummy route 
-            // or at least one address. For DNS-only VPN, we don't want to route all traffic.
-            // However, on many systems, addDnsServer is only effective if we establish the interface.
-            // We use a private IP for the VPN interface itself.
             builder.addAddress("10.0.0.2", 32)
-            
-            // Note: If we don't add routes, only DNS traffic *might* be affected depending on OS.
-            // If we want to be sure, we could add 0.0.0.0/0 but that would break connectivity 
-            // without a packet forwarder.
-            // For DNS blocking apps, they usually use a local DNS proxy.
-            
-            vpnInterface = builder.establish()
+
+            val established = builder.establish()
+            if (established == null) {
+                Log.w(TAG, "VPN interface returned null; stopping service")
+                stopVpn()
+                stopSelf()
+                return
+            }
+            vpnInterface = established
             Log.i(TAG, "VPN Interface established with mode: $mode")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to establish VPN", e)
+            stopVpn()
             stopSelf()
         }
     }
 
     private fun stopVpn() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             vpnInterface?.close()
             vpnInterface = null
             Log.i(TAG, "VPN Interface closed")
@@ -114,22 +124,19 @@ class DnsBlockerService : VpnService() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Ads Blocker Service"
-            val descriptionText = "Ensures DNS blocking is active"
-            val importance = NotificationManager.IMPORTANCE_LOW
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        val name = "Ads Blocker Service"
+        val descriptionText = "Ensures DNS blocking is active"
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
         }
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun createNotification(): Notification {
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,

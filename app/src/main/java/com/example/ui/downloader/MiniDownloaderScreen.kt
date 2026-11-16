@@ -25,6 +25,8 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -411,7 +413,7 @@ fun MiniDownloaderScreen(
 
                 withContext(Dispatchers.Main) {
                     try {
-                        prefs.edit().putString("url_${outputFile.name}", currentUrl).apply()
+                        prefs.edit { putString("url_${outputFile.name}", currentUrl) }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -1520,9 +1522,7 @@ fun BrowserScreen(
                             allowContentAccess = true
                             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                             userAgentString = "Mozilla/5.0 (Linux; Android 10; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Downloader/1.4.3"
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                safeBrowsingEnabled = false
-                            }
+                            safeBrowsingEnabled = false
                         }
 
                         CookieManager.getInstance().let { cm ->
@@ -2221,7 +2221,7 @@ fun MiniDownloadsManagerScreen(
                                                 fontSize = 12.sp
                                             )
                                             val shortUrl = try {
-                                                val uri = Uri.parse(item.sourceUrl)
+                                                val uri = item.sourceUrl.toUri()
                                                 uri.host ?: item.sourceUrl
                                             } catch (e: Exception) {
                                                 item.sourceUrl

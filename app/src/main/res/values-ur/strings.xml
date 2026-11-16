@@ -3,14 +3,10 @@
     <string name="title_favorite_channels">پسندیدہ چینلز</string>
     <string name="title_apps">ایپس</string>
     <string name="title_games">گیمز</string>
-    <string name="no_games_installed">ابھی تک کوئی گیم انسٹال نہیں ہے</string>
-    <string name="no_games_desc">گوگل پلے سے گیمز انسٹال کریں یا کسی بھی ایپ کو دبا کر رکھیں اور گیمز میں منتقل کریں</string>
-    <string name="open_play_store_games">ٹی وی گیمز تلاش کریں</string>
-    <string name="title_media_hub">تفریحی مرکز</string>
+
     <string name="iptv_title">لائیو IPTV</string>
     <string name="iptv_subtitle">عالمی لائیو ٹی وی چینلز دیکھیں</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">مکمل سمارٹ ٹی وی تجربہ</string>
+
     <string name="settings_title">ترتیبات</string>
 
     <!-- Top Bar -->
@@ -29,7 +25,7 @@
     <string name="action_cancel">منسوخ کریں</string>
     <string name="action_save">محفوظ کریں</string>
     <string name="action_reset">ری سیٹ کریں</string>
-    <string name="action_add">شامل کریں</string>
+
     <string name="action_delete">حذف کریں</string>
     <string name="action_play">چلائیں</string>
     <string name="action_retry">دوبارہ کوشش کریں</string>
@@ -44,44 +40,19 @@
     <string name="iptv_empty">اس گروپ میں کوئی چینل نہیں ملا</string>
     <string name="iptv_loading">پلے لسٹ چینلز لوڈ ہو رہے ہیں…</string>
     <string name="iptv_error_playback">نشریات چلانے میں خرابی۔ دوبارہ کوشش کریں یا دوسرا چینل منتخب کریں۔</string>
-    <string name="iptv_channel_up_down_hint">چینل بدلنے کے لیے ریموٹ کے اوپر/نیچے بٹن استعمال کریں</string>
+
     <string name="iptv_quick_channels">فوری چینلز</string>
-    <string name="iptv_quick_channels_hint">تلاش کے لیے بائیں/دائیں دبائیں • چلانے کے لیے OK دبائیں</string>
+
     <string name="iptv_toggle_favorite">پسندیدہ</string>
     <string name="iptv_added_to_favorites">پسندیدہ میں شامل کر دیا گیا ★</string>
     <string name="iptv_removed_from_favorites">پسندیدہ سے ہٹا دیا گیا</string>
-    <string name="iptv_playlist_updated">پلے لسٹ کامیابی سے اپ ڈیٹ ہو گئی</string>
+
     <string name="iptv_no_playlist">ابھی کوئی IPTV پلے لسٹ شامل نہیں کی گئی۔ ترتیبات میں M3U لنک درج کریں۔</string>
     <string name="settings_open_iptv_settings">IPTV ترتیبات کھولیں</string>
-    <string name="settings_clear_playlist">پلے لسٹ صاف کریں</string>
+
 
     <!-- YouTube -->
-    <string name="youtube_curated_only">صرف نجی چینلز</string>
-    <string name="youtube_no_channels">ابھی کوئی نجی چینل شامل نہیں کیا گیا۔ اپنے قابل اعتماد چینلز شامل کریں۔</string>
-    <string name="youtube_loading_feed">تازہ ترین ویڈیوز حاصل کی جا رہی ہیں…</string>
-    <string name="youtube_feed_error">چینل فیڈ لوڈ نہیں ہو سکی</string>
-    <string name="youtube_add_channel_title">نجی چینل شامل کریں</string>
-    <string name="youtube_channel_name">چینل کا نام (اختیاری)</string>
-    <string name="youtube_channel_id_or_url">چینل آئی ڈی (UCxxxx)، ہینڈل (@name) یا لنک</string>
-    <string name="youtube_video_player">ویڈیو پلیئر</string>
-    <string name="youtube_player_hint">چینلز کی فہرست پر واپس جانے کے لیے ریموٹ پر Back بٹن دبائیں</string>
-    <string name="youtube_add_channel_button">نجی چینل شامل کریں</string>
-    <string name="youtube_delete_channel">چینل حذف کریں</string>
-    <string name="youtube_delete_channel_confirm">کیا آپ واقعی اس چینل کو نجی فہرست سے ہٹانا چاہتے ہیں؟</string>
-    <string name="youtube_private_notice">MiniTube صرف آپ کے منظور شدہ چینلز کی ویڈیوز دکھاتا ہے۔</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">نجی چینلز</string>
-    <string name="youtube_tv_exit">لانچر پر واپس جائیں</string>
-    <string name="youtube_tv_reload">دوبارہ لوڈ کریں</string>
-    <string name="youtube_tv_press_back_again">لانچر پر واپس جانے کے لیے دوبارہ Back دبائیں</string>
-    <string name="youtube_play_on_tv">YouTube.com/tv پر چلائیں</string>
-    <string name="youtube_open_channel_on_tv">YouTube.com/tv پر کھولیں</string>
-    <string name="youtube_back_to_channels">چینلز پر واپس جائیں</string>
-    <string name="youtube_running_on_tv_badge">YouTube.com/tv پلیئر</string>
-    <string name="settings_youtube_default_mode">ڈیفالٹ ویو موڈ</string>
-    <string name="settings_youtube_default_mode_desc">YouTube.com/tv یا نجی چینلز میں سے انتخاب کریں</string>
-    <string name="settings_youtube_clear_cache">YouTube TV کیشے اور کوکیز صاف کریں</string>
-    <string name="settings_youtube_cache_cleared">YouTube TV کیشے اور کوکیز صاف کر دی گئیں</string>
+
 
     <!-- Settings -->
     <string name="settings_category_network">نیٹ ورک اور انٹرنیٹ</string>
@@ -91,7 +62,7 @@
     <string name="settings_open_display">ڈسپلے اور اسکرین</string>
     <string name="settings_open_sound">آواز اور آڈیو</string>
     <string name="settings_open_datetime">تاریخ اور وقت</string>
-    <string name="settings_open_apps">سسٹم میں انسٹال کردہ ایپس</string>
+
     <string name="settings_open_all_settings">تمام Android TV ترتیبات</string>
 
     <string name="settings_category_launcher">لانچر کی تخصیص</string>
@@ -100,13 +71,10 @@
     <string name="settings_wallpaper_dynamic">متحرک پیلیٹ رنگ</string>
     <string name="settings_wallpaper_custom">اپنی تصویر / فوٹو</string>
     <string name="settings_wallpaper_default">ڈیفالٹ ڈارک تھیم</string>
-    <string name="settings_wallpaper_url_label">کسٹم وال پیپر امیج URL</string>
-    <string name="settings_wallpaper_apply">وال پیپر لاگو کریں</string>
+
     <string name="settings_wallpaper_presets">4K تیار شدہ وال پیپرز</string>
     <string name="settings_wallpaper_pick_device">ڈیوائس سے تصویر منتخب کریں</string>
-    <string name="settings_dynamic_bg">متحرک پیلیٹ وال پیپر</string>
-    <string name="settings_dynamic_bg_desc">منتخب کردہ ایپ آئیکن سے دلکش رنگ اخذ کریں</string>
-    <string name="settings_clock_24h">24 گھنٹے گھڑی کا فارمیٹ</string>
+
     <string name="settings_apps_per_row">فی قطار ایپس کی تعداد</string>
     <string name="settings_apps_per_row_desc">ہوم اسکرین پر ہر قطار میں نظر آنے والے ایپ کارڈز کی تعداد</string>
     <string name="settings_glass_opacity">کارڈز کے شیشے کی شفافیت</string>
@@ -130,33 +98,25 @@
     <string name="settings_open_app_info">ایپ کی معلومات (ترتیبات)</string>
     <string name="settings_open_app_info_desc">اینڈرائیڈ سسٹم کی ترتیبات میں Aura TV کی تفصیلات کھولیں</string>
     <string name="settings_category_iptv">IPTV کی ترتیبات</string>
-    <string name="settings_m3u_url">M3U / M3U8 پلے لسٹ کا لنک</string>
-    <string name="settings_reload_m3u">پلے لسٹ ری لوڈ / سنک کریں</string>
-    <string name="settings_load_sample_m3u">ڈیفالٹ مفت ٹی وی پلے لسٹ لوڈ کریں</string>
 
-    <string name="settings_category_youtube">Mini YouTube چینلز</string>
-    <string name="settings_manage_channels">اجازت یافتہ چینلز کا انتظام</string>
-    <string name="settings_clear_all_yt">تمام اجازت یافتہ چینلز صاف کریں</string>
+
+
     <string name="settings_language">زبان / Language</string>
     <string name="launcher_prompt_title">ڈیفالٹ لانچر کے طور پر سیٹ کریں</string>
     <string name="launcher_prompt_desc">مکمل سنیما تجربے سے لطف اندوز ہونے کے لیے، براہ کرم Aura TV کو اپنی ڈیفالٹ ہوم اسکرین بنائیں۔</string>
     <string name="action_set_default">ڈیفالٹ بنائیں</string>
     <string name="action_later">بعد میں</string>
-    <string name="action_move_apps">ایپس منتقل کریں</string>
-    <string name="action_delete_apps">ایپس حذف کریں</string>
-    <string name="action_hide_apps">ایپس چھپائیں</string>
+
     <string name="action_edit">ترمیم</string>
-    <string name="action_edit_options">ترمیم</string>
+
     <string name="action_stop_editing">مکمل</string>
     <string name="edit_mode_move_hint">منتقل کرنے یا اختیارات کے لیے کسی ایپ یا چینل پر کلک کریں</string>
-    <string name="edit_mode_delete_hint">ان انسٹال کرنے کے لیے کسی ایپ پر کلک کریں</string>
-    <string name="edit_mode_hide_hint">چھپانے کے لیے کسی ایپ پر کلک کریں</string>
-    <string name="edit_mode_options_hint">منتقل کرنے یا تخصیص کرنے کے لیے کوئی بھی آئٹم منتخب کریں</string>
+
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">Mini Downloader</string>
     <string name="mini_downloader_subtitle">ایپس انسٹال کرنے کے لیے ڈاؤن لوڈ کوڈ یا لنک درج کریں</string>
-    <string name="mini_downloader_enter_code">کوڈ درج کریں (مثال: 123456)</string>
+
     <string name="mini_downloader_go">جائیں / GO</string>
     <string name="mini_downloader_delete_prompt_title">ڈاؤن لوڈ مکمل ہو گیا</string>
     <string name="mini_downloader_delete_prompt_desc">کیا آپ اسٹوریج بچانے کے لیے ڈاؤن لوڈ کردہ APK فائل کو حذف کرنا چاہتے ہیں؟</string>
@@ -170,7 +130,7 @@
     <string name="mini_downloader_download_error">ڈاؤن لوڈ میں خرابی</string>
     <string name="mini_downloader_open_in_browser">براؤزر میں کھولیں</string>
     <string name="mini_downloader_file_deleted">فائل حذف کر دی گئی</string>
-    <string name="mini_downloader_requires_browser">اس صفحے کو براؤزر میں تعامل کی ضرورت ہے</string>
+
     <string name="mini_downloader_downloads_title">ڈاؤن لوڈ کردہ فائلیں</string>
     <string name="mini_downloader_downloads_subtitle">ڈاؤن لوڈ کردہ APK فائلوں کا جائزہ لیں، انسٹال کریں، یا جگہ خالی کرنے کے لیے حذف کریں</string>
     <string name="mini_downloader_downloads_btn">ڈاؤن لوڈز</string>
@@ -178,12 +138,12 @@
     <string name="mini_downloader_no_files_desc">Mini Downloader کے ذریعے ڈاؤن لوڈ کی گئی فائلیں اور APKs یہاں ظاہر ہوں گی۔</string>
     <string name="mini_downloader_install_now">انسٹال کریں</string>
     <string name="mini_downloader_redownload">دوبارہ ڈاؤن لوڈ کریں</string>
-    <string name="mini_downloader_delete">حذف کریں</string>
+
     <string name="mini_downloader_clear_all">سب صاف کریں</string>
     <string name="mini_downloader_all_cleared">تمام ڈاؤن لوڈ کردہ فائلیں ہٹا دی گئیں</string>
     <string name="mini_downloader_redownloading">دوبارہ ڈاؤن لوڈ شروع ہو رہا ہے…</string>
     <string name="mini_downloader_view_downloads">ڈاؤن لوڈز دیکھیں</string>
-    <string name="aurastore_title">Aura Store</string>
+
     <string name="aurastore_downloads_btn">ڈاؤن لوڈز</string>
     <string name="aurastore_downloading">ایپ ڈاؤن لوڈ ہو رہی ہے…</string>
     <string name="aurastore_connecting">لنک سے رابطہ ہو رہا ہے…</string>
@@ -210,8 +170,7 @@
     <string name="aurastore_delete">حذف کریں</string>
     <string name="aurastore_ok">ٹھیک ہے</string>
     <string name="settings_language_system">سسٹم ڈیفالٹ</string>
-    <string name="settings_reset_default_launcher">پرانا لانچر صاف کریں اور ڈیفالٹ بنائیں</string>
-    <string name="settings_reset_default_launcher_desc">موجودہ ڈیفالٹ لانچر ترجیحات صاف کریں اور Aura TV کو ڈیفالٹ کے طور پر منتخب کریں</string>
+
 
     <!-- Privacy -->
     <string name="settings_privacy_title">رازداری اور تحفظ</string>
@@ -226,29 +185,31 @@
     <string name="settings_items_count">آئٹمز کی تعداد</string>
     <string name="settings_opacity_level">شفافیت کی سطح</string>
     <string name="settings_display_preference">ڈسپلے ترجیح</string>
-    <string name="settings_status">حالت</string>
-    <string name="settings_enabled">فعال</string>
-    <string name="settings_disabled">غیر فعال</string>
+
     <string name="settings_apps_suffix">ایپس</string>
 
     <!-- IPTV Management -->
     <string name="settings_iptv_add_new">نئی IPTV پلے لسٹ شامل کریں</string>
     <string name="settings_iptv_name_placeholder">پلے لسٹ کا نام (مثلاً کھیل، خبریں)</string>
-    <string name="settings_iptv_url_placeholder">M3U / M3U8 لنک (https://...)</string>
+    <string name="settings_iptv_url_placeholder">M3U / M3U8 لنک (https://…)</string>
     <string name="settings_iptv_add_button">پلے لسٹ شامل کریں</string>
     <string name="settings_iptv_load_presets">تمام تیار فہرستیں لوڈ کریں</string>
     <string name="settings_iptv_saved_header">محفوظ شدہ IPTV پلے لسٹس (%d)</string>
     <string name="settings_iptv_no_saved">کوئی محفوظ پلے لسٹ نہیں۔ اوپر M3U لنک شامل کریں۔</string>
-    <string name="settings_iptv_channels_count">%d چینلز</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="one">%d چینل</item>
+        <item quantity="other">%d چینلز</item>
+    </plurals>
     <string name="settings_iptv_active_tag">فعال</string>
     <string name="settings_iptv_activate_button">فعال کریں</string>
     <string name="settings_iptv_sync_button">سنک کریں</string>
 
     <!-- Extra UI -->
-    <string name="action_options_ok">اختیارات (OK)</string>
-    <string name="reorder_move_hint_remote">منتقل کرنے کے لیے تیر کے بٹن استعمال کریں • اختیارات کے لیے OK</string>
-    <string name="state_moving">منتقل ہو رہا ہے</string>
-    <string name="iptv_channels_plural">%d چینلز</string>
+
+    <plurals name="iptv_channels_plural">
+        <item quantity="one">%d چینل</item>
+        <item quantity="other">%d چینلز</item>
+    </plurals>
     <string name="youtube_renderer_crash">یوٹیوب رینڈرر کریش ہو گیا۔ دوبارہ لوڈ ہو رہا ہے…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">%.1f MB ڈاؤن لوڈ ہو چکا</string>
@@ -256,7 +217,10 @@
     <string name="mini_downloader_browser_crash">براؤزر کریش ہو گیا۔ دوبارہ لوڈ ہو رہا ہے…</string>
 
     <!-- Status Messages -->
-    <string name="status_apps_per_row_updated">فی قطار %d ایپس پر اپ ڈیٹ کر دیا گیا</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="one">فی قطار %d ایپ پر اپ ڈیٹ کر دیا گیا</item>
+        <item quantity="other">فی قطار %d ایپس پر اپ ڈیٹ کر دیا گیا</item>
+    </plurals>
     <string name="status_wallpaper_style_updated">وال پیپر کا انداز اپ ڈیٹ ہو گیا</string>
     <string name="status_custom_wallpaper_applied">کسٹم وال پیپر لاگو کر دیا گیا</string>
     <string name="status_language_saved">زبان کی ترجیح محفوظ ہو گئی</string>
@@ -267,11 +231,23 @@
     <string name="status_app_unhidden">ایپ دوبارہ ظاہر کر دی گئی</string>
     <string name="status_all_apps_restored">تمام ایپس بحال کر دی گئیں</string>
     <string name="status_app_order_reset">ایپس کی ترتیب ڈیفالٹ پر ری سیٹ کر دی گئی</string>
-    <string name="status_playlist_added">پلے لسٹ شامل ہو گئی: %d چینلز لوڈ ہوئے</string>
-    <string name="status_playlist_switch_success">فعال پلے لسٹ تبدیل ہو گئی: %d چینلز</string>
-    <string name="status_playlist_synced">پلے لسٹ سنک ہو گئی: %d چینلز اپ ڈیٹ ہوئے</string>
+    <plurals name="status_playlist_added">
+        <item quantity="one">پلے لسٹ شامل ہو گئی: %d چینل لوڈ ہوا</item>
+        <item quantity="other">پلے لسٹ شامل ہو گئی: %d چینلز لوڈ ہوئے</item>
+    </plurals>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="one">فعال پلے لسٹ تبدیل ہو گئی: %d چینل</item>
+        <item quantity="other">فعال پلے لسٹ تبدیل ہو گئی: %d چینلز</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="one">پلے لسٹ سنک ہو گئی: %d چینل اپ ڈیٹ ہوا</item>
+        <item quantity="other">پلے لسٹ سنک ہو گئی: %d چینلز اپ ڈیٹ ہوئے</item>
+    </plurals>
     <string name="status_playlist_removed">پلے لسٹ ہٹا دی گئی</string>
-    <string name="status_presets_loaded">%d تیار پلے لسٹس لوڈ ہو گئیں</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="one">%d تیار پلے لسٹ لوڈ ہو گئی</item>
+        <item quantity="other">%d تیار پلے لسٹس لوڈ ہو گئیں</item>
+    </plurals>
     <string name="status_presets_already_loaded">تمام تیار پلے لسٹس پہلے ہی لوڈ ہیں</string>
     <string name="status_select_default_launcher">Aura TV کو ڈیفالٹ لانچر کے طور پر منتخب کریں</string>
     <string name="status_already_default_launcher">Aura TV پہلے ہی آپ کا ڈیفالٹ لانچر ہے</string>
@@ -301,24 +277,18 @@
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
     <string name="control_center_title">لانچر کنٹرول سینٹر</string>
     <string name="control_center_subtitle">لے آؤٹ، گھڑی، وال پیپر اور اسکرین سیور کی ترتیبات تک فوری رسائی</string>
-    <string name="control_center_ram">ریم میموری (RAM)</string>
+
     <string name="control_center_storage">اندرونی اسٹوریج</string>
     <string name="control_center_boost_btn">تیز کریں اور کیشے صاف کریں</string>
     <string name="control_center_boost_desc">RAM خالی کریں اور عارضی کیشے صاف کریں</string>
     <string name="control_center_boosting">ٹی وی کو بہتر بنایا جا رہا ہے…</string>
     <string name="control_center_boost_done">بہتر ہو گیا (+%d MB)</string>
-    <string name="control_center_quick_actions">فوری اقدامات اور شارٹ کٹس</string>
-    <string name="control_center_ambient">ایمبیئنٹ موڈ</string>
-    <string name="control_center_ambient_sub">سنیما اسکرین سیور</string>
+
     <string name="control_center_search">جامع تلاش</string>
     <string name="control_center_search_sub">ایپس، گیمز اور لائیو ٹی وی</string>
-    <string name="control_center_display_sub">HDMI / ریزولوشن</string>
-    <string name="control_center_audio_sub">آڈیو / آؤٹ پٹ</string>
-    <string name="control_center_ip_tag">IP: %s</string>
+
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">ظاہری شکل اور ہوم لے آؤٹ</string>
-    <string name="control_center_section_clock">گھڑی، تاریخ اور ڈسپلے</string>
-    <string name="control_center_section_experience">خوش آمدید، اسکرین سیور اور ایپس</string>
+
 
     <string name="universal_search_hint">ایپس، گیمز اور لائیو ٹی وی چینلز تلاش کریں…</string>
     <string name="universal_search_all">سب</string>
@@ -361,12 +331,7 @@
     <string name="timeout_15min">15 منٹ</string>
     <string name="timeout_30min">30 منٹ</string>
     <string name="timeout_never">غیر فعال / کبھی نہیں</string>
-    <string name="settings_screensaver_wallpaper_choice">اسکرین سیور وال پیپر کا ماخذ</string>
-    <string name="screensaver_wallpaper_current">لانچر کا موجودہ وال پیپر</string>
-    <string name="screensaver_wallpaper_presets">4K گیلری سے منتخب کریں</string>
-    <string name="screensaver_wallpaper_device">ڈیوائس سے تصویر منتخب کریں</string>
-    <string name="screensaver_video_info_title">سنیما ویڈیو ایمبیئنٹ</string>
-    <string name="screensaver_video_info_desc">بغیر کسی بٹن یا متن کے فل اسکرین پر پرسکون ویڈیوز چلاتا ہے۔</string>
+
     <string name="screensaver_video_choice">ایمبیئنٹ ویڈیو کا انتخاب</string>
     <string name="screensaver_video_choice_desc">اپنی پسندیدہ پرسکون ویڈیو منتخب کریں یا کسٹم یوٹیوب لنک درج کریں</string>
     <string name="screensaver_video_rain_fireplace">آتش دان کا پرسکون ماحول 4K</string>
@@ -390,11 +355,11 @@
     <string name="settings_clock_settings">گھڑی کے ڈسپلے کی ترتیبات</string>
     <string name="settings_clock_settings_desc">وقت کا فارمیٹ، سیکنڈز اور گھڑی کا سائز تبدیل کریں</string>
     <string name="settings_clock_seconds">سیکنڈز دکھائیں</string>
-    <string name="settings_clock_seconds_desc">وقت کے ساتھ چلتے ہوئے سیکنڈز دکھائیں</string>
+
     <string name="settings_seconds_disabled">غیر فعال</string>
     <string name="settings_seconds_enabled">فعال</string>
     <string name="settings_clock_size">گھڑی کا سائز</string>
-    <string name="settings_clock_size_desc">ہوم اسکرین پر گھڑی کا سائز منتخب کریں</string>
+
     <string name="settings_clock_size_large">بڑا (60sp)</string>
     <string name="settings_clock_size_medium">درمیانہ (48sp)</string>
     <string name="settings_clock_size_compact">چھوٹا (36sp)</string>
@@ -458,10 +423,7 @@
     <string name="status_update_check_failed">اپ ڈیٹس چیک نہیں ہو سکیں: %1$s</string>
     <string name="action_pause">روکیں</string>
     <string name="iptv_paused_tag">رکا ہوا</string>
-    <string name="iptv_hint_menu_cursor">مینو نیویگیشن</string>
-    <string name="iptv_hint_change_channels">چینل تبدیل کریں</string>
-    <string name="iptv_hint_select">منتخب کریں</string>
-    <string name="iptv_hint_hide">چھپائیں</string>
+
     <string name="iptv_hide_menu">مینو چھپائیں</string>
     <string name="iptv_audio_unsupported_codec">چینل آڈیو (%1$s) سپورٹ نہیں ہے — صرف ویڈیو چل رہی ہے</string>
     <string name="iptv_audio_unsupported_generic">اس ڈیوائس پر چینل آڈیو سپورٹ نہیں ہے — صرف ویڈیو چل رہی ہے</string>
@@ -517,7 +479,7 @@
     <string name="iptv_lock_category">زمرہ لاک کریں (PIN)</string>
     <string name="iptv_unlock_category">زمرہ ان لاک کریں</string>
     <string name="iptv_resume_last">آخری چینل چلائیں</string>
-    <string name="iptv_epg_now">ابھی</string>
+
     <string name="iptv_epg_next">اگلا</string>
     <string name="iptv_sleep_toast_set">سلیپ ٹائمر سیٹ ہو گیا: %d منٹ</string>
     <string name="iptv_sleep_toast_off">سلیپ ٹائمر غیر فعال کر دیا گیا</string>
@@ -558,7 +520,7 @@
     <string name="slideshow_select_folder_btn">تصاویر کا فولڈر منتخب کریں (TV / USB)</string>
     <string name="slideshow_system_folder_picker">سسٹم فولڈر منتخب کنندہ</string>
     <string name="slideshow_no_folder_selected">کوئی فولڈر منتخب نہیں — منتخب کرنے کے لیے اوپر کلک کریں</string>
-    <string name="slideshow_pick_photos_btn">گیلری سے تصاویر منتخب کریں (%1$d منتخب)</string>
+    <string name="slideshow_pick_photos_btn">گیلری سے تصاویر منتخب کریں</string>
     <string name="slideshow_order_label">چلانے کی ترتیب</string>
     <string name="slideshow_order_shuffle">بے ترتیب (شفل)</string>
     <string name="slideshow_order_sequential">ترتیب وار (A–Z)</string>

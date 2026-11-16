@@ -16,8 +16,8 @@ android {
     applicationId = "ps.salsa.tvlauncher"
     minSdk = 26
     targetSdk = 36
-    versionCode = 3
-    versionName = "1.2"
+    versionCode = 4
+    versionName = "1.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -68,6 +68,11 @@ android {
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
+  }
+  bundle {
+    language {
+      enableSplit = false
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import android.net.VpnService
 import android.os.Build
 import android.util.Log
 import android.provider.Settings
+import androidx.core.net.toUri
 import com.example.FakeHomeActivity
 import com.example.R
 import androidx.lifecycle.ViewModel
@@ -33,11 +34,13 @@ import kotlinx.coroutines.launch
 
 sealed class StatusUiText {
     data class Resource(val resId: Int, val formatArgs: List<Any> = emptyList()) : StatusUiText()
+    data class Plural(val resId: Int, val quantity: Int, val formatArgs: List<Any> = listOf(quantity)) : StatusUiText()
     data class DynamicString(val value: String) : StatusUiText()
     
     fun asString(context: Context): String {
         return when (this) {
             is Resource -> context.getString(resId, *formatArgs.toTypedArray())
+            is Plural -> context.resources.getQuantityString(resId, quantity, *formatArgs.toTypedArray())
             is DynamicString -> value
         }
     }
@@ -521,7 +524,7 @@ class SettingsViewModel(
     fun setAppsPerRow(count: Int) {
         viewModelScope.launch {
             preferences.setAppsPerRow(count)
-            _statusMessage.value = StatusUiText.Resource(R.string.status_apps_per_row_updated, listOf(count))
+            _statusMessage.value = StatusUiText.Plural(R.plurals.status_apps_per_row_updated, count)
         }
     }
 
@@ -585,7 +588,7 @@ class SettingsViewModel(
             val intent = Intent(context, com.example.service.DnsBlockerService::class.java).apply {
                 putExtra(com.example.service.DnsBlockerService.EXTRA_MODE, mode)
             }
-            context.startService(intent)
+            androidx.core.content.ContextCompat.startForegroundService(context, intent)
         } catch (e: Exception) {
             Log.e("SettingsViewModel", "Failed to start DNS Blocker service", e)
         }
@@ -631,7 +634,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val result = iptvRepository.addPlaylist(name, url, activateImmediately = true)
             result.onSuccess { count ->
-                _statusMessage.value = StatusUiText.Resource(R.string.status_playlist_added, listOf(count))
+                _statusMessage.value = StatusUiText.Plural(R.plurals.status_playlist_added, count)
             }.onFailure { err ->
                 _statusMessage.value = StatusUiText.DynamicString("Failed: ${err.message}")
             }
@@ -642,7 +645,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val result = iptvRepository.switchActivePlaylist(playlistId)
             result.onSuccess { count ->
-                _statusMessage.value = StatusUiText.Resource(R.string.status_playlist_switch_success, listOf(count))
+                _statusMessage.value = StatusUiText.Plural(R.plurals.status_playlist_switch_success, count)
             }.onFailure { err ->
                 _statusMessage.value = StatusUiText.DynamicString("Error: ${err.message}")
             }
@@ -653,7 +656,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val result = iptvRepository.refreshActivePlaylist()
             result.onSuccess { count ->
-                _statusMessage.value = StatusUiText.Resource(R.string.status_playlist_synced, listOf(count))
+                _statusMessage.value = StatusUiText.Plural(R.plurals.status_playlist_synced, count)
             }.onFailure { err ->
                 _statusMessage.value = StatusUiText.DynamicString("Sync error: ${err.message}")
             }
@@ -679,7 +682,7 @@ class SettingsViewModel(
             val result = iptvRepository.loadPresetPlaylists()
             result.onSuccess { count ->
                 if (count > 0) {
-                    _statusMessage.value = StatusUiText.Resource(R.string.status_presets_loaded, listOf(count))
+                    _statusMessage.value = StatusUiText.Plural(R.plurals.status_presets_loaded, count)
                 } else {
                     _statusMessage.value = StatusUiText.Resource(R.string.status_presets_already_loaded)
                 }
@@ -777,7 +780,7 @@ class SettingsViewModel(
         // Strategy 5: Application Details Settings (where user can set as default app or clear defaults)
         try {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:${context.packageName}")
+                data = "package:${context.packageName}".toUri()
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -833,7 +836,7 @@ class SettingsViewModel(
     fun openAppInfo(context: Context) {
         try {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:${context.packageName}")
+                data = "package:${context.packageName}".toUri()
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)

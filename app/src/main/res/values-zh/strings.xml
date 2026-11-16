@@ -3,14 +3,10 @@
     <string name="title_favorite_channels">收藏频道</string>
     <string name="title_apps">应用</string>
     <string name="title_games">游戏</string>
-    <string name="no_games_installed">尚未安装游戏</string>
-    <string name="no_games_desc">从应用商店安装游戏，或长按任意应用将其移至游戏分类</string>
-    <string name="open_play_store_games">浏览电视游戏</string>
-    <string name="title_media_hub">娱乐中心</string>
+
     <string name="iptv_title">IPTV 直播</string>
     <string name="iptv_subtitle">观看全球电视直播频道</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">完整的智能电视体验</string>
+
     <string name="settings_title">设置</string>
 
     <!-- 顶部栏 -->
@@ -29,7 +25,7 @@
     <string name="action_cancel">取消</string>
     <string name="action_save">保存</string>
     <string name="action_reset">重置</string>
-    <string name="action_add">添加</string>
+
     <string name="action_delete">删除</string>
     <string name="action_play">播放</string>
     <string name="action_retry">重试</string>
@@ -44,44 +40,19 @@
     <string name="iptv_empty">该分组下暂无频道</string>
     <string name="iptv_loading">正在加载播放列表频道…</string>
     <string name="iptv_error_playback">播放出错，请点击重试或切换其他频道。</string>
-    <string name="iptv_channel_up_down_hint">使用遥控器上/下键切换频道</string>
+
     <string name="iptv_quick_channels">快速频道</string>
-    <string name="iptv_quick_channels_hint">按左/右键浏览 • 按 OK 键切换</string>
+
     <string name="iptv_toggle_favorite">收藏</string>
     <string name="iptv_added_to_favorites">已添加到收藏夹 ★</string>
     <string name="iptv_removed_from_favorites">已从收藏夹移除</string>
-    <string name="iptv_playlist_updated">播放列表已更新</string>
+
     <string name="iptv_no_playlist">尚未配置 IPTV 播放列表，请在设置中输入 M3U 链接。</string>
     <string name="settings_open_iptv_settings">打开 IPTV 设置</string>
-    <string name="settings_clear_playlist">清空列表</string>
+
 
     <!-- YouTube -->
-    <string name="youtube_curated_only">仅私密频道</string>
-    <string name="youtube_no_channels">尚未添加私密频道。添加您信任的频道以享受无干扰观看。</string>
-    <string name="youtube_loading_feed">正在获取最新视频…</string>
-    <string name="youtube_feed_error">无法加载频道内容</string>
-    <string name="youtube_add_channel_title">添加私密频道</string>
-    <string name="youtube_channel_name">频道名称（可选）</string>
-    <string name="youtube_channel_id_or_url">频道 ID (UCxxxx)、句柄 (@name) 或链接</string>
-    <string name="youtube_video_player">视频播放器</string>
-    <string name="youtube_player_hint">按遥控器返回键回到频道列表</string>
-    <string name="youtube_add_channel_button">添加私密频道</string>
-    <string name="youtube_delete_channel">删除频道</string>
-    <string name="youtube_delete_channel_confirm">确定要从私密列表中移除此频道吗？</string>
-    <string name="youtube_private_notice">MiniTube 仅显示您明确批准的频道视频。</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">私密频道</string>
-    <string name="youtube_tv_exit">退出到桌面</string>
-    <string name="youtube_tv_reload">重新加载</string>
-    <string name="youtube_tv_press_back_again">再按一次返回键回到桌面</string>
-    <string name="youtube_play_on_tv">在 YouTube.com/tv 上播放</string>
-    <string name="youtube_open_channel_on_tv">在 YouTube.com/tv 上打开</string>
-    <string name="youtube_back_to_channels">返回频道</string>
-    <string name="youtube_running_on_tv_badge">YouTube.com/tv 播放器</string>
-    <string name="settings_youtube_default_mode">默认视图模式</string>
-    <string name="settings_youtube_default_mode_desc">选择 YouTube.com/tv（智能电视版）或私密频道</string>
-    <string name="settings_youtube_clear_cache">清除 YouTube TV 缓存与 Cookie</string>
-    <string name="settings_youtube_cache_cleared">已清除 YouTube TV 缓存与 Cookie</string>
+
 
     <!-- 设置 -->
     <string name="settings_category_network">网络与互联网</string>
@@ -91,7 +62,7 @@
     <string name="settings_open_display">显示与屏幕</string>
     <string name="settings_open_sound">声音与音频</string>
     <string name="settings_open_datetime">日期与时间</string>
-    <string name="settings_open_apps">系统已安装应用</string>
+
     <string name="settings_open_all_settings">所有 Android TV 设置</string>
 
     <string name="settings_category_launcher">桌面定制</string>
@@ -100,13 +71,10 @@
     <string name="settings_wallpaper_dynamic">动态取色背景</string>
     <string name="settings_wallpaper_custom">自定义图片</string>
     <string name="settings_wallpaper_default">默认深色主题</string>
-    <string name="settings_wallpaper_url_label">自定义壁纸图片链接</string>
-    <string name="settings_wallpaper_apply">应用壁纸</string>
+
     <string name="settings_wallpaper_presets">4K 精选壁纸</string>
     <string name="settings_wallpaper_pick_device">从设备选择图片</string>
-    <string name="settings_dynamic_bg">动态取色壁纸</string>
-    <string name="settings_dynamic_bg_desc">从当前聚焦的应用图标提取绚丽色彩</string>
-    <string name="settings_clock_24h">24 小时制时钟</string>
+
     <string name="settings_apps_per_row">每行应用数</string>
     <string name="settings_apps_per_row_desc">主屏幕每行显示的应用图标数量</string>
     <string name="settings_glass_opacity">频道卡片毛玻璃透明度</string>
@@ -130,33 +98,25 @@
     <string name="settings_open_app_info">应用信息（系统设置）</string>
     <string name="settings_open_app_info_desc">在 Android 系统设置中打开 Aura TV 应用详情</string>
     <string name="settings_category_iptv">IPTV 配置</string>
-    <string name="settings_m3u_url">M3U / M3U8 播放列表链接</string>
-    <string name="settings_reload_m3u">重新加载 / 同步播放列表</string>
-    <string name="settings_load_sample_m3u">加载默认免费电视列表</string>
 
-    <string name="settings_category_youtube">Mini YouTube 频道</string>
-    <string name="settings_manage_channels">管理允许的频道</string>
-    <string name="settings_clear_all_yt">清空所有允许的频道</string>
+
+
     <string name="settings_language">语言 / Language</string>
     <string name="launcher_prompt_title">设为默认桌面</string>
     <string name="launcher_prompt_desc">为了获得完整的影院级大屏体验，请将 Aura TV 设为默认主屏幕。</string>
     <string name="action_set_default">设为默认</string>
     <string name="action_later">稍后</string>
-    <string name="action_move_apps">移动应用</string>
-    <string name="action_delete_apps">删除应用</string>
-    <string name="action_hide_apps">隐藏应用</string>
+
     <string name="action_edit">编辑</string>
-    <string name="action_edit_options">编辑</string>
+
     <string name="action_stop_editing">完成</string>
     <string name="edit_mode_move_hint">点击应用或频道以移动，或选择其他操作</string>
-    <string name="edit_mode_delete_hint">点击应用以卸载</string>
-    <string name="edit_mode_hide_hint">点击应用以隐藏</string>
-    <string name="edit_mode_options_hint">选择任意项目进行移动或自定义</string>
+
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">迷你下载器</string>
     <string name="mini_downloader_subtitle">输入下载码或链接以安装应用</string>
-    <string name="mini_downloader_enter_code">输入下载码（例如 123456）</string>
+
     <string name="mini_downloader_go">前往 / 确认</string>
     <string name="mini_downloader_delete_prompt_title">下载完成</string>
     <string name="mini_downloader_delete_prompt_desc">是否删除已下载的 APK 安装包以节省存储空间？</string>
@@ -170,7 +130,7 @@
     <string name="mini_downloader_download_error">下载出错</string>
     <string name="mini_downloader_open_in_browser">在浏览器中打开</string>
     <string name="mini_downloader_file_deleted">文件已删除</string>
-    <string name="mini_downloader_requires_browser">该页面需要浏览器交互操作</string>
+
     <string name="mini_downloader_downloads_title">已下载文件</string>
     <string name="mini_downloader_downloads_subtitle">查看已下载的 APK，支持安装、重新下载或删除释放空间</string>
     <string name="mini_downloader_downloads_btn">下载列表</string>
@@ -178,12 +138,12 @@
     <string name="mini_downloader_no_files_desc">通过迷你下载器下载的文件和 APK 将显示在此处便于管理。</string>
     <string name="mini_downloader_install_now">安装</string>
     <string name="mini_downloader_redownload">重新下载</string>
-    <string name="mini_downloader_delete">删除</string>
+
     <string name="mini_downloader_clear_all">全部清空</string>
     <string name="mini_downloader_all_cleared">已移除全部下载文件</string>
     <string name="mini_downloader_redownloading">正在开始重新下载…</string>
     <string name="mini_downloader_view_downloads">查看下载</string>
-    <string name="aurastore_title">Aura 应用商店</string>
+
     <string name="aurastore_downloads_btn">下载管理</string>
     <string name="aurastore_downloading">正在下载应用…</string>
     <string name="aurastore_connecting">正在连接下载链接…</string>
@@ -210,8 +170,7 @@
     <string name="aurastore_delete">删除</string>
     <string name="aurastore_ok">确定</string>
     <string name="settings_language_system">跟随系统</string>
-    <string name="settings_reset_default_launcher">清除旧桌面默认设置并设为默认</string>
-    <string name="settings_reset_default_launcher_desc">清除旧的默认桌面偏好并提示将 Aura TV 设为默认桌面</string>
+
 
     <!-- 隐私与保护 -->
     <string name="settings_privacy_title">隐私保护</string>
@@ -226,29 +185,29 @@
     <string name="settings_items_count">每行数量</string>
     <string name="settings_opacity_level">透明度级别</string>
     <string name="settings_display_preference">显示偏好</string>
-    <string name="settings_status">状态</string>
-    <string name="settings_enabled">已启用</string>
-    <string name="settings_disabled">已禁用</string>
+
     <string name="settings_apps_suffix">个应用</string>
 
     <!-- IPTV 管理 -->
     <string name="settings_iptv_add_new">添加新的 IPTV 播放列表</string>
     <string name="settings_iptv_name_placeholder">列表名称（如：体育、新闻）</string>
-    <string name="settings_iptv_url_placeholder">M3U / M3U8 链接 (https://...)</string>
+    <string name="settings_iptv_url_placeholder">M3U / M3U8 链接 (https://…)</string>
     <string name="settings_iptv_add_button">添加列表</string>
     <string name="settings_iptv_load_presets">加载所有预设</string>
     <string name="settings_iptv_saved_header">已保存的 IPTV 列表 (%d)</string>
     <string name="settings_iptv_no_saved">暂无保存的播放列表，请在上方添加 M3U 链接。</string>
-    <string name="settings_iptv_channels_count">%d 个频道</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="other">%d 个频道</item>
+    </plurals>
     <string name="settings_iptv_active_tag">当前启用</string>
     <string name="settings_iptv_activate_button">启用</string>
     <string name="settings_iptv_sync_button">同步</string>
 
     <!-- 额外 UI -->
-    <string name="action_options_ok">选项 (OK)</string>
-    <string name="reorder_move_hint_remote">使用方向键移动 • 按 OK 键查看选项</string>
-    <string name="state_moving">移动中</string>
-    <string name="iptv_channels_plural">%d 个频道</string>
+
+    <plurals name="iptv_channels_plural">
+        <item quantity="other">%d 个频道</item>
+    </plurals>
     <string name="youtube_renderer_crash">YouTube 渲染器异常，正在重新加载…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">已下载 %.1f MB</string>
@@ -256,7 +215,9 @@
     <string name="mini_downloader_browser_crash">浏览器渲染器异常，正在重新加载…</string>
 
     <!-- 状态提示 -->
-    <string name="status_apps_per_row_updated">已更新为每行显示 %d 个应用</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="other">已更新为每行显示 %d 个应用</item>
+    </plurals>
     <string name="status_wallpaper_style_updated">壁纸风格已更新</string>
     <string name="status_custom_wallpaper_applied">已应用自定义壁纸</string>
     <string name="status_language_saved">语言偏好已保存</string>
@@ -267,11 +228,19 @@
     <string name="status_app_unhidden">已取消隐藏应用</string>
     <string name="status_all_apps_restored">已恢复全部应用</string>
     <string name="status_app_order_reset">应用排序已恢复默认</string>
-    <string name="status_playlist_added">列表已添加：共加载 %d 个频道</string>
-    <string name="status_playlist_switch_success">已切换当前列表：%d 个频道</string>
-    <string name="status_playlist_synced">播放列表同步完成：已更新 %d 个频道</string>
+    <plurals name="status_playlist_added">
+        <item quantity="other">列表已添加：共加载 %d 个频道</item>
+    </plurals>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="other">已切换当前列表：%d 个频道</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="other">播放列表同步完成：已更新 %d 个频道</item>
+    </plurals>
     <string name="status_playlist_removed">播放列表已移除</string>
-    <string name="status_presets_loaded">已加载 %d 个预设播放列表</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="other">已加载 %d 个预设播放列表</item>
+    </plurals>
     <string name="status_presets_already_loaded">所有预设列表均已加载</string>
     <string name="status_select_default_launcher">请选择 Aura TV 作为默认桌面</string>
     <string name="status_already_default_launcher">Aura TV 已是您的默认桌面</string>
@@ -301,24 +270,18 @@
     <!-- 控制中心、全局搜索、屏保与播放器 -->
     <string name="control_center_title">桌面控制中心</string>
     <string name="control_center_subtitle">快速调整桌面布局、时钟、壁纸与屏幕保护设置</string>
-    <string name="control_center_ram">运行内存 (RAM)</string>
+
     <string name="control_center_storage">内部存储</string>
     <string name="control_center_boost_btn">加速与清理缓存</string>
     <string name="control_center_boost_desc">释放内存并清理临时缓存</string>
     <string name="control_center_boosting">正在优化电视…</string>
     <string name="control_center_boost_done">已优化 (+%d MB)</string>
-    <string name="control_center_quick_actions">快捷操作与系统入口</string>
-    <string name="control_center_ambient">环境屏保模式</string>
-    <string name="control_center_ambient_sub">影院级屏保</string>
+
     <string name="control_center_search">全局搜索</string>
     <string name="control_center_search_sub">应用、游戏与直播频道</string>
-    <string name="control_center_display_sub">HDMI / 分辨率</string>
-    <string name="control_center_audio_sub">音频 / 输出</string>
-    <string name="control_center_ip_tag">IP: %s</string>
+
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">外观与桌面布局</string>
-    <string name="control_center_section_clock">时钟、日期与显示</string>
-    <string name="control_center_section_experience">问候语、屏保与应用</string>
+
 
     <string name="universal_search_hint">搜索应用、游戏和电视直播频道…</string>
     <string name="universal_search_all">全部</string>
@@ -361,12 +324,7 @@
     <string name="timeout_15min">15 分钟</string>
     <string name="timeout_30min">30 分钟</string>
     <string name="timeout_never">禁用 / 从不</string>
-    <string name="settings_screensaver_wallpaper_choice">屏保壁纸来源</string>
-    <string name="screensaver_wallpaper_current">当前桌面壁纸</string>
-    <string name="screensaver_wallpaper_presets">从 4K 图库选择</string>
-    <string name="screensaver_wallpaper_device">从设备选择图片</string>
-    <string name="screensaver_video_info_title">影院视频环境模式</string>
-    <string name="screensaver_video_info_desc">无文字无按钮全屏播放助眠视频，按下遥控器立即唤醒。</string>
+
     <string name="screensaver_video_choice">环境视频选择</string>
     <string name="screensaver_video_choice_desc">选择您喜欢的助眠视频或粘贴自定义 YouTube 链接</string>
     <string name="screensaver_video_rain_fireplace">温馨壁炉氛围 4K</string>
@@ -390,11 +348,11 @@
     <string name="settings_clock_settings">时钟显示设置</string>
     <string name="settings_clock_settings_desc">自定义时间制式、秒数显示与字体大小</string>
     <string name="settings_clock_seconds">显示秒数</string>
-    <string name="settings_clock_seconds_desc">实时显示跳动的秒数</string>
+
     <string name="settings_seconds_disabled">关闭</string>
     <string name="settings_seconds_enabled">开启</string>
     <string name="settings_clock_size">时钟尺寸</string>
-    <string name="settings_clock_size_desc">选择主屏幕时钟的显示大小</string>
+
     <string name="settings_clock_size_large">大号 (60sp)</string>
     <string name="settings_clock_size_medium">中号 (48sp)</string>
     <string name="settings_clock_size_compact">紧凑 (36sp)</string>
@@ -458,10 +416,7 @@
     <string name="status_update_check_failed">检查更新失败：%1$s</string>
     <string name="action_pause">暂停</string>
     <string name="iptv_paused_tag">已暂停</string>
-    <string name="iptv_hint_menu_cursor">浏览菜单</string>
-    <string name="iptv_hint_change_channels">切换频道</string>
-    <string name="iptv_hint_select">选择</string>
-    <string name="iptv_hint_hide">隐藏</string>
+
     <string name="iptv_hide_menu">隐藏菜单</string>
     <string name="iptv_audio_unsupported_codec">频道音频 (%1$s) 不受支持 — 仅播放画面</string>
     <string name="iptv_audio_unsupported_generic">当前设备不支持该频道音频 — 仅播放画面</string>
@@ -517,7 +472,7 @@
     <string name="iptv_lock_category">锁定分类 (PIN)</string>
     <string name="iptv_unlock_category">解锁分类</string>
     <string name="iptv_resume_last">继续上次观看</string>
-    <string name="iptv_epg_now">正在播出</string>
+
     <string name="iptv_epg_next">即将播出</string>
     <string name="iptv_sleep_toast_set">睡眠定时：%d 分钟</string>
     <string name="iptv_sleep_toast_off">已关闭睡眠定时</string>
@@ -558,7 +513,7 @@
     <string name="slideshow_select_folder_btn">浏览照片文件夹（电视 / U盘）</string>
     <string name="slideshow_system_folder_picker">系统文件夹选择器</string>
     <string name="slideshow_no_folder_selected">尚未选择文件夹 — 点击上方按钮选择</string>
-    <string name="slideshow_pick_photos_btn">从相册选择照片（已选 %1$d 张）</string>
+    <string name="slideshow_pick_photos_btn">从相册选择照片</string>
     <string name="slideshow_order_label">播放顺序</string>
     <string name="slideshow_order_shuffle">随机播放</string>
     <string name="slideshow_order_sequential">顺序播放 (A–Z)</string>

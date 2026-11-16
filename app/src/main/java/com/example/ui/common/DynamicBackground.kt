@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.createBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import android.os.Build
@@ -77,7 +78,7 @@ fun AuroraBackground(
     // Eliminates color banding (خطوط تدرج الألوان) completely on all TV screen panels
     val ditherShaderBrush = remember {
         val size = 64
-        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(size, size)
         val rand = java.util.Random(1337)
         val pixels = IntArray(size * size)
         for (i in pixels.indices) {

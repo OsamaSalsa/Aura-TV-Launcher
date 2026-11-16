@@ -42,13 +42,11 @@ private class AuraVoiceInteractionSession(context: Context) : VoiceInteractionSe
                     )
                 }
                 var launched = false
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try {
-                        // Uses the system Assist token, exempt from Android 10+ Background Activity Launch limits.
-                        startAssistantActivity(launchIntent)
-                        launched = true
-                    } catch (_: Exception) {}
-                }
+                try {
+                    // Uses the system Assist token, exempt from Android 10+ Background Activity Launch limits.
+                    startAssistantActivity(launchIntent)
+                    launched = true
+                } catch (_: Exception) {}
                 if (!launched) {
                     context.startActivity(launchIntent)
                 }

@@ -3,14 +3,8 @@
     <string name="title_favorite_channels">Αγαπημένα Κανάλια</string>
     <string name="title_apps">Εφαρμογές</string>
     <string name="title_games">Παιχνίδια</string>
-    <string name="no_games_installed">Δεν έχουν εγκατασταθεί παιχνίδια ακόμα</string>
-    <string name="no_games_desc">Εγκαταστήστε παιχνίδια από το Google Play ή πατήστε παρατεταμένα οποιαδήποτε εφαρμογή για μετακίνηση στα Παιχνίδια</string>
-    <string name="open_play_store_games">Περιήγηση Παιχνιδιών TV</string>
-    <string name="title_media_hub">Κέντρο Ψυχαγωγίας</string>
     <string name="iptv_title">Ζωντανή IPTV</string>
     <string name="iptv_subtitle">Ζωντανή μετάδοση τηλεοπτικών καναλιών από όλο τον κόσμο</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">Πλήρης εμπειρία Smart TV</string>
     <string name="settings_title">Ρυθμίσεις</string>
 
     <!-- Top Bar -->
@@ -29,7 +23,6 @@
     <string name="action_cancel">Ακύρωση</string>
     <string name="action_save">Αποθήκευση</string>
     <string name="action_reset">Επαναφορά</string>
-    <string name="action_add">Προσθήκη</string>
     <string name="action_delete">Διαγραφή</string>
     <string name="action_play">Αναπαραγωγή</string>
     <string name="action_retry">Επανάληψη</string>
@@ -44,44 +37,12 @@
     <string name="iptv_empty">Δεν βρέθηκαν κανάλια σε αυτήν την ομάδα</string>
     <string name="iptv_loading">Φόρτωση καναλιών λίστας…</string>
     <string name="iptv_error_playback">Σφάλμα αναπαραγωγής ροής. Δοκιμάστε ξανά ή επιλέξτε άλλο κανάλι.</string>
-    <string name="iptv_channel_up_down_hint">Χρησιμοποιήστε τα κουμπιά Πάνω/Κάτω στο τηλεχειριστήριο για αλλαγή καναλιού</string>
     <string name="iptv_quick_channels">Γρήγορα Κανάλια</string>
-    <string name="iptv_quick_channels_hint">Χρησιμοποιήστε Αριστερά/Δεξιά για περιήγηση • Πατήστε OK για αλλαγή</string>
     <string name="iptv_toggle_favorite">Αγαπημένο</string>
     <string name="iptv_added_to_favorites">Προστέθηκε στα Αγαπημένα ★</string>
     <string name="iptv_removed_from_favorites">Αφαιρέθηκε από τα Αγαπημένα</string>
-    <string name="iptv_playlist_updated">Η λίστα αναπαραγωγής ενημερώθηκε επιτυχώς</string>
     <string name="iptv_no_playlist">Δεν έχει ρυθμιστεί λίστα IPTV ακόμα. Εισαγάγετε το URL M3U στις Ρυθμίσεις.</string>
     <string name="settings_open_iptv_settings">Άνοιγμα Ρυθμίσεων IPTV</string>
-    <string name="settings_clear_playlist">Εκκαθάριση Λίστας</string>
-
-    <!-- YouTube -->
-    <string name="youtube_curated_only">Μόνο Ιδιωτικά Κανάλια</string>
-    <string name="youtube_no_channels">Δεν έχουν προστεθεί ιδιωτικά κανάλια. Προσθέστε έμπιστα κανάλια για παρακολούθηση χωρίς περισπασμούς.</string>
-    <string name="youtube_loading_feed">Λήψη τελευταίων βίντεο…</string>
-    <string name="youtube_feed_error">Αδυναμία φόρτωσης ροής καναλιού</string>
-    <string name="youtube_add_channel_title">Προσθήκη Ιδιωτικού Καναλιού</string>
-    <string name="youtube_channel_name">Όνομα Καναλιού (Προαιρετικό)</string>
-    <string name="youtube_channel_id_or_url">Αναγνωριστικό Καναλιού (UCxxxx), @όνομα ή URL</string>
-    <string name="youtube_video_player">Πρόγραμμα Αναπαραγωγής Βίντεο</string>
-    <string name="youtube_player_hint">Πατήστε το κουμπί Πίσω στο τηλεχειριστήριο για επιστροφή στα κανάλια</string>
-    <string name="youtube_add_channel_button">Προσθήκη Ιδιωτικού Καναλιού</string>
-    <string name="youtube_delete_channel">Διαγραφή Καναλιού</string>
-    <string name="youtube_delete_channel_confirm">Είστε βέβαιοι ότι θέλετε να αφαιρέσετε αυτό το κανάλι από την ιδιωτική λίστα;</string>
-    <string name="youtube_private_notice">Το MiniTube εμφανίζει μόνο βίντεο από κανάλια που έχετε εγκρίνει.</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">Ιδιωτικά Κανάλια</string>
-    <string name="youtube_tv_exit">Έξοδος στον Launcher</string>
-    <string name="youtube_tv_reload">Επαναφόρτωση</string>
-    <string name="youtube_tv_press_back_again">Πατήστε ξανά Πίσω για έξοδο στον Launcher</string>
-    <string name="youtube_play_on_tv">Αναπαραγωγή στο YouTube.com/tv</string>
-    <string name="youtube_open_channel_on_tv">Άνοιγμα στο YouTube.com/tv</string>
-    <string name="youtube_back_to_channels">Επιστροφή στα Κανάλια</string>
-    <string name="youtube_running_on_tv_badge">Αναπαραγωγή YouTube.com/tv</string>
-    <string name="settings_youtube_default_mode">Προεπιλεγμένη Λειτουργία Προβολής</string>
-    <string name="settings_youtube_default_mode_desc">Επιλέξτε μεταξύ YouTube.com/tv (Smart TV Leanback) ή Ιδιωτικών Καναλιών</string>
-    <string name="settings_youtube_clear_cache">Εκκαθάριση Προσωρινής Μνήμης &amp; Cookies YouTube TV</string>
-    <string name="settings_youtube_cache_cleared">Η προσωρινή μνήμη και τα cookies του YouTube TV εκκαθαρίστηκαν</string>
 
     <!-- Settings -->
     <string name="settings_category_network">Δίκτυο &amp; Διαδίκτυο</string>
@@ -91,7 +52,6 @@
     <string name="settings_open_display">Οθόνη &amp; Εικόνα</string>
     <string name="settings_open_sound">Ήχος</string>
     <string name="settings_open_datetime">Ημερομηνία &amp; Ώρα</string>
-    <string name="settings_open_apps">Εγκατεστημένες Εφαρμογές Συστήματος</string>
     <string name="settings_open_all_settings">Όλες οι Ρυθμίσεις Android TV</string>
 
     <string name="settings_category_launcher">Προσαρμογή Launcher</string>
@@ -100,13 +60,8 @@
     <string name="settings_wallpaper_dynamic">Χρώμα Δυναμικής Παλέτας</string>
     <string name="settings_wallpaper_custom">Προσαρμοσμένη Εικόνα / Φωτογραφία</string>
     <string name="settings_wallpaper_default">Προεπιλεγμένο Σκοτεινό Θέμα</string>
-    <string name="settings_wallpaper_url_label">URL Προσαρμοσμένης Ταπετσαρίας</string>
-    <string name="settings_wallpaper_apply">Εφαρμογή Ταπετσαρίας</string>
     <string name="settings_wallpaper_presets">Προκαθορισμένες Ταπετσαρίες 4K</string>
     <string name="settings_wallpaper_pick_device">Επιλογή Φωτογραφίας από τη Συσκευή</string>
-    <string name="settings_dynamic_bg">Ταπετσαρία Δυναμικής Παλέτας</string>
-    <string name="settings_dynamic_bg_desc">Εξαγωγή ζωντανών χρωμάτων από τα επιλεγμένα εικονίδια εφαρμογών</string>
-    <string name="settings_clock_24h">24ωρη Μορφή Ρολογιού</string>
     <string name="settings_apps_per_row">Εφαρμογές ανά Σειρά</string>
     <string name="settings_apps_per_row_desc">Αριθμός καρτών εφαρμογών που εμφανίζονται σε κάθε σειρά της αρχικής οθόνης</string>
     <string name="settings_glass_opacity">Διαφάνεια Γυαλιού Καρτών</string>
@@ -130,33 +85,19 @@
     <string name="settings_open_app_info">Πληροφορίες Εφαρμογής (Ρυθμίσεις)</string>
     <string name="settings_open_app_info_desc">Άνοιγμα λεπτομερειών του Aura TV στις ρυθμίσεις συστήματος Android</string>
     <string name="settings_category_iptv">Διαμόρφωση IPTV</string>
-    <string name="settings_m3u_url">URL Λίστας Αναπαραγωγής M3U / M3U8</string>
-    <string name="settings_reload_m3u">Επαναφόρτωση / Συγχρονισμός Λίστας</string>
-    <string name="settings_load_sample_m3u">Φόρτωση Προεπιλεγμένης Δωρεάν Λίστας TV</string>
 
-    <string name="settings_category_youtube">Κανάλια Mini YouTube</string>
-    <string name="settings_manage_channels">Διαχείριση Επιτρεπόμενων Καναλιών</string>
-    <string name="settings_clear_all_yt">Εκκαθάριση Όλων των Επιτρεπόμενων Καναλιών</string>
     <string name="settings_language">Γλώσσα / Language</string>
     <string name="launcher_prompt_title">Ορισμός ως προεπιλεγμένος launcher</string>
     <string name="launcher_prompt_desc">Για να απολαύσετε την πλήρη εμπειρία, ορίστε το Aura TV ως την προεπιλεγμένη αρχική οθόνη σας.</string>
     <string name="action_set_default">Ορισμός ως προεπιλογή</string>
     <string name="action_later">Αργότερα</string>
-    <string name="action_move_apps">Μετακίνηση Εφαρμογών</string>
-    <string name="action_delete_apps">Διαγραφή Εφαρμογών</string>
-    <string name="action_hide_apps">Απόκρυψη Εφαρμογών</string>
     <string name="action_edit">Επεξεργασία</string>
-    <string name="action_edit_options">Επεξεργασία</string>
     <string name="action_stop_editing">Τέλος</string>
     <string name="edit_mode_move_hint">Πατήστε σε μια εφαρμογή ή κανάλι για μετακίνηση ή επιλογές</string>
-    <string name="edit_mode_delete_hint">Πατήστε σε μια εφαρμογή για απεγκατάσταση</string>
-    <string name="edit_mode_hide_hint">Πατήστε σε μια εφαρμογή για απόκρυψη</string>
-    <string name="edit_mode_options_hint">Επιλέξτε οποιοδήποτε στοιχείο για μετακίνηση ή προσαρμογή</string>
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">Mini Downloader</string>
     <string name="mini_downloader_subtitle">Εισαγάγετε κωδικό λήψης ή URL για εγκατάσταση εφαρμογών</string>
-    <string name="mini_downloader_enter_code">Εισαγωγή Κωδικού (π.χ. 123456)</string>
     <string name="mini_downloader_go">ΜΕΤΑΒΑΣΗ / Enter</string>
     <string name="mini_downloader_delete_prompt_title">Η Λήψη Ολοκληρώθηκε</string>
     <string name="mini_downloader_delete_prompt_desc">Θέλετε να διαγράψετε το ληφθέν αρχείο APK για εξοικονόμηση χώρου;</string>
@@ -170,7 +111,6 @@
     <string name="mini_downloader_download_error">Σφάλμα Λήψης</string>
     <string name="mini_downloader_open_in_browser">Άνοιγμα στο Πρόγραμμα Περιήγησης</string>
     <string name="mini_downloader_file_deleted">Το αρχείο διαγράφηκε</string>
-    <string name="mini_downloader_requires_browser">Η σελίδα απαιτεί αλληλεπίδραση στο πρόγραμμα περιήγησης</string>
     <string name="mini_downloader_downloads_title">Ληφθέντα Αρχεία</string>
     <string name="mini_downloader_downloads_subtitle">Δείτε τα ληφθέντα APK, εγκαταστήστε τα, κατεβάστε τα ξανά ή διαγράψτε τα</string>
     <string name="mini_downloader_downloads_btn">Λήψεις</string>
@@ -178,12 +118,10 @@
     <string name="mini_downloader_no_files_desc">Τα αρχεία και τα APK που λαμβάνονται μέσω του Mini Downloader θα εμφανίζονται εδώ.</string>
     <string name="mini_downloader_install_now">Εγκατάσταση</string>
     <string name="mini_downloader_redownload">Λήψη Ξανά</string>
-    <string name="mini_downloader_delete">Διαγραφή</string>
     <string name="mini_downloader_clear_all">Εκκαθάριση Όλων</string>
     <string name="mini_downloader_all_cleared">Όλα τα ληφθέντα αρχεία αφαιρέθηκαν</string>
     <string name="mini_downloader_redownloading">Έναρξη νέας λήψης…</string>
     <string name="mini_downloader_view_downloads">Προβολή Λήψεων</string>
-    <string name="aurastore_title">Aura Store</string>
     <string name="aurastore_downloads_btn">Λήψεις</string>
     <string name="aurastore_downloading">Λήψη εφαρμογής…</string>
     <string name="aurastore_connecting">Σύνδεση στον σύνδεσμο…</string>
@@ -210,8 +148,6 @@
     <string name="aurastore_delete">Διαγραφή</string>
     <string name="aurastore_ok">OK</string>
     <string name="settings_language_system">Προεπιλογή Συστήματος</string>
-    <string name="settings_reset_default_launcher">Εκκαθάριση Παλιού Launcher &amp; Ορισμός Προεπιλογής</string>
-    <string name="settings_reset_default_launcher_desc">Εκκαθάριση προηγούμενων προτιμήσεων και ορισμός του Aura TV ως προεπιλογή</string>
 
     <!-- Privacy -->
     <string name="settings_privacy_title">Απόρρητο</string>
@@ -226,29 +162,29 @@
     <string name="settings_items_count">Αριθμός Στοιχείων</string>
     <string name="settings_opacity_level">Επίπεδο Διαφάνειας</string>
     <string name="settings_display_preference">Προτίμηση Εμφάνισης</string>
-    <string name="settings_status">Κατάσταση</string>
-    <string name="settings_enabled">Ενεργό</string>
-    <string name="settings_disabled">Ανενεργό</string>
     <string name="settings_apps_suffix">Εφαρμογές</string>
 
     <!-- IPTV Management -->
     <string name="settings_iptv_add_new">Προσθήκη Νέας Λίστας IPTV</string>
     <string name="settings_iptv_name_placeholder">Όνομα Λίστας (π.χ. Αθλητικά, Ειδήσεις)</string>
-    <string name="settings_iptv_url_placeholder">URL M3U / M3U8 (https://...)</string>
+    <string name="settings_iptv_url_placeholder">URL M3U / M3U8 (https://…)</string>
     <string name="settings_iptv_add_button">Προσθήκη Λίστας</string>
     <string name="settings_iptv_load_presets">Φόρτωση Όλων των Προεπιλογών</string>
     <string name="settings_iptv_saved_header">Αποθηκευμένες Λίστες IPTV (%d)</string>
     <string name="settings_iptv_no_saved">Δεν υπάρχουν αποθηκευμένες λίστες. Προσθέστε έναν σύνδεσμο M3U παραπάνω.</string>
-    <string name="settings_iptv_channels_count">%d κανάλια</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="one">%d κανάλι</item>
+        <item quantity="other">%d κανάλια</item>
+    </plurals>
     <string name="settings_iptv_active_tag">Ενεργή</string>
     <string name="settings_iptv_activate_button">Ενεργοποίηση</string>
     <string name="settings_iptv_sync_button">Συγχρονισμός</string>
 
     <!-- Extra UI -->
-    <string name="action_options_ok">Επιλογές (OK)</string>
-    <string name="reorder_move_hint_remote">Χρησιμοποιήστε τα βέλη για μετακίνηση • Πατήστε OK για επιλογές</string>
-    <string name="state_moving">ΜΕΤΑΚΙΝΗΣΗ</string>
-    <string name="iptv_channels_plural">%d Κανάλια</string>
+    <plurals name="iptv_channels_plural">
+        <item quantity="one">%d Κανάλι</item>
+        <item quantity="other">%d Κανάλια</item>
+    </plurals>
     <string name="youtube_renderer_crash">Το YouTube τερματίστηκε απροσδόκητα. Επαναφόρτωση…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">Λήφθηκαν %.1f MB</string>
@@ -256,7 +192,10 @@
     <string name="mini_downloader_browser_crash">Το πρόγραμμα περιήγησης τερματίστηκε. Επαναφόρτωση…</string>
 
     <!-- Status Messages -->
-    <string name="status_apps_per_row_updated">Ενημερώθηκε σε %d εφαρμογές ανά σειρά</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="one">Ενημερώθηκε σε %d εφαρμογή ανά σειρά</item>
+        <item quantity="other">Ενημερώθηκε σε %d εφαρμογές ανά σειρά</item>
+    </plurals>
     <string name="status_wallpaper_style_updated">Το στυλ ταπετσαρίας ενημερώθηκε</string>
     <string name="status_custom_wallpaper_applied">Εφαρμόστηκε προσαρμοσμένη ταπετσαρία</string>
     <string name="status_language_saved">Η προτίμηση γλώσσας αποθηκεύτηκε</string>
@@ -267,11 +206,23 @@
     <string name="status_app_unhidden">Η εφαρμογή εμφανίστηκε ξανά</string>
     <string name="status_all_apps_restored">Όλες οι εφαρμογές επαναφέρθηκαν</string>
     <string name="status_app_order_reset">Η σειρά εφαρμογών επανήλθε στην προεπιλογή</string>
-    <string name="status_playlist_added">Η λίστα προστέθηκε: φορτώθηκαν %d κανάλια</string>
-    <string name="status_playlist_switch_success">Αλλαγή ενεργής λίστας: %d κανάλια</string>
-    <string name="status_playlist_synced">Συγχρονισμός λίστας: ενημερώθηκαν %d κανάλια</string>
+    <plurals name="status_playlist_added">
+        <item quantity="one">Η λίστα προστέθηκε: φορτώθηκε %d κανάλι</item>
+        <item quantity="other">Η λίστα προστέθηκε: φορτώθηκαν %d κανάλια</item>
+    </plurals>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="one">Αλλαγή ενεργής λίστας: %d κανάλι</item>
+        <item quantity="other">Αλλαγή ενεργής λίστας: %d κανάλια</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="one">Συγχρονισμός λίστας: ενημερώθηκε %d κανάλι</item>
+        <item quantity="other">Συγχρονισμός λίστας: ενημερώθηκαν %d κανάλια</item>
+    </plurals>
     <string name="status_playlist_removed">Η λίστα αναπαραγωγής αφαιρέθηκε</string>
-    <string name="status_presets_loaded">Φορτώθηκαν %d προεπιλεγμένες λίστες</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="one">Φορτώθηκε %d προεπιλεγμένη λίστα</item>
+        <item quantity="other">Φορτώθηκαν %d προεπιλεγμένες λίστες</item>
+    </plurals>
     <string name="status_presets_already_loaded">Όλες οι προεπιλεγμένες λίστες έχουν ήδη φορτωθεί</string>
     <string name="status_select_default_launcher">Επιλέξτε το Aura TV ως Προεπιλεγμένο Launcher</string>
     <string name="status_already_default_launcher">Το Aura TV είναι ήδη ο προεπιλεγμένος σας launcher</string>
@@ -301,24 +252,14 @@
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
     <string name="control_center_title">Κέντρο Ελέγχου Launcher</string>
     <string name="control_center_subtitle">Γρήγορη πρόσβαση σε διάταξη, ρολόι, ταπετσαρία &amp; προφύλαξη οθόνης</string>
-    <string name="control_center_ram">Μνήμη RAM</string>
     <string name="control_center_storage">Εσωτερικός Χώρος</string>
     <string name="control_center_boost_btn">Βελτιστοποίηση &amp; Εκκαθάριση Cache</string>
     <string name="control_center_boost_desc">Απελευθέρωση RAM &amp; εκκαθάριση προσωρινών αρχείων</string>
     <string name="control_center_boosting">Βελτιστοποίηση TV…</string>
     <string name="control_center_boost_done">Βελτιστοποιήθηκε (+%d MB)</string>
-    <string name="control_center_quick_actions">Γρήγορες Ενέργειες &amp; Συντομεύσεις</string>
-    <string name="control_center_ambient">Λειτουργία Ambient</string>
-    <string name="control_center_ambient_sub">Κινηματογραφική Προφύλαξη Οθόνης</string>
     <string name="control_center_search">Καθολική Αναζήτηση</string>
     <string name="control_center_search_sub">Εφαρμογές, Παιχνίδια &amp; Ζωντανή TV</string>
-    <string name="control_center_display_sub">HDMI / Ανάλυση</string>
-    <string name="control_center_audio_sub">Ήχος / Έξοδος</string>
-    <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">Εμφάνιση &amp; Διάταξη Αρχικής Οθόνης</string>
-    <string name="control_center_section_clock">Ρολόι, Ημερομηνία &amp; Οθόνη</string>
-    <string name="control_center_section_experience">Χαιρετισμός, Προφύλαξη Οθόνης &amp; Εφαρμογές</string>
 
     <string name="universal_search_hint">Αναζήτηση εφαρμογών, παιχνιδιών και ζωντανών καναλιών TV…</string>
     <string name="universal_search_all">Όλα</string>
@@ -361,12 +302,6 @@
     <string name="timeout_15min">15 Λεπτά</string>
     <string name="timeout_30min">30 Λεπτά</string>
     <string name="timeout_never">Ανενεργό / Ποτέ</string>
-    <string name="settings_screensaver_wallpaper_choice">Πηγή Ταπετσαρίας Προφύλαξης Οθόνης</string>
-    <string name="screensaver_wallpaper_current">Τρέχουσα Ταπετσαρία Launcher</string>
-    <string name="screensaver_wallpaper_presets">Επιλογή από Συλλογή 4K</string>
-    <string name="screensaver_wallpaper_device">Επιλογή Φωτογραφίας από τη Συσκευή</string>
-    <string name="screensaver_video_info_title">Κινηματογραφικό Βίντεο Ambient</string>
-    <string name="screensaver_video_info_desc">Αναπαράγει χαλαρωτικά βίντεο σε πλήρη οθόνη χωρίς κείμενο ή κουμπιά.</string>
     <string name="screensaver_video_choice">Επιλογή Βίντεο Ambient</string>
     <string name="screensaver_video_choice_desc">Επιλέξτε το αγαπημένο σας χαλαρωτικό βίντεο ή εισαγάγετε προσαρμοσμένο σύνδεσμο YouTube</string>
     <string name="screensaver_video_rain_fireplace">Ζεστή Ατμόσφαιρα Τζακιού 4K</string>
@@ -390,11 +325,9 @@
     <string name="settings_clock_settings">Ρυθμίσεις Εμφάνισης Ρολογιού</string>
     <string name="settings_clock_settings_desc">Προσαρμόστε τη μορφή ώρας, τα δευτερόλεπτα και το μέγεθος ρολογιού</string>
     <string name="settings_clock_seconds">Εμφάνιση Δευτερολέπτων</string>
-    <string name="settings_clock_seconds_desc">Εμφάνιση ζωντανών δευτερολέπτων δίπλα στην ώρα</string>
     <string name="settings_seconds_disabled">Ανενεργό</string>
     <string name="settings_seconds_enabled">Ενεργό</string>
     <string name="settings_clock_size">Μέγεθος Ρολογιού</string>
-    <string name="settings_clock_size_desc">Επιλέξτε το μέγεθος εμφάνισης του ρολογιού στην αρχική οθόνη</string>
     <string name="settings_clock_size_large">Μεγάλο (60sp)</string>
     <string name="settings_clock_size_medium">Μεσαίο (48sp)</string>
     <string name="settings_clock_size_compact">Μικρό (36sp)</string>
@@ -458,10 +391,6 @@
     <string name="status_update_check_failed">Αδυναμία ελέγχου για ενημερώσεις: %1$s</string>
     <string name="action_pause">Παύση</string>
     <string name="iptv_paused_tag">ΣΕ ΠΑΥΣΗ</string>
-    <string name="iptv_hint_menu_cursor">Πλοήγηση Μενού</string>
-    <string name="iptv_hint_change_channels">Αλλαγή Καναλιών</string>
-    <string name="iptv_hint_select">Επιλογή</string>
-    <string name="iptv_hint_hide">Απόκρυψη</string>
     <string name="iptv_hide_menu">Απόκρυψη Μενού</string>
     <string name="iptv_audio_unsupported_codec">Ο ήχος καναλιού (%1$s) δεν υποστηρίζεται — αναπαραγωγή μόνο εικόνας</string>
     <string name="iptv_audio_unsupported_generic">Ο ήχος καναλιού δεν υποστηρίζεται σε αυτήν τη συσκευή — αναπαραγωγή μόνο εικόνας</string>
@@ -517,7 +446,6 @@
     <string name="iptv_lock_category">Κλείδωμα Κατηγορίας (PIN)</string>
     <string name="iptv_unlock_category">Ξεκλείδωμα Κατηγορίας</string>
     <string name="iptv_resume_last">Συνέχιση Τελευταίου</string>
-    <string name="iptv_epg_now">Τώρα</string>
     <string name="iptv_epg_next">Επόμενο</string>
     <string name="iptv_sleep_toast_set">Ο χρονοδιακόπτης ύπνου ορίστηκε: %d λεπτά</string>
     <string name="iptv_sleep_toast_off">Ο χρονοδιακόπτης ύπνου απενεργοποιήθηκε</string>
@@ -558,7 +486,7 @@
     <string name="slideshow_select_folder_btn">Αναζήτηση Φακέλου Φωτογραφιών (TV / USB)</string>
     <string name="slideshow_system_folder_picker">Επιλογέας Φακέλου Συστήματος</string>
     <string name="slideshow_no_folder_selected">Δεν επιλέχθηκε φάκελος — πατήστε παραπάνω για επιλογή</string>
-    <string name="slideshow_pick_photos_btn">Επιλογή Φωτογραφιών από Συλλογή (%1$d επιλεγμένες)</string>
+    <string name="slideshow_pick_photos_btn">Επιλογή Φωτογραφιών από Συλλογή</string>
     <string name="slideshow_order_label">Σειρά Αναπαραγωγής</string>
     <string name="slideshow_order_shuffle">Τυχαία Σειρά (Ανάμειξη)</string>
     <string name="slideshow_order_sequential">Διαδοχική (A–Z)</string>

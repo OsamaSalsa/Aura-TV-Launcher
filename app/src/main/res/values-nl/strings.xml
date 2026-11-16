@@ -3,14 +3,8 @@
     <string name="title_favorite_channels">Favoriete Zenders</string>
     <string name="title_apps">Apps</string>
     <string name="title_games">Games</string>
-    <string name="no_games_installed">Nog geen games geïnstalleerd</string>
-    <string name="no_games_desc">Installeer games via Google Play of houd een app ingedrukt om deze naar Games te verplaatsen</string>
-    <string name="open_play_store_games">TV-games bekijken</string>
-    <string name="title_media_hub">Entertainment Hub</string>
     <string name="iptv_title">Live IPTV</string>
     <string name="iptv_subtitle">Stream wereldwijde live tv-zenders</string>
-    <string name="youtube_title">MiniTube</string>
-    <string name="youtube_subtitle">Volledige Smart TV-ervaring</string>
     <string name="settings_title">Instellingen</string>
 
     <!-- Top Bar -->
@@ -29,7 +23,6 @@
     <string name="action_cancel">Annuleren</string>
     <string name="action_save">Opslaan</string>
     <string name="action_reset">Herstellen</string>
-    <string name="action_add">Toevoegen</string>
     <string name="action_delete">Wissen</string>
     <string name="action_play">Afspelen</string>
     <string name="action_retry">Opnieuw</string>
@@ -44,44 +37,12 @@
     <string name="iptv_empty">Geen zenders gevonden in deze groep</string>
     <string name="iptv_loading">Afspeellijst zenders laden…</string>
     <string name="iptv_error_playback">Fout bij afspelen. Klik op opnieuw of kies een andere zender.</string>
-    <string name="iptv_channel_up_down_hint">Gebruik Omhoog/Omlaag op de afstandsbediening om van zender te wisselen</string>
     <string name="iptv_quick_channels">Snelle Zenders</string>
-    <string name="iptv_quick_channels_hint">Gebruik Links/Rechts om te bladeren • Druk op OK om te wisselen</string>
     <string name="iptv_toggle_favorite">Favoriet</string>
     <string name="iptv_added_to_favorites">Toegevoegd aan Favorieten ★</string>
     <string name="iptv_removed_from_favorites">Verwijderd uit Favorieten</string>
-    <string name="iptv_playlist_updated">Afspeellijst succesvol bijgewerkt</string>
     <string name="iptv_no_playlist">Nog geen IPTV-afspeellijst ingesteld. Voer je M3U-URL in bij Instellingen.</string>
     <string name="settings_open_iptv_settings">IPTV-instellingen openen</string>
-    <string name="settings_clear_playlist">Afspeellijst wissen</string>
-
-    <!-- YouTube -->
-    <string name="youtube_curated_only">Alleen Privékanalen</string>
-    <string name="youtube_no_channels">Nog geen privékanalen toegevoegd. Voeg vertrouwde kanalen toe om zonder afleiding te kijken.</string>
-    <string name="youtube_loading_feed">Nieuwste video-feeds ophalen…</string>
-    <string name="youtube_feed_error">Kan kanaalfeed niet laden</string>
-    <string name="youtube_add_channel_title">Privékanaal Toevoegen</string>
-    <string name="youtube_channel_name">Kanaalnaam (Optioneel)</string>
-    <string name="youtube_channel_id_or_url">Kanaal-ID (UCxxxx), @naam of URL</string>
-    <string name="youtube_video_player">Videospeler</string>
-    <string name="youtube_player_hint">Druk op Terug op de afstandsbediening om terug te keren naar kanalen</string>
-    <string name="youtube_add_channel_button">Privékanaal Toevoegen</string>
-    <string name="youtube_delete_channel">Kanaal Verwijderen</string>
-    <string name="youtube_delete_channel_confirm">Weet je zeker dat je dit kanaal uit de privélijst wilt verwijderen?</string>
-    <string name="youtube_private_notice">MiniTube toont alleen video\'s van door jou goedgekeurde kanalen.</string>
-    <string name="youtube_tv_mode_tv">YouTube TV</string>
-    <string name="youtube_tv_mode_curated">Privékanalen</string>
-    <string name="youtube_tv_exit">Afsluiten naar Launcher</string>
-    <string name="youtube_tv_reload">Herladen</string>
-    <string name="youtube_tv_press_back_again">Druk nogmaals op Terug om af te sluiten naar Launcher</string>
-    <string name="youtube_play_on_tv">Afspelen op YouTube.com/tv</string>
-    <string name="youtube_open_channel_on_tv">Openen op YouTube.com/tv</string>
-    <string name="youtube_back_to_channels">Terug naar Kanalen</string>
-    <string name="youtube_running_on_tv_badge">YouTube.com/tv Speler</string>
-    <string name="settings_youtube_default_mode">Standaard Weergavemodus</string>
-    <string name="settings_youtube_default_mode_desc">Kies tussen YouTube.com/tv (Smart TV Leanback) of Privékanalen</string>
-    <string name="settings_youtube_clear_cache">YouTube TV-cache en cookies wissen</string>
-    <string name="settings_youtube_cache_cleared">YouTube TV-cache en cookies gewist</string>
 
     <!-- Settings -->
     <string name="settings_category_network">Netwerk &amp; Internet</string>
@@ -91,7 +52,6 @@
     <string name="settings_open_display">Beeldscherm &amp; Weergave</string>
     <string name="settings_open_sound">Geluid &amp; Audio</string>
     <string name="settings_open_datetime">Datum &amp; Tijd</string>
-    <string name="settings_open_apps">Geïnstalleerde Systeem-apps</string>
     <string name="settings_open_all_settings">Alle Android TV-instellingen</string>
 
     <string name="settings_category_launcher">Launcher Aanpassen</string>
@@ -100,13 +60,8 @@
     <string name="settings_wallpaper_dynamic">Dynamische Paletkleur</string>
     <string name="settings_wallpaper_custom">Eigen Afbeelding / Foto</string>
     <string name="settings_wallpaper_default">Standaard Donker Thema</string>
-    <string name="settings_wallpaper_url_label">URL van Eigen Achtergrond</string>
-    <string name="settings_wallpaper_apply">Achtergrond Toepassen</string>
     <string name="settings_wallpaper_presets">4K Vooringestelde Achtergronden</string>
     <string name="settings_wallpaper_pick_device">Kies Foto van Apparaat</string>
-    <string name="settings_dynamic_bg">Dynamische Achtergrond</string>
-    <string name="settings_dynamic_bg_desc">Haal levendige kleuren uit geselecteerde app-pictogrammen</string>
-    <string name="settings_clock_24h">24-uurs Kloknotatie</string>
     <string name="settings_apps_per_row">Apps per Rij</string>
     <string name="settings_apps_per_row_desc">Aantal app-kaarten op elke rij van het startscherm</string>
     <string name="settings_glass_opacity">Glastransparantie</string>
@@ -130,33 +85,19 @@
     <string name="settings_open_app_info">App-info (Instellingen)</string>
     <string name="settings_open_app_info_desc">Open Aura TV-details in de Android-systeeminstellingen</string>
     <string name="settings_category_iptv">IPTV-configuratie</string>
-    <string name="settings_m3u_url">M3U / M3U8 Afspeellijst-URL</string>
-    <string name="settings_reload_m3u">Afspeellijst Herladen / Synchroniseren</string>
-    <string name="settings_load_sample_m3u">Standaard Gratis TV-lijst Laden</string>
 
-    <string name="settings_category_youtube">Mini YouTube-kanalen</string>
-    <string name="settings_manage_channels">Toegestane Kanalen Beheren</string>
-    <string name="settings_clear_all_yt">Alle Toegestane Kanalen Wissen</string>
     <string name="settings_language">Taal / Language</string>
     <string name="launcher_prompt_title">Instellen als standaard launcher</string>
     <string name="launcher_prompt_desc">Stel Aura TV in als je standaard startscherm voor de volledige bioscoopervaring.</string>
     <string name="action_set_default">Instellen als standaard</string>
     <string name="action_later">Later</string>
-    <string name="action_move_apps">Apps Verplaatsen</string>
-    <string name="action_delete_apps">Apps Verwijderen</string>
-    <string name="action_hide_apps">Apps Verbergen</string>
     <string name="action_edit">Bewerken</string>
-    <string name="action_edit_options">Bewerken</string>
     <string name="action_stop_editing">Klaar</string>
     <string name="edit_mode_move_hint">Klik op een app of zender om te verplaatsen of kies opties</string>
-    <string name="edit_mode_delete_hint">Klik op een app om deze te verwijderen</string>
-    <string name="edit_mode_hide_hint">Klik op een app om deze te verbergen</string>
-    <string name="edit_mode_options_hint">Selecteer een item om te verplaatsen of aan te passen</string>
 
     <!-- Mini Downloader -->
     <string name="mini_downloader_title">Mini Downloader</string>
     <string name="mini_downloader_subtitle">Voer downloadcode of URL in om apps te installeren</string>
-    <string name="mini_downloader_enter_code">Voer Code In (bijv. 123456)</string>
     <string name="mini_downloader_go">GA / Enter</string>
     <string name="mini_downloader_delete_prompt_title">Download Voltooid</string>
     <string name="mini_downloader_delete_prompt_desc">Wil je het gedownloade APK-bestand verwijderen om opslagruimte te besparen?</string>
@@ -170,7 +111,6 @@
     <string name="mini_downloader_download_error">Downloadfout</string>
     <string name="mini_downloader_open_in_browser">Openen in Browser</string>
     <string name="mini_downloader_file_deleted">Bestand verwijderd</string>
-    <string name="mini_downloader_requires_browser">Deze pagina vereist browserinteractie</string>
     <string name="mini_downloader_downloads_title">Gedownloade Bestanden</string>
     <string name="mini_downloader_downloads_subtitle">Bekijk gedownloade APK\'s, installeer ze, download opnieuw of verwijder ze</string>
     <string name="mini_downloader_downloads_btn">Downloads</string>
@@ -178,12 +118,10 @@
     <string name="mini_downloader_no_files_desc">Bestanden en APK\'s die via Mini Downloader zijn gedownload, verschijnen hier.</string>
     <string name="mini_downloader_install_now">Installeren</string>
     <string name="mini_downloader_redownload">Opnieuw downloaden</string>
-    <string name="mini_downloader_delete">Verwijderen</string>
     <string name="mini_downloader_clear_all">Alles Wissen</string>
     <string name="mini_downloader_all_cleared">Alle gedownloade bestanden verwijderd</string>
     <string name="mini_downloader_redownloading">Opnieuw downloaden starten…</string>
     <string name="mini_downloader_view_downloads">Downloads Bekijken</string>
-    <string name="aurastore_title">Aura Store</string>
     <string name="aurastore_downloads_btn">Downloads</string>
     <string name="aurastore_downloading">App downloaden…</string>
     <string name="aurastore_connecting">Verbinden met link…</string>
@@ -210,8 +148,6 @@
     <string name="aurastore_delete">Verwijderen</string>
     <string name="aurastore_ok">OK</string>
     <string name="settings_language_system">Systeemstandaard</string>
-    <string name="settings_reset_default_launcher">Oude Launcher Wissen &amp; Standaard Instellen</string>
-    <string name="settings_reset_default_launcher_desc">Wis bestaande standaardvoorkeuren en stel Aura TV in als standaard</string>
 
     <!-- Privacy -->
     <string name="settings_privacy_title">Privacy</string>
@@ -226,29 +162,29 @@
     <string name="settings_items_count">Aantal Items</string>
     <string name="settings_opacity_level">Transparantieniveau</string>
     <string name="settings_display_preference">Weergavevoorkeur</string>
-    <string name="settings_status">Status</string>
-    <string name="settings_enabled">Ingeschakeld</string>
-    <string name="settings_disabled">Uitgeschakeld</string>
     <string name="settings_apps_suffix">Apps</string>
 
     <!-- IPTV Management -->
     <string name="settings_iptv_add_new">Nieuwe IPTV-afspeellijst Toevoegen</string>
     <string name="settings_iptv_name_placeholder">Naam Afspeellijst (bijv. Sport, Nieuws)</string>
-    <string name="settings_iptv_url_placeholder">M3U / M3U8 URL (https://...)</string>
+    <string name="settings_iptv_url_placeholder">M3U / M3U8 URL (https://…)</string>
     <string name="settings_iptv_add_button">Afspeellijst Toevoegen</string>
     <string name="settings_iptv_load_presets">Alle Voorinstellingen Laden</string>
     <string name="settings_iptv_saved_header">Opgeslagen IPTV-afspeellijsten (%d)</string>
     <string name="settings_iptv_no_saved">Geen opgeslagen lijsten. Voeg hierboven een M3U-link toe.</string>
-    <string name="settings_iptv_channels_count">%d zenders</string>
+    <plurals name="settings_iptv_channels_count">
+        <item quantity="one">%d zender</item>
+        <item quantity="other">%d zenders</item>
+    </plurals>
     <string name="settings_iptv_active_tag">Actief</string>
     <string name="settings_iptv_activate_button">Activeren</string>
     <string name="settings_iptv_sync_button">Synchroniseren</string>
 
     <!-- Extra UI -->
-    <string name="action_options_ok">Opties (OK)</string>
-    <string name="reorder_move_hint_remote">Gebruik pijltjes om te verplaatsen • Druk op OK voor opties</string>
-    <string name="state_moving">VERPLAATSEN</string>
-    <string name="iptv_channels_plural">%d Zenders</string>
+    <plurals name="iptv_channels_plural">
+        <item quantity="one">%d Zender</item>
+        <item quantity="other">%d Zenders</item>
+    </plurals>
     <string name="youtube_renderer_crash">YouTube-renderer is gecrasht. Herladen…</string>
     <string name="mini_downloader_status_format">%1$d%% (%2$.1f MB / %3$.1f MB)</string>
     <string name="mini_downloader_downloaded_mb">%.1f MB gedownload</string>
@@ -256,7 +192,10 @@
     <string name="mini_downloader_browser_crash">Browser-renderer is gecrasht. Herladen…</string>
 
     <!-- Status Messages -->
-    <string name="status_apps_per_row_updated">Bijgewerkt naar %d apps per rij</string>
+    <plurals name="status_apps_per_row_updated">
+        <item quantity="one">Bijgewerkt naar %d app per rij</item>
+        <item quantity="other">Bijgewerkt naar %d apps per rij</item>
+    </plurals>
     <string name="status_wallpaper_style_updated">Achtergrondstijl bijgewerkt</string>
     <string name="status_custom_wallpaper_applied">Eigen achtergrond toegepast</string>
     <string name="status_language_saved">Taalvoorkeur opgeslagen</string>
@@ -267,11 +206,23 @@
     <string name="status_app_unhidden">App weer zichtbaar gemaakt</string>
     <string name="status_all_apps_restored">Alle apps hersteld</string>
     <string name="status_app_order_reset">App-volgorde hersteld naar standaard</string>
-    <string name="status_playlist_added">Afspeellijst toegevoegd: %d zenders geladen</string>
-    <string name="status_playlist_switch_success">Actieve lijst gewijzigd: %d zenders</string>
-    <string name="status_playlist_synced">Lijst gesynchroniseerd: %d zenders bijgewerkt</string>
+    <plurals name="status_playlist_added">
+        <item quantity="one">Afspeellijst toegevoegd: %d zender geladen</item>
+        <item quantity="other">Afspeellijst toegevoegd: %d zenders geladen</item>
+    </plurals>
+    <plurals name="status_playlist_switch_success">
+        <item quantity="one">Actieve lijst gewijzigd: %d zender</item>
+        <item quantity="other">Actieve lijst gewijzigd: %d zenders</item>
+    </plurals>
+    <plurals name="status_playlist_synced">
+        <item quantity="one">Lijst gesynchroniseerd: %d zender bijgewerkt</item>
+        <item quantity="other">Lijst gesynchroniseerd: %d zenders bijgewerkt</item>
+    </plurals>
     <string name="status_playlist_removed">Afspeellijst verwijderd</string>
-    <string name="status_presets_loaded">%d vooringestelde lijsten geladen</string>
+    <plurals name="status_presets_loaded">
+        <item quantity="one">%d vooringestelde lijst geladen</item>
+        <item quantity="other">%d vooringestelde lijsten geladen</item>
+    </plurals>
     <string name="status_presets_already_loaded">Alle vooringestelde lijsten zijn al geladen</string>
     <string name="status_select_default_launcher">Selecteer Aura TV als Standaard Launcher</string>
     <string name="status_already_default_launcher">Aura TV is al je standaard launcher</string>
@@ -301,24 +252,14 @@
     <!-- Control Center, Universal Search, Ambient Mode, App Lock & Player Enhancements -->
     <string name="control_center_title">Launcher Bedieningspaneel</string>
     <string name="control_center_subtitle">Snelle toegang tot indeling, klok, achtergrond &amp; screensaver</string>
-    <string name="control_center_ram">RAM-geheugen</string>
     <string name="control_center_storage">Interne Opslag</string>
     <string name="control_center_boost_btn">Optimaliseren &amp; Cache Wissen</string>
     <string name="control_center_boost_desc">Maak RAM vrij &amp; wis tijdelijke cache</string>
     <string name="control_center_boosting">TV optimaliseren…</string>
     <string name="control_center_boost_done">Geoptimaliseerd (+%d MB)</string>
-    <string name="control_center_quick_actions">Snelle Acties &amp; Snelkoppelingen</string>
-    <string name="control_center_ambient">Ambient-modus</string>
-    <string name="control_center_ambient_sub">Bioscoop Screensaver</string>
     <string name="control_center_search">Universeel Zoeken</string>
     <string name="control_center_search_sub">Apps, Games &amp; Live TV</string>
-    <string name="control_center_display_sub">HDMI / Resolutie</string>
-    <string name="control_center_audio_sub">Audio / Uitvoer</string>
-    <string name="control_center_ip_tag">IP: %s</string>
     <string name="control_center_gb_format">%1$.1f / %2$.1f GB</string>
-    <string name="control_center_section_layout">Uiterlijk &amp; Startschermindeling</string>
-    <string name="control_center_section_clock">Klok, Datum &amp; Weergave</string>
-    <string name="control_center_section_experience">Begroeting, Screensaver &amp; Apps</string>
 
     <string name="universal_search_hint">Zoek apps, games en live tv-zenders…</string>
     <string name="universal_search_all">Alles</string>
@@ -361,12 +302,6 @@
     <string name="timeout_15min">15 Minuten</string>
     <string name="timeout_30min">30 Minuten</string>
     <string name="timeout_never">Uitgeschakeld / Nooit</string>
-    <string name="settings_screensaver_wallpaper_choice">Achtergrondbron Screensaver</string>
-    <string name="screensaver_wallpaper_current">Huidige Launcher-achtergrond</string>
-    <string name="screensaver_wallpaper_presets">Kies uit 4K-galerij</string>
-    <string name="screensaver_wallpaper_device">Kies Foto van Apparaat</string>
-    <string name="screensaver_video_info_title">Cinematische Video Ambient</string>
-    <string name="screensaver_video_info_desc">Speelt ontspannende video\'s op volledig scherm af zonder tekst of knoppen.</string>
     <string name="screensaver_video_choice">Ambient Videoselectie</string>
     <string name="screensaver_video_choice_desc">Kies je favoriete ontspannende video of voer een aangepaste YouTube-link in</string>
     <string name="screensaver_video_rain_fireplace">Gezellige Open Haard 4K</string>
@@ -390,11 +325,9 @@
     <string name="settings_clock_settings">Klokweergave-instellingen</string>
     <string name="settings_clock_settings_desc">Pas tijdnotatie, seconden en klokgrootte aan</string>
     <string name="settings_clock_seconds">Seconden Tonen</string>
-    <string name="settings_clock_seconds_desc">Toon live tikkende seconden bij de tijd</string>
     <string name="settings_seconds_disabled">Uitgeschakeld</string>
     <string name="settings_seconds_enabled">Ingeschakeld</string>
     <string name="settings_clock_size">Klokgrootte</string>
-    <string name="settings_clock_size_desc">Kies de weergavegrootte van de klok op het startscherm</string>
     <string name="settings_clock_size_large">Groot (60sp)</string>
     <string name="settings_clock_size_medium">Normaal (48sp)</string>
     <string name="settings_clock_size_compact">Compact (36sp)</string>
@@ -458,10 +391,6 @@
     <string name="status_update_check_failed">Kan niet controleren op updates: %1$s</string>
     <string name="action_pause">Pauzeren</string>
     <string name="iptv_paused_tag">GEPAUZEERD</string>
-    <string name="iptv_hint_menu_cursor">Menu Navigeren</string>
-    <string name="iptv_hint_change_channels">Zender Wisselen</string>
-    <string name="iptv_hint_select">Selecteren</string>
-    <string name="iptv_hint_hide">Verbergen</string>
     <string name="iptv_hide_menu">Menu Verbergen</string>
     <string name="iptv_audio_unsupported_codec">Kanaalaudio (%1$s) niet ondersteund — alleen video afspelen</string>
     <string name="iptv_audio_unsupported_generic">Kanaalaudio wordt niet ondersteund op dit apparaat — alleen video afspelen</string>
@@ -517,7 +446,6 @@
     <string name="iptv_lock_category">Categorie Vergrendelen (PIN)</string>
     <string name="iptv_unlock_category">Categorie Ontgrendelen</string>
     <string name="iptv_resume_last">Laatste Hervatten</string>
-    <string name="iptv_epg_now">Nu</string>
     <string name="iptv_epg_next">Straks</string>
     <string name="iptv_sleep_toast_set">Slaaptimer ingesteld: %d min</string>
     <string name="iptv_sleep_toast_off">Slaaptimer uitgeschakeld</string>
@@ -558,7 +486,7 @@
     <string name="slideshow_select_folder_btn">Blader door Fotomap (TV / USB)</string>
     <string name="slideshow_system_folder_picker">Systeemmapkiezer</string>
     <string name="slideshow_no_folder_selected">Geen map geselecteerd — klik hierboven om te kiezen</string>
-    <string name="slideshow_pick_photos_btn">Kies Foto\'s uit Galerij (%1$d geselecteerd)</string>
+    <string name="slideshow_pick_photos_btn">Kies Foto\'s uit Galerij</string>
     <string name="slideshow_order_label">Afspeelvolgorde</string>
     <string name="slideshow_order_shuffle">Willekeurig (Shuffle)</string>
     <string name="slideshow_order_sequential">Op volgorde (A–Z)</string>

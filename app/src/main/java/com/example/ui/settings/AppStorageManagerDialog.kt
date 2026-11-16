@@ -2,9 +2,9 @@ package com.example.ui.settings
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.core.net.toUri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -87,12 +87,29 @@ fun AppStorageManagerDialog(
             val loaded = withContext(Dispatchers.IO) {
                 val pm = context.packageManager
                 val ownPkg = context.packageName
-                @Suppress("DEPRECATION")
-                val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-                apps.mapNotNull { info ->
+                val leanbackIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                    addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                }
+                val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                }
+                val uniqueApps = LinkedHashMap<String, ApplicationInfo>()
+                for (resolveInfo in pm.queryIntentActivities(leanbackIntent, 0)) {
+                    val appInfo = resolveInfo.activityInfo?.applicationInfo ?: continue
+                    if (appInfo.packageName != ownPkg) {
+                        uniqueApps.putIfAbsent(appInfo.packageName, appInfo)
+                    }
+                }
+                for (resolveInfo in pm.queryIntentActivities(launcherIntent, 0)) {
+                    val appInfo = resolveInfo.activityInfo?.applicationInfo ?: continue
+                    if (appInfo.packageName != ownPkg) {
+                        uniqueApps.putIfAbsent(appInfo.packageName, appInfo)
+                    }
+                }
+                uniqueApps.values.mapNotNull { info ->
                     val isSystem = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
                         (info.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
-                    if (isSystem || info.packageName == ownPkg) return@mapNotNull null
+                    if (isSystem) return@mapNotNull null
                     val label = try {
                         pm.getApplicationLabel(info).toString()
                     } catch (_: Exception) {
@@ -131,7 +148,7 @@ fun AppStorageManagerDialog(
         onUninstallApp = { pkg ->
             try {
                 val intent = Intent(Intent.ACTION_DELETE).apply {
-                    data = Uri.parse("package:$pkg")
+                    data = "package:$pkg".toUri()
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)

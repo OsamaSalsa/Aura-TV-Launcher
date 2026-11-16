@@ -13,6 +13,7 @@ import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.createBitmap
 import androidx.palette.graphics.Palette
 import com.example.data.local.LauncherPreferences
 import com.example.data.model.AppItem
@@ -94,7 +95,12 @@ class AppRepository(
                 addAction(Intent.ACTION_PACKAGE_REPLACED)
                 addDataScheme("package")
             }
-            context.registerReceiver(appUpdateReceiver, filter)
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                appUpdateReceiver,
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+            )
         } catch (_: Exception) {}
     }
 
@@ -273,9 +279,7 @@ class AppRepository(
         if (resolveInfo == null) return defaultIsGame
 
         val appInfo = resolveInfo.activityInfo.applicationInfo
-        val isGameCategory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            appInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME
-        } else false
+        val isGameCategory = appInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME
         val isGameFlag = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_IS_GAME) != 0
         val isGamePkg = packageName.contains(".game", ignoreCase = true) ||
             packageName.contains(".games", ignoreCase = true) ||
@@ -532,7 +536,7 @@ class AppRepository(
         }
         val w = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth.coerceAtMost(maxWidth) else 96
         val h = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight.coerceAtMost(maxHeight) else 96
-        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(w, h)
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)

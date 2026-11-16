@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -666,7 +667,7 @@ fun IptvScreen(
                                 .padding(horizontal = 14.dp, vertical = 7.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.iptv_channels_plural).format(channels.size),
+                                text = pluralStringResource(R.plurals.iptv_channels_plural, channels.size, channels.size),
                                 color = TvAccentGold,
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -1284,7 +1285,7 @@ fun IptvQuickSettingsDialog(
                             )
                             Text(
                                 text = activePlaylist?.let {
-                                    "${it.name} (${stringResource(R.string.settings_iptv_channels_count).format(it.channelCount)})"
+                                    "${it.name} (${pluralStringResource(R.plurals.settings_iptv_channels_count, it.channelCount, it.channelCount)})"
                                 } ?: stringResource(R.string.iptv_no_playlist),
                                 color = TvAccentGold,
                                 fontSize = 12.sp,
@@ -1726,7 +1727,7 @@ fun IptvQuickSettingsDialog(
                                                     }
                                                     Spacer(modifier = Modifier.height(2.dp))
                                                     Text(
-                                                        text = "${stringResource(R.string.settings_iptv_channels_count).format(pl.channelCount)} • ${pl.url}",
+                                                        text = "${pluralStringResource(R.plurals.settings_iptv_channels_count, pl.channelCount, pl.channelCount)} • ${pl.url}",
                                                         color = TvTextSecondary,
                                                         fontSize = 11.sp,
                                                         maxLines = 1,

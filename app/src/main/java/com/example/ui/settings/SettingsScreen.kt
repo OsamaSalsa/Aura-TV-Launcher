@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -2442,7 +2443,7 @@ fun SettingsScreen(
                                                 Spacer(modifier = Modifier.height(3.dp))
                                                 Text(
                                                     text = activeIptvPlaylist?.let {
-                                                        "${stringResource(R.string.settings_iptv_channels_count).format(it.channelCount)} • ${it.url}"
+                                                        "${pluralStringResource(R.plurals.settings_iptv_channels_count, it.channelCount, it.channelCount)} • ${it.url}"
                                                     } ?: stringResource(R.string.iptv_no_playlist),
                                                     color = TvTextSecondary,
                                                     fontSize = 12.sp,
@@ -2751,7 +2752,7 @@ fun SettingsScreen(
                                                                     overflow = TextOverflow.Ellipsis
                                                                 )
                                                                 Text(
-                                                                    text = stringResource(R.string.settings_iptv_channels_count).format(playlist.channelCount),
+                                                                    text = pluralStringResource(R.plurals.settings_iptv_channels_count, playlist.channelCount, playlist.channelCount),
                                                                     color = if (isActive || cardFocused) TvAccentGoldRadiant else TvTextSecondary,
                                                                     fontSize = 12.sp
                                                                 )

@@ -1,7 +1,7 @@
 {
-  "versionCode": 3,
-  "versionName": "1.2",
+  "versionCode": 4,
+  "versionName": "1.3",
   "apkUrl": "https://raw.githubusercontent.com/OsamaSalsa/Aura-TV-Launcher/main/aura-tv-launcher.apk",
-  "changelog": "Aura TV Launcher v1.2 - Photo Slideshow Screensaver with Folder Picker, Ambient Music & Snow/Particle Effects, Direct Settings / Control Center Top Bar Modes, American & International Date Formats, 21 Languages",
+  "changelog": "Aura TV Launcher v1.3 - Unified YouTube TV User-Agent for Web Bookmarks, Full 21-Language Localization & Plurals Support, Security & Performance Optimizations, Adaptive & Monochrome Icons",
   "mandatory": false
 }

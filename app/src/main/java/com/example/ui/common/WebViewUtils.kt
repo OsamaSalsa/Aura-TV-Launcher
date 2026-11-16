@@ -121,14 +121,12 @@ fun hardenWebView(webView: WebView) {
         webView.resumeTimers()
         webView.onResume()
     } catch (_: Exception) {}
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        try {
-            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
-        } catch (_: Exception) {}
-        try {
-            webView.settings.safeBrowsingEnabled = false
-        } catch (_: Exception) {}
-    }
+    try {
+        webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+    } catch (_: Exception) {}
+    try {
+        webView.settings.safeBrowsingEnabled = false
+    } catch (_: Exception) {}
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
             webView.webViewRenderProcessClient = object : android.webkit.WebViewRenderProcessClient() {
@@ -148,11 +146,9 @@ fun hardenWebView(webView: WebView) {
             }
         } catch (_: Exception) {}
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        try {
-            webView.settings.offscreenPreRaster = false
-        } catch (_: Exception) {}
-    }
+    try {
+        webView.settings.offscreenPreRaster = false
+    } catch (_: Exception) {}
     try {
         webView.settings.setGeolocationEnabled(false)
     } catch (_: Exception) {}
@@ -352,8 +348,6 @@ fun BindWebViewLifecycle(webView: WebView?) {
     }
 }
 
-@Volatile
-private var parkedKeepAliveWebView: WebView? = null
 private val rendererGoneWebViews: MutableSet<WebView> =
     Collections.synchronizedSet(Collections.newSetFromMap(WeakHashMap()))
 
@@ -373,43 +367,61 @@ private class SafeParkedWebViewClient : WebViewClient() {
     }
 }
 
+fun createSafeParkedWebViewClient(): WebViewClient = SafeParkedWebViewClient()
+
+fun destroyWebViewImmediately(webView: WebView?) {
+    if (webView == null) return
+    destroyedWebViews.add(webView)
+    try {
+        (webView.parent as? ViewGroup)?.removeView(webView)
+    } catch (_: Exception) {}
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        try {
+            webView.webViewRenderProcessClient = null
+        } catch (_: Exception) {}
+    }
+    try {
+        webView.stopLoading()
+    } catch (_: Exception) {}
+    try {
+        webView.webChromeClient = null
+        webView.webViewClient = SafeParkedWebViewClient()
+    } catch (_: Exception) {}
+    try {
+        webView.onPause()
+    } catch (_: Exception) {}
+    try {
+        webView.removeAllViews()
+    } catch (_: Exception) {}
+    try {
+        webView.destroy()
+    } catch (_: Exception) {}
+}
+
 /**
  * Safely and idempotently tears down a WebView instance.
- * When [rendererGone] is false (normal navigation/dismissal), unloads active media/timers via about:blank
- * and maintains one steady parked idle instance so Chromium's RenderProcessHost refCount never drops to 0
- * (preventing AwBrowserTerminator from unbinding/SIGKILLing SandboxedProcessService0 with code -1).
+ * Ensures a lightweight Application-context anchor keeps Chromium's RenderProcessHost alive during
+ * the session without holding any static reference to an Activity-backed UI WebView.
  */
 fun safeDestroyWebView(webView: WebView?, rendererGone: Boolean = false) {
     if (webView == null) return
+    val app = webView.context.applicationContext as? com.example.AuraTvApp
 
     if (rendererGone) {
         rendererGoneWebViews.add(webView)
         destroyedWebViews.add(webView)
-        if (parkedKeepAliveWebView === webView) {
-            parkedKeepAliveWebView = null
+        if (app?.webViewKeepAliveAnchor === webView) {
+            app.webViewKeepAliveAnchor = null
         }
-        try {
-            (webView.parent as? ViewGroup)?.removeView(webView)
-        } catch (_: Exception) {}
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            try {
-                webView.webViewRenderProcessClient = null
-            } catch (_: Exception) {}
-        }
-        try {
-            webView.removeAllViews()
-        } catch (_: Exception) {}
-        try {
-            webView.webChromeClient = null
-            webView.webViewClient = SafeParkedWebViewClient()
-        } catch (_: Exception) {}
-        try {
-            webView.destroy()
-        } catch (_: Exception) {}
+        destroyWebViewImmediately(webView)
         return
     }
 
     if (!destroyedWebViews.add(webView)) return
+
+    // Keep Chromium RenderProcessHost refCount >= 1 via an Application-scoped blank anchor
+    // so destroying this Activity-backed UI WebView never leaks MainActivity or triggers LMK kill -1.
+    app?.ensureWebViewKeepAliveAnchor()
 
     try {
         (webView.parent as? ViewGroup)?.removeView(webView)
@@ -460,24 +472,12 @@ fun safeDestroyWebView(webView: WebView?, rendererGone: Boolean = false) {
         webView.clearHistory()
     } catch (_: Exception) {}
 
-    val currentParked = parkedKeepAliveWebView
-    if (currentParked == null || rendererGoneWebViews.contains(currentParked)) {
-        // Become the steady keep-alive anchor and pause only after about:blank finishes committing
-        parkedKeepAliveWebView = webView
-        postOnMain(350L) {
-            if (!rendererGoneWebViews.contains(webView)) {
-                try { webView.onPause() } catch (_: Exception) {}
-            }
-        }
-    } else if (currentParked !== webView) {
-        // Keep the existing steady anchor untouched (preserving refCount >= 1) and destroy this unloaded instance
-        // only after about:blank has had time to release page resources cleanly.
-        postOnMain(900L) {
-            if (!rendererGoneWebViews.contains(webView)) {
-                try { webView.onPause() } catch (_: Exception) {}
-                try { webView.removeAllViews() } catch (_: Exception) {}
-                try { webView.destroy() } catch (_: Exception) {}
-            }
+    // Destroy the unloaded UI WebView cleanly once about:blank finishes releasing page resources.
+    postOnMain(900L) {
+        if (!rendererGoneWebViews.contains(webView)) {
+            try { webView.onPause() } catch (_: Exception) {}
+            try { webView.removeAllViews() } catch (_: Exception) {}
+            try { webView.destroy() } catch (_: Exception) {}
         }
     }
 }
