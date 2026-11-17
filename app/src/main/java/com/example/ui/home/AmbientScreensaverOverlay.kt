@@ -335,7 +335,8 @@ private fun VideoScreensaver(
 @androidx.annotation.Keep
 class ScreensaverVideoBridge(
     private val mainHandler: android.os.Handler,
-    private val onStarted: () -> Unit
+    private val onStarted: () -> Unit,
+    private val onError: () -> Unit = {}
 ) {
     @android.webkit.JavascriptInterface
     fun onVideoStarted() {
@@ -343,12 +344,21 @@ class ScreensaverVideoBridge(
             onStarted()
         }
     }
+
+    @android.webkit.JavascriptInterface
+    fun onEmbedError() {
+        mainHandler.post {
+            onError()
+        }
+    }
 }
 
 /**
- * WebView YouTube screensaver player.
- * Uses desktop watch page with CSS isolation and 3-way playback detection so the clock
- * hides the instant playback starts and never interrupts active video playback on TV.
+ * 3-Stage Fullscreen YouTube Screensaver Player:
+ * - Stage 0 (Primary): Official YouTube Embed inside loadDataWithBaseURL("https://ps.salsa.tvlauncher/")
+ *   so Chromium sends a valid Referer (avoiding Error 153) with pure 100% fullscreen video & zero page chrome.
+ * - Stage 1 (Fast Fallback for Cloud/Emulator IPs or Embed-Restricted Videos): Invidious fullscreen embed player.
+ * - Stage 2 (Last-Resort Residential TV Fallback): YouTube Watch page isolated to 100% fullscreen via textContent CSS + inline styles.
  */
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
@@ -356,16 +366,17 @@ private fun YouTubeWebScreensaver(
     videoId: String,
     onVideoReady: () -> Unit
 ) {
-    var webViewRef by remember { mutableStateOf<WebView?>(null) }
-    var crashCount by remember(videoId) { mutableStateOf(0) }
-    var hasVideoStarted by remember(videoId) { mutableStateOf(false) }
+    val safeVideoId = remember(videoId) {
+        videoId.replace(Regex("[^A-Za-z0-9_-]"), "").ifEmpty { SCREENSAVER_YOUTUBE_VIDEO_ID }
+    }
+    var webViewRef by remember(safeVideoId) { mutableStateOf<WebView?>(null) }
+    var crashCount by remember(safeVideoId) { mutableStateOf(0) }
+    // 0 = YouTube Embed IFrame (pure fullscreen), 1 = Invidious Fullscreen Embed, 2 = Isolated Fullscreen Watch
+    var playerStage by remember(safeVideoId) { mutableStateOf(0) }
+    var hasVideoStarted by remember(safeVideoId) { mutableStateOf(false) }
     val mainHandler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
 
-    val playerUrl = remember(videoId) {
-        "https://www.youtube.com/watch?v=$videoId"
-    }
-
-    val markVideoStarted = remember(videoId) {
+    val markVideoStarted = remember(safeVideoId) {
         {
             if (!hasVideoStarted) {
                 hasVideoStarted = true
@@ -374,48 +385,279 @@ private fun YouTubeWebScreensaver(
         }
     }
 
-    val cleanFullscreenScript = remember(videoId) {
+    val advanceStageOnError = remember(safeVideoId) {
+        {
+            if (!hasVideoStarted && playerStage < 2) {
+                playerStage++
+            }
+        }
+    }
+
+    // Timeout safety net ONLY while video has not started yet; once playing, stage NEVER changes
+    LaunchedEffect(safeVideoId, playerStage, hasVideoStarted) {
+        if (!hasVideoStarted && playerStage < 2) {
+            val waitMs = if (playerStage == 0) 6_000L else 7_500L
+            delay(waitMs)
+            if (!hasVideoStarted && playerStage < 2) {
+                playerStage++
+            }
+        }
+    }
+
+    val embedWrapperHtml = remember(safeVideoId) {
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                html, body {
+                    width: 100%;
+                    height: 100%;
+                    background: #000000;
+                    overflow: hidden;
+                }
+                #ytframe {
+                    position: fixed;
+                    inset: 0;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    background: #000000;
+                }
+            </style>
+        </head>
+        <body>
+            <iframe
+                id="ytframe"
+                src="https://www.youtube.com/embed/$safeVideoId?autoplay=1&mute=1&controls=0&loop=1&playlist=$safeVideoId&playsinline=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&cc_load_policy=0&enablejsapi=1&widgetid=1&origin=https%3A%2F%2Fps.salsa.tvlauncher"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+            </iframe>
+            <script>
+                (function() {
+                    var started = false;
+                    var errored = false;
+                    var unmuteScheduled = false;
+                    var frame = document.getElementById('ytframe');
+
+                    function postCmd(func, args) {
+                        if (!frame || !frame.contentWindow) return;
+                        try {
+                            frame.contentWindow.postMessage(JSON.stringify({
+                                event: 'command',
+                                func: func,
+                                args: args || [],
+                                id: 1,
+                                channel: 'widget'
+                            }), '*');
+                        } catch (e) {}
+                    }
+
+                    function registerListener() {
+                        if (!frame || !frame.contentWindow) return;
+                        try {
+                            frame.contentWindow.postMessage(JSON.stringify({
+                                event: 'listening',
+                                id: 1,
+                                channel: 'widget'
+                            }), '*');
+                        } catch (e) {}
+                    }
+
+                    function notifyStarted() {
+                        if (!started && !errored) {
+                            started = true;
+                            try { AuraVideoBridge.onVideoStarted(); } catch (e) {}
+                            try { console.log('AURA_VIDEO_STARTED'); } catch (e) {}
+                            if (!unmuteScheduled) {
+                                unmuteScheduled = true;
+                                setTimeout(function() {
+                                    postCmd('unMute', []);
+                                    postCmd('setVolume', [100]);
+                                }, 450);
+                            }
+                        }
+                    }
+
+                    function notifyError() {
+                        if (!started && !errored) {
+                            errored = true;
+                            try { AuraVideoBridge.onEmbedError(); } catch (e) {}
+                            try { console.log('AURA_EMBED_ERROR'); } catch (e) {}
+                        }
+                    }
+
+                    window.addEventListener('message', function(ev) {
+                        if (!ev || !ev.data) return;
+                        var msg = null;
+                        if (typeof ev.data === 'string') {
+                            try { msg = JSON.parse(ev.data); } catch (e) { return; }
+                        } else if (typeof ev.data === 'object') {
+                            msg = ev.data;
+                        }
+                        if (!msg) return;
+                        if (msg.event === 'onReady') {
+                            postCmd('mute', []);
+                            postCmd('setPlaybackQuality', ['hd720']);
+                            postCmd('playVideo', []);
+                        } else if (msg.event === 'onStateChange') {
+                            if (msg.info === 1) {
+                                notifyStarted();
+                            } else if (msg.info === 0) {
+                                postCmd('seekTo', [0, true]);
+                                postCmd('playVideo', []);
+                            }
+                        } else if (msg.event === 'infoDelivery' && msg.info) {
+                            if (msg.info.playerState === 1 ||
+                                (typeof msg.info.currentTime === 'number' && msg.info.currentTime > 0.05 && msg.info.playerState !== 2 && msg.info.playerState !== -1)) {
+                                notifyStarted();
+                            }
+                            if (msg.info.playerState === 0) {
+                                postCmd('seekTo', [0, true]);
+                                postCmd('playVideo', []);
+                            }
+                            if (typeof msg.info.videoData === 'object' && msg.info.videoData && msg.info.videoData.errorCode) {
+                                notifyError();
+                            }
+                        } else if (msg.event === 'onError') {
+                            notifyError();
+                        }
+                    });
+
+                    if (frame) {
+                        frame.addEventListener('load', function() {
+                            registerListener();
+                            postCmd('mute', []);
+                            postCmd('setPlaybackQuality', ['hd720']);
+                            postCmd('playVideo', []);
+                        });
+                    }
+                    setInterval(function() {
+                        if (!started && !errored) {
+                            registerListener();
+                            postCmd('playVideo', []);
+                        }
+                    }, 350);
+                })();
+            </script>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    val stageUrl = remember(safeVideoId, playerStage) {
+        when (playerStage) {
+            1 -> "https://invidious.tiekoetter.com/embed/$safeVideoId?autoplay=1&muted=1&loop=1&controls=0&quality=hd720"
+            2 -> "https://www.youtube.com/watch?v=$safeVideoId"
+            else -> ""
+        }
+    }
+
+    val cleanFullscreenScript = remember(safeVideoId, playerStage) {
+        val isWatchPage = playerStage == 2
         """
         (function() {
-            try {
-                Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });
-                Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });
-            } catch(e) {}
-            function forceFullscreenElement(el, z) {
-                if (!el || !el.style) return;
-                el.style.setProperty('position', 'fixed', 'important');
-                el.style.setProperty('inset', '0px', 'important');
-                el.style.setProperty('top', '0px', 'important');
-                el.style.setProperty('left', '0px', 'important');
-                el.style.setProperty('right', '0px', 'important');
-                el.style.setProperty('bottom', '0px', 'important');
-                el.style.setProperty('width', '100vw', 'important');
-                el.style.setProperty('height', '100vh', 'important');
-                el.style.setProperty('max-width', '100vw', 'important');
-                el.style.setProperty('max-height', '100vh', 'important');
-                el.style.setProperty('min-width', '100vw', 'important');
-                el.style.setProperty('min-height', '100vh', 'important');
-                el.style.setProperty('margin', '0px', 'important');
-                el.style.setProperty('padding', '0px', 'important');
-                el.style.setProperty('border', 'none', 'important');
-                el.style.setProperty('border-radius', '0px', 'important');
-                el.style.setProperty('outline', 'none', 'important');
-                el.style.setProperty('background', '#000000', 'important');
-                el.style.setProperty('transform', 'none', 'important');
-                el.style.setProperty('contain', 'none', 'important');
-                el.style.setProperty('z-index', String(z || 2147483647), 'important');
+            var isWatch = ${if (isWatchPage) "true" else "false"};
+            function hasBlockingError(v) {
+                try {
+                    if (v && !v.paused && v.currentTime > 0.05) return false;
+                    var errEl = document.querySelector('.ytp-error, yt-player-error-message-renderer');
+                    if (errEl && errEl.offsetWidth > 0 && errEl.offsetHeight > 0) return true;
+                    var txt = (document.body && document.body.innerText) ? document.body.innerText.toLowerCase() : '';
+                    if (txt.indexOf('not a bot') !== -1 || txt.indexOf('sign in to confirm') !== -1) return true;
+                    if (!isWatch && (txt.indexOf('could not find') !== -1 || txt.indexOf('video unavailable') !== -1)) return true;
+                } catch (e) {}
+                return false;
+            }
+            function styleFullscreenPlayer(v, mp) {
+                try {
+                    if (document.documentElement && document.documentElement.style) {
+                        document.documentElement.style.setProperty('background', '#000000', 'important');
+                        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+                        document.documentElement.style.setProperty('margin', '0px', 'important');
+                        document.documentElement.style.setProperty('padding', '0px', 'important');
+                        document.documentElement.style.setProperty('width', '100%', 'important');
+                        document.documentElement.style.setProperty('height', '100%', 'important');
+                    }
+                    if (document.body && document.body.style) {
+                        document.body.style.setProperty('background', '#000000', 'important');
+                        document.body.style.setProperty('overflow', 'hidden', 'important');
+                        document.body.style.setProperty('margin', '0px', 'important');
+                        document.body.style.setProperty('padding', '0px', 'important');
+                        document.body.style.setProperty('width', '100%', 'important');
+                        document.body.style.setProperty('height', '100%', 'important');
+                    }
+                    var chromeNodes = document.querySelectorAll('#masthead-container, ytd-masthead, #masthead, #secondary, #below, #above-the-fold, ytd-watch-metadata, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ytd-popup-container, tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop, .ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-pause-overlay, .ytp-ce-element, .ytp-large-play-button, .navbar, header, footer, .vjs-control-bar, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .vjs-big-play-button, .watch-on-invidious');
+                    for (var i = 0; i < chromeNodes.length; i++) {
+                        if (chromeNodes[i] && chromeNodes[i].style) {
+                            chromeNodes[i].style.setProperty('display', 'none', 'important');
+                            chromeNodes[i].style.setProperty('visibility', 'hidden', 'important');
+                            chromeNodes[i].style.setProperty('opacity', '0', 'important');
+                        }
+                    }
+                    var targets = [mp, document.getElementById('player-container'), document.querySelector('.video-js'), v];
+                    for (var t = 0; t < targets.length; t++) {
+                        var el = targets[t];
+                        if (el && el.style) {
+                            el.style.setProperty('position', 'fixed', 'important');
+                            el.style.setProperty('top', '0px', 'important');
+                            el.style.setProperty('left', '0px', 'important');
+                            el.style.setProperty('right', '0px', 'important');
+                            el.style.setProperty('bottom', '0px', 'important');
+                            el.style.setProperty('width', '100%', 'important');
+                            el.style.setProperty('height', '100%', 'important');
+                            el.style.setProperty('max-width', '100%', 'important');
+                            el.style.setProperty('max-height', '100%', 'important');
+                            el.style.setProperty('background', '#000000', 'important');
+                            el.style.setProperty('border-radius', '0px', 'important');
+                            el.style.setProperty('margin', '0px', 'important');
+                            el.style.setProperty('padding', '0px', 'important');
+                            el.style.setProperty('z-index', el === v ? '2147483647' : '999999', 'important');
+                        }
+                    }
+                    if (v && v.style) {
+                        var anc = v.parentElement;
+                        while (anc && anc !== document.body && anc !== document.documentElement) {
+                            if (anc.style) {
+                                anc.style.setProperty('transform', 'none', 'important');
+                                anc.style.setProperty('contain', 'none', 'important');
+                                anc.style.setProperty('border-radius', '0px', 'important');
+                                anc.style.setProperty('overflow', 'visible', 'important');
+                            }
+                            anc = anc.parentElement;
+                        }
+                        v.style.setProperty('object-fit', 'cover', 'important');
+                    }
+                } catch (e) {}
+            }
+            function isWatchFullscreenReady(v) {
+                if (!isWatch) return true;
+                try {
+                    if (!v) return false;
+                    var mast = document.getElementById('masthead-container');
+                    if (mast && getComputedStyle(mast).display !== 'none') return false;
+                    var r = v.getBoundingClientRect();
+                    return r.width >= (window.innerWidth * 0.85) && r.height >= (window.innerHeight * 0.85);
+                } catch (e) {
+                    return false;
+                }
             }
             function notifyIfPlaying(v, mp) {
-                var videoPlaying = v && !v.paused && (v.currentTime > 0.02 || v.readyState >= 3);
-                var playerPlaying = mp && typeof mp.getPlayerState === 'function' && mp.getPlayerState() === 1;
-                if ((videoPlaying || playerPlaying) && v) {
-                    var r = v.getBoundingClientRect();
-                    if (r.width >= window.innerWidth * 0.85 && r.height >= window.innerHeight * 0.85) {
-                        try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
-                        if (!window.__auraConsoleReadySent) {
-                            window.__auraConsoleReadySent = true;
-                            try { console.log('AURA_VIDEO_STARTED'); } catch(e) {}
-                        }
+                var videoPlaying = v && v.readyState >= 2 && !v.paused && v.currentTime > 0.05;
+                var playerPlaying = mp && typeof mp.getPlayerState === 'function' && mp.getPlayerState() === 1 && v && v.currentTime > 0.02;
+                if (videoPlaying || playerPlaying) {
+                    styleFullscreenPlayer(v, mp);
+                    if (!isWatchFullscreenReady(v)) return;
+                    try { AuraVideoBridge.onVideoStarted(); } catch(e) {}
+                    if (!window.__auraConsoleReadySent) {
+                        window.__auraConsoleReadySent = true;
+                        try { console.log('AURA_VIDEO_STARTED'); } catch(e) {}
                     }
                 }
             }
@@ -436,91 +678,55 @@ private fun YouTubeWebScreensaver(
                         dialogBtn.click();
                         return true;
                     }
-                    var popups = document.querySelectorAll('ytd-popup-container tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop');
-                    for (var j = 0; j < popups.length; j++) {
-                        try { popups[j].remove(); } catch(e) {}
-                    }
                 } catch (e) {}
                 return false;
             }
             function applyCleanVideo() {
                 try {
                     tryDismissConsent();
-                } catch (e) {}
-                try {
-                    if (document.documentElement && document.documentElement.style) {
-                        document.documentElement.style.setProperty('background', '#000000', 'important');
-                        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-                        document.documentElement.style.setProperty('margin', '0px', 'important');
-                        document.documentElement.style.setProperty('padding', '0px', 'important');
-                    }
-                    if (document.body && document.body.style) {
-                        document.body.style.setProperty('background', '#000000', 'important');
-                        document.body.style.setProperty('overflow', 'hidden', 'important');
-                        document.body.style.setProperty('margin', '0px', 'important');
-                        document.body.style.setProperty('padding', '0px', 'important');
-                        document.body.style.setProperty('opacity', '1', 'important');
-                    }
-                    var targetRoot = document.head || document.documentElement;
-                    if (!document.getElementById('ambient-clean-style') && targetRoot) {
+                    if (!document.getElementById('ambient-clean-style') && document.head) {
                         var st = document.createElement('style');
                         st.id = 'ambient-clean-style';
-                        var cssRules = 'html, body, ytd-app, #content, ytd-page-manager, ytd-watch-flexy { margin:0 !important; padding:0 !important; background:#000000 !important; overflow:hidden !important; width:100vw !important; height:100vh !important; } ' +
-                            '#masthead-container, ytd-masthead, #masthead, #secondary, #secondary-inner, #below, #above-the-fold, ytd-watch-metadata, #bottom-row, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ytd-popup-container, tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop, ' +
-                            '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-show-cards-title, .ytp-title, .ytp-pause-overlay, .ytp-ce-element, .ytp-spinner, .ytp-impression-link, .ytp-bezel, .ytp-cued-thumbnail-overlay, .ytp-paid-content-overlay, .iv-branding, ' +
-                            '.navbar, header, footer, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box { display:none !important; opacity:0 !important; visibility:hidden !important; pointer-events:none !important; width:0 !important; height:0 !important; overflow:hidden !important; } ' +
-                            '.ytp-large-play-button { opacity:0 !important; } ' +
-                            'ytd-app, #content, ytd-page-manager, ytd-watch-flexy, #columns, #primary, #primary-inner, #full-bleed-container, #player, #player-container-outer, #player-container-inner, #player-container, ytd-player, #ytd-player, #container { transform:none !important; contain:none !important; filter:none !important; backdrop-filter:none !important; perspective:none !important; will-change:auto !important; border-radius:0px !important; overflow:visible !important; margin:0px !important; padding:0px !important; border:none !important; } ' +
-                            '#movie_player, #player, #player-container, ytd-player, #ytd-player, .html5-video-player, .html5-video-container { position:fixed !important; inset:0px !important; top:0px !important; left:0px !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; background:#000000 !important; z-index:999999 !important; border:none !important; border-radius:0px !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
-                            'video, .video-stream { position:fixed !important; inset:0px !important; top:0px !important; left:0px !important; width:100vw !important; height:100vh !important; max-width:100vw !important; max-height:100vh !important; object-fit:cover !important; background:#000000 !important; z-index:2147483647 !important; border:none !important; border-radius:0px !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
-                        // Use textContent (not innerHTML) so YouTube's TrustedHTML CSP never blocks style injection
-                        st.textContent = cssRules;
-                        targetRoot.appendChild(st);
-                    }
-                    var hideSelectors = document.querySelectorAll('#masthead-container, ytd-masthead, #masthead, #secondary, #below, #above-the-fold, ytd-watch-metadata, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, .ytp-chrome-top, .ytp-chrome-bottom, .ytp-watermark, .ytp-pause-overlay, .ytp-ce-element');
-                    for (var h = 0; h < hideSelectors.length; h++) {
-                        var hEl = hideSelectors[h];
-                        if (hEl && hEl.style) {
-                            hEl.style.setProperty('display', 'none', 'important');
-                            hEl.style.setProperty('visibility', 'hidden', 'important');
+                        var nonceEl = document.querySelector('style[nonce], script[nonce]');
+                        var nonceVal = nonceEl ? (nonceEl.nonce || nonceEl.getAttribute('nonce')) : '';
+                        if (nonceVal) {
+                            st.setAttribute('nonce', nonceVal);
                         }
+                        st.textContent = 'html, body { margin:0 !important; padding:0 !important; background:#000 !important; overflow:hidden !important; width:100% !important; height:100% !important; } ' +
+                            '#masthead-container, ytd-masthead, #masthead, #secondary, #below, #above-the-fold, ytd-watch-metadata, #comments, #related, ytd-mini-guide-renderer, tp-yt-app-drawer, ytd-popup-container, tp-yt-paper-dialog, tp-yt-iron-overlay-backdrop, ' +
+                            '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-gradient-top, .ytp-gradient-bottom, .ytp-watermark, .ytp-show-cards-title, .ytp-title, .ytp-pause-overlay, .ytp-ce-element, .ytp-spinner, .ytp-impression-link, .ytp-bezel, .ytp-cued-thumbnail-overlay, ' +
+                            '.navbar, header, footer, .watch-card, .pure-u-lg-1-5, .title, .flexible, #description-box, .vjs-control-bar, .vjs-modal-dialog, .vjs-EndScreen, .vjs-title-bar, .vjs-DockText, .vjs-poster, .vjs-loading-spinner, .watch-on-invidious { display:none !important; opacity:0 !important; visibility:hidden !important; } ' +
+                            '.vjs-big-play-button, .ytp-large-play-button { opacity:0 !important; } ' +
+                            '#movie_player, #player-container, .html5-video-player, .html5-video-container, .video-js { position:fixed !important; top:0 !important; left:0 !important; width:100% !important; height:100% !important; background:#000 !important; z-index:999999 !important; border:none !important; border-radius:0px !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; } ' +
+                            'video, .video-stream, .vjs-tech { position:fixed !important; top:0 !important; left:0 !important; width:100% !important; height:100% !important; object-fit:cover !important; background:#000 !important; z-index:2147483647 !important; border:none !important; border-radius:0px !important; outline:none !important; display:block !important; visibility:visible !important; opacity:1 !important; }';
+                        document.head.appendChild(st);
                     }
-                } catch (e) {}
-                try {
+                    var v = document.querySelector('video');
+                    if (hasBlockingError(v)) {
+                        if (!window.__auraEmbedErrSent) {
+                            window.__auraEmbedErrSent = true;
+                            try { AuraVideoBridge.onEmbedError(); } catch(e) {}
+                            try { console.log('AURA_EMBED_ERROR'); } catch(e) {}
+                        }
+                        return;
+                    }
+                    if (document.body) {
+                        document.body.style.opacity = '1';
+                    }
                     var skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-skip-ad-button, .ytp-ad-skip-button-modern');
                     if (skipBtn) {
                         try { skipBtn.click(); } catch(e) {}
                     }
                     var mp = document.getElementById('movie_player');
-                    if (mp) {
-                        forceFullscreenElement(mp, 999999);
-                        if (!window.__auraQualityApplied) {
-                            try {
-                                if (mp.setPlaybackQualityRange) { mp.setPlaybackQualityRange('large', 'hd720'); }
-                                if (mp.setPlaybackQuality) { mp.setPlaybackQuality('hd720'); }
-                                window.__auraQualityApplied = true;
-                            } catch(e) {}
-                        }
+                    if (mp && !window.__auraQualityApplied) {
+                        try {
+                            if (mp.setPlaybackQualityRange) { mp.setPlaybackQualityRange('large', 'hd720'); }
+                            if (mp.setPlaybackQuality) { mp.setPlaybackQuality('hd720'); }
+                            window.__auraQualityApplied = true;
+                        } catch(e) {}
                     }
-                    var v = document.querySelector('video');
                     if (v) {
-                        // Strip any ancestor CSS containment/transform that traps position:fixed inside the small player box
-                        var anc = v.parentElement;
-                        while (anc && anc !== document.body && anc !== document.documentElement) {
-                            if (anc.style) {
-                                anc.style.setProperty('transform', 'none', 'important');
-                                anc.style.setProperty('contain', 'none', 'important');
-                                anc.style.setProperty('filter', 'none', 'important');
-                                anc.style.setProperty('backdrop-filter', 'none', 'important');
-                                anc.style.setProperty('perspective', 'none', 'important');
-                                anc.style.setProperty('will-change', 'auto', 'important');
-                                anc.style.setProperty('border-radius', '0px', 'important');
-                                anc.style.setProperty('overflow', 'visible', 'important');
-                            }
-                            anc = anc.parentElement;
-                        }
-                        forceFullscreenElement(v, 2147483647);
-                        v.style.setProperty('object-fit', 'cover', 'important');
+                        styleFullscreenPlayer(v, mp);
                         v.loop = true;
                         v.controls = false;
                         if (mp && mp.classList && mp.classList.contains('ad-showing') && isFinite(v.duration) && v.duration > 0) {
@@ -569,7 +775,7 @@ private fun YouTubeWebScreensaver(
                                     }
                                 }).catch(function() {
                                     v.muted = true;
-                                    var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button');
+                                    var playBtn = document.querySelector('.ytp-large-play-button, .ytp-play-button, .vjs-big-play-button');
                                     if (playBtn) { try { playBtn.click(); } catch(e) {} }
                                 });
                             }
@@ -579,6 +785,14 @@ private fun YouTubeWebScreensaver(
                 } catch (e) {}
             }
             window.__auraApplyCleanVideo = applyCleanVideo;
+            window.__auraIsWatchFullscreenReady = function() {
+                var v = document.querySelector('video');
+                var mp = document.getElementById('movie_player');
+                var playing = Boolean((v && v.readyState >= 2 && !v.paused && v.currentTime > 0.05) || (mp && typeof mp.getPlayerState === 'function' && mp.getPlayerState() === 1 && v && v.currentTime > 0.02));
+                if (!playing) return false;
+                styleFullscreenPlayer(v, mp);
+                return isWatchFullscreenReady(v);
+            };
             applyCleanVideo();
             if (!window.__ambientCleanTimer) {
                 window.__ambientCleanTimer = setInterval(applyCleanVideo, 250);
@@ -587,15 +801,16 @@ private fun YouTubeWebScreensaver(
         """.trimIndent()
     }
 
-    // Kotlin-side direct JS enforcement & playback check so fullscreen styles are guaranteed before hiding the clock
-    LaunchedEffect(webViewRef, cleanFullscreenScript) {
+    // Kotlin-side enforcement & playback polling for Stage 1 (Invidious) and Stage 2 (Watch)
+    LaunchedEffect(webViewRef, playerStage, cleanFullscreenScript) {
+        if (playerStage == 0) return@LaunchedEffect
         val wv = webViewRef ?: return@LaunchedEffect
         while (!isWebViewDestroyed(wv)) {
             try {
                 wv.evaluateJavascript(cleanFullscreenScript, null)
                 if (!hasVideoStarted) {
                     wv.evaluateJavascript(
-                        "(function(){try{if(window.__auraApplyCleanVideo){window.__auraApplyCleanVideo();}var v=document.querySelector('video');var mp=document.getElementById('movie_player');var playing=Boolean((v&&!v.paused&&(v.currentTime>0.02||v.readyState>=3))||(mp&&typeof mp.getPlayerState==='function'&&mp.getPlayerState()===1));if(!playing||!v)return false;var r=v.getBoundingClientRect();var full=r.width>=(window.innerWidth*0.85)&&r.height>=(window.innerHeight*0.85);return Boolean(playing&&full);}catch(e){return false;}})()"
+                        "(function(){try{if(window.__auraIsWatchFullscreenReady){return window.__auraIsWatchFullscreenReady();}var v=document.querySelector('video');return Boolean(v&&v.readyState>=2&&!v.paused&&v.currentTime>0.05);}catch(e){return false;}})()"
                     ) { result ->
                         if (result == "true") {
                             markVideoStarted()
@@ -603,7 +818,7 @@ private fun YouTubeWebScreensaver(
                     }
                 }
             } catch (_: Exception) {}
-            delay(if (hasVideoStarted) 1000L else 300L)
+            delay(if (hasVideoStarted) 1000L else 350L)
         }
     }
 
@@ -613,7 +828,7 @@ private fun YouTubeWebScreensaver(
             .background(Color.Black)
     ) {
         if (crashCount <= 1) {
-            androidx.compose.runtime.key(videoId, crashCount) {
+            androidx.compose.runtime.key(safeVideoId, playerStage, crashCount) {
                 AndroidView(
                     factory = { ctx ->
                         WebView(ctx.findActivityContext()).apply {
@@ -632,8 +847,8 @@ private fun YouTubeWebScreensaver(
                                 domStorageEnabled = true
                                 databaseEnabled = true
                                 mediaPlaybackRequiresUserGesture = false
-                                loadWithOverviewMode = true
-                                useWideViewPort = true
+                                loadWithOverviewMode = false
+                                useWideViewPort = false
                                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                                 cacheMode = WebSettings.LOAD_DEFAULT
                                 userAgentString = STREAM_USER_AGENT
@@ -645,7 +860,8 @@ private fun YouTubeWebScreensaver(
                             addJavascriptInterface(
                                 ScreensaverVideoBridge(
                                     mainHandler = mainHandler,
-                                    onStarted = markVideoStarted
+                                    onStarted = markVideoStarted,
+                                    onError = advanceStageOnError
                                 ),
                                 "AuraVideoBridge"
                             )
@@ -665,19 +881,29 @@ private fun YouTubeWebScreensaver(
                                     val msg = consoleMessage?.message() ?: ""
                                     if (msg.contains("AURA_VIDEO_STARTED")) {
                                         mainHandler.post { markVideoStarted() }
+                                    } else if (msg.contains("AURA_EMBED_ERROR")) {
+                                        mainHandler.post { advanceStageOnError() }
                                     }
                                     return super.onConsoleMessage(consoleMessage)
                                 }
                             }
 
                             webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: android.webkit.WebResourceRequest?
+                                ): Boolean {
+                                    val url = request?.url?.toString() ?: return false
+                                    return !url.startsWith("http://") && !url.startsWith("https://")
+                                }
+
                                 override fun onPageStarted(
                                     view: WebView?,
                                     url: String?,
                                     favicon: android.graphics.Bitmap?
                                 ) {
                                     super.onPageStarted(view, url, favicon)
-                                    if (!isWebViewDestroyed(view)) {
+                                    if (!isWebViewDestroyed(view) && playerStage > 0) {
                                         injectWebViewStabilityShim(view, disableWebGl = true)
                                         view?.evaluateJavascript(cleanFullscreenScript, null)
                                     }
@@ -685,7 +911,7 @@ private fun YouTubeWebScreensaver(
 
                                 override fun onPageCommitVisible(view: WebView?, url: String?) {
                                     super.onPageCommitVisible(view, url)
-                                    if (!isWebViewDestroyed(view)) {
+                                    if (!isWebViewDestroyed(view) && playerStage > 0) {
                                         injectWebViewStabilityShim(view, disableWebGl = true)
                                         view?.evaluateJavascript(cleanFullscreenScript, null)
                                     }
@@ -693,7 +919,7 @@ private fun YouTubeWebScreensaver(
 
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
-                                    if (!isWebViewDestroyed(view)) {
+                                    if (!isWebViewDestroyed(view) && playerStage > 0) {
                                         injectWebViewStabilityShim(view, disableWebGl = true)
                                         view?.evaluateJavascript(cleanFullscreenScript, null)
                                     }
@@ -712,14 +938,34 @@ private fun YouTubeWebScreensaver(
                                 }
                             }
 
-                            loadUrl(playerUrl)
+                            if (playerStage == 0) {
+                                loadDataWithBaseURL(
+                                    "https://ps.salsa.tvlauncher/",
+                                    embedWrapperHtml,
+                                    "text/html",
+                                    "UTF-8",
+                                    null
+                                )
+                            } else {
+                                loadUrl(stageUrl)
+                            }
                             webViewRef = this
                         }
                     },
                     update = { webView ->
                         webViewRef = webView
                         if (!isWebViewDestroyed(webView) && webView.url == null) {
-                            webView.loadUrl(playerUrl)
+                            if (playerStage == 0) {
+                                webView.loadDataWithBaseURL(
+                                    "https://ps.salsa.tvlauncher/",
+                                    embedWrapperHtml,
+                                    "text/html",
+                                    "UTF-8",
+                                    null
+                                )
+                            } else {
+                                webView.loadUrl(stageUrl)
+                            }
                         }
                     },
                     onRelease = { webView ->
