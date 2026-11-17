@@ -96,12 +96,12 @@ class CrazyGamesWebView(
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
-            allowFileAccess = true
+            allowFileAccess = false
             allowContentAccess = true
             @Suppress("DEPRECATION")
-            allowFileAccessFromFileURLs = true
+            allowFileAccessFromFileURLs = false
             @Suppress("DEPRECATION")
-            allowUniversalAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = false
             javaScriptCanOpenWindowsAutomatically = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_NO_CACHE

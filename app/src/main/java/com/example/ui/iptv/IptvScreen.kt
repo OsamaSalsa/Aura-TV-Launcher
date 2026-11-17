@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderSpecial
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
@@ -113,6 +114,7 @@ fun IptvScreen(
     val categories by viewModel.rawCategories.collectAsState()
     val channels by viewModel.channels.collectAsState()
     val favoriteChannels by viewModel.favoriteChannels.collectAsState()
+    val recentChannels by viewModel.recentChannels.collectAsState()
     val currentPlayingChannel by viewModel.currentPlayingChannel.collectAsState()
     val playbackError by viewModel.playbackError.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
@@ -360,10 +362,15 @@ fun IptvScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Categories list with Favorites & All at top
-                val allCategories = remember(categories) {
-                    listOf("Favorites", "All") + categories.filter {
-                        it.isNotBlank() && it != "Favorites" && it != "All"
+                // Categories list with Favorites, Recent & All at top
+                val allCategories = remember(categories, recentChannels.isNotEmpty()) {
+                    val topCats = if (recentChannels.isNotEmpty()) {
+                        listOf("Favorites", "Recent", "All")
+                    } else {
+                        listOf("Favorites", "All")
+                    }
+                    topCats + categories.filter {
+                        it.isNotBlank() && it != "Favorites" && it != "Recent" && it != "All"
                     }
                 }
 
@@ -376,7 +383,7 @@ fun IptvScreen(
                         val isSelected = (category == selectedCategory) && searchQuery.isBlank()
                         val isLocked = lockedCategories.contains(category)
                         val isSessionUnlocked = sessionUnlockedCategories.contains(category)
-                        val isLockProtected = category != "All" && category != "Favorites"
+                        val isLockProtected = category != "All" && category != "Favorites" && category != "Recent"
                         val itemFr = if (category == "All") firstCategoryFocusRequester else remember { FocusRequester() }
                         TvFocusableCard(
                             onClick = {
@@ -432,6 +439,14 @@ fun IptvScreen(
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
+                                    category == "Recent" -> {
+                                        Icon(
+                                            imageVector = Icons.Default.History,
+                                            contentDescription = null,
+                                            tint = if (isFocused) Color.Black else if (isSelected) TvAccentGold else TvAccentBlue,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                     category == "All" -> {
                                         Icon(
                                             imageVector = Icons.Default.LiveTv,
@@ -467,6 +482,7 @@ fun IptvScreen(
                                 Text(
                                     text = when (category) {
                                         "Favorites" -> stringResource(R.string.iptv_favorites)
+                                        "Recent" -> stringResource(R.string.home_recent_apps)
                                         "All" -> stringResource(R.string.iptv_all_categories)
                                         else -> category
                                     },
@@ -482,7 +498,12 @@ fun IptvScreen(
                                     modifier = Modifier.weight(1f)
                                 )
 
-                                if (category == "Favorites" && favoriteChannels.isNotEmpty()) {
+                                val catBadgeCount = when (category) {
+                                    "Favorites" -> favoriteChannels.size
+                                    "Recent" -> recentChannels.size
+                                    else -> 0
+                                }
+                                if (catBadgeCount > 0) {
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(50))
@@ -493,7 +514,7 @@ fun IptvScreen(
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = "${favoriteChannels.size}",
+                                            text = "$catBadgeCount",
                                             color = if (isFocused) Color.Black else TvAccentGold,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.ExtraBold
@@ -646,6 +667,7 @@ fun IptvScreen(
                             Text(
                                 text = when (selectedCategory) {
                                     "Favorites" -> stringResource(R.string.iptv_favorites)
+                                    "Recent" -> stringResource(R.string.home_recent_apps)
                                     "All" -> stringResource(R.string.iptv_all_categories)
                                     else -> selectedCategory
                                 },
@@ -813,6 +835,10 @@ fun IptvScreen(
                 onOpenIptvSettings = {
                     viewModel.closePlayer()
                     showIptvSettingsModal = true
+                },
+                onMinimizeToPiP = {
+                    viewModel.minimizeToPiP()
+                    onBackToHome()
                 },
                 onClose = { viewModel.closePlayer() }
             )

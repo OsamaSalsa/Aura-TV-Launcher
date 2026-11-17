@@ -552,7 +552,7 @@ class AppRepository(
                 context.startActivity(intent)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.w("AppRepository", "Failed to launch app ${app.packageName}", e)
         }
     }
 

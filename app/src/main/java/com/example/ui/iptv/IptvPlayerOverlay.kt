@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -92,34 +93,17 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
-import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
-import androidx.media3.exoplayer.DefaultRenderersFactory
-import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.FormatHolder
-import androidx.media3.exoplayer.Renderer
-import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
-import androidx.media3.exoplayer.drm.DrmSessionManager
 import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
-import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.exoplayer.video.VideoRendererEventListener
-import androidx.media3.extractor.DefaultExtractorsFactory
-import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
@@ -138,9 +122,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val PlayerHudGlassTop = Color(0xE60B1325)
-private val PlayerHudGlassBottom = Color(0xF5070B16)
-
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun IptvPlayerOverlay(
@@ -155,6 +136,7 @@ fun IptvPlayerOverlay(
     onRetry: () -> Unit,
     onError: (String) -> Unit,
     onOpenIptvSettings: (() -> Unit)? = null,
+    onMinimizeToPiP: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
@@ -164,7 +146,7 @@ fun IptvPlayerOverlay(
     var isPaused by remember { mutableStateOf(false) }
 
     // When showControls == true (Channel Info Menu is visible), D-Pad Left/Right & Up/Down
-    // strictly control the cursor inside the 2x5 Info Menu matrix and NEVER switch channels.
+    // strictly control the cursor inside the Info Menu row and switch channels cleanly.
     var showControls by remember { mutableStateOf(true) }
     var controlsInteractionTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
@@ -182,8 +164,8 @@ fun IptvPlayerOverlay(
     var numericDigitTick by remember { mutableLongStateOf(0L) }
 
     val rootFocusRequester = remember { FocusRequester() }
-    // Single-row (10 buttons) deterministic focus array for the Channel Info Menu
-    val menuFocusRequesters = remember { Array(10) { FocusRequester() } }
+    val menuButtonsCount = if (onMinimizeToPiP != null) 11 else 10
+    val menuFocusRequesters = remember(menuButtonsCount) { Array(menuButtonsCount) { FocusRequester() } }
     var focusedMenuCol by remember { mutableStateOf(0) }
     val quickStripFocusRequesters = remember { mutableMapOf<Long, FocusRequester>() }
 
@@ -264,7 +246,7 @@ fun IptvPlayerOverlay(
         if (showControls && playbackError == null) {
             delay(65)
             try {
-                menuFocusRequesters[focusedMenuCol.coerceIn(0, 9)].requestFocus()
+                menuFocusRequesters[focusedMenuCol.coerceIn(0, menuButtonsCount - 1)].requestFocus()
             } catch (_: Exception) {}
         } else if (!showControls && !showQuickBar && playbackError == null) {
             try {
@@ -281,187 +263,29 @@ fun IptvPlayerOverlay(
     var blackScreenFallbackAttempt by remember(channel) { mutableStateOf(0) }
     var manualReloadTick by remember { mutableStateOf(0) }
 
-    // Media3 ExoPlayer instance configured for live stream URLs with resilient audio & video fallback
     val mainHandler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
     var exoPlayerRef by remember { mutableStateOf<ExoPlayer?>(null) }
 
     val exoPlayer: ExoPlayer = remember(preferSoftwareVideoDecoder) {
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15000)
-            .setReadTimeoutMs(15000)
-
-        val extractorsFactory = DefaultExtractorsFactory()
-            .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES)
-
-        val mediaSourceFactory = DefaultMediaSourceFactory(context, extractorsFactory)
-            .setDataSourceFactory(DefaultDataSource.Factory(context, httpDataSourceFactory))
-            .setDrmSessionManagerProvider { DrmSessionManager.DRM_UNSUPPORTED }
-
-        val trackSelector = DefaultTrackSelector(context).apply {
-            setParameters(
-                buildUponParameters()
-                    .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                    .setAllowVideoNonSeamlessAdaptiveness(true)
-                    .setAllowAudioMixedMimeTypeAdaptiveness(true)
-                    .setExceedVideoConstraintsIfNecessary(true)
-                    .setExceedRendererCapabilitiesIfNecessary(true)
-                    .setTunnelingEnabled(false)
-            )
-        }
-
-        val renderersFactory = object : DefaultRenderersFactory(context) {
-            override fun buildVideoRenderers(
-                ctx: android.content.Context,
-                extensionRendererMode: Int,
-                mediaCodecSelector: MediaCodecSelector,
-                enableDecoderFallback: Boolean,
-                eventHandler: android.os.Handler,
-                eventListener: VideoRendererEventListener,
-                allowedVideoJoiningTimeMs: Long,
-                out: ArrayList<Renderer>
-            ) {
-                val effectiveSelector = if (preferSoftwareVideoDecoder) {
-                    MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
-                        val all = mediaCodecSelector.getDecoderInfos(
-                            mimeType,
-                            requiresSecureDecoder,
-                            requiresTunnelingDecoder
-                        )
-                        all.sortedByDescending { info ->
-                            val name = info.name.lowercase(Locale.US)
-                            info.softwareOnly || name.startsWith("c2.android.") || name.startsWith("omx.google.")
-                        }
-                    }
-                } else {
-                    mediaCodecSelector
-                }
-                super.buildVideoRenderers(
-                    ctx,
-                    extensionRendererMode,
-                    effectiveSelector,
-                    true,
-                    eventHandler,
-                    eventListener,
-                    allowedVideoJoiningTimeMs,
-                    out
+        buildResilientIptvExoPlayer(
+            context = context,
+            preferSoftwareVideoDecoder = preferSoftwareVideoDecoder,
+            mainHandler = mainHandler,
+            onUnsupportedAudioDetected = { player, sampleMime ->
+                audioDisabledForChannel = true
+                audioFallbackNotice = context.getString(
+                    R.string.iptv_audio_unsupported_codec,
+                    sampleMime
                 )
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                    .build()
+            },
+            onPlayerCreated = { created ->
+                exoPlayerRef = created
             }
-
-            override fun buildAudioRenderers(
-                ctx: android.content.Context,
-                extensionRendererMode: Int,
-                mediaCodecSelector: MediaCodecSelector,
-                enableDecoderFallback: Boolean,
-                audioSink: AudioSink,
-                eventHandler: android.os.Handler,
-                eventListener: AudioRendererEventListener,
-                out: ArrayList<Renderer>
-            ) {
-                val safeAudioRenderer = object : MediaCodecAudioRenderer(
-                    ctx,
-                    mediaCodecSelector,
-                    enableDecoderFallback,
-                    eventHandler,
-                    eventListener,
-                    audioSink
-                ) {
-                    private var bypassUnsupportedAudio = false
-
-                    private fun hasNativeDecoder(format: Format): Boolean {
-                        val mime = format.sampleMimeType ?: return false
-                        return try {
-                            mediaCodecSelector.getDecoderInfos(mime, false, false).isNotEmpty() ||
-                                MediaCodecUtil.getDecoderInfos(mime, false, false).isNotEmpty()
-                        } catch (_: Exception) {
-                            false
-                        }
-                    }
-
-                    override fun onEnabled(joining: Boolean, mayRenderStartOfStream: Boolean) {
-                        bypassUnsupportedAudio = false
-                        super.onEnabled(joining, mayRenderStartOfStream)
-                    }
-
-                    override fun onDisabled() {
-                        bypassUnsupportedAudio = false
-                        super.onDisabled()
-                    }
-
-                    override fun onReset() {
-                        bypassUnsupportedAudio = false
-                        super.onReset()
-                    }
-
-                    override fun onInputFormatChanged(formatHolder: FormatHolder): DecoderReuseEvaluation? {
-                        val incoming = formatHolder.format
-                        if (incoming != null && incoming.sampleMimeType != null && !hasNativeDecoder(incoming)) {
-                            // Stream advertised a MIME (e.g. audio/mpeg-L2 in TS PMT under group_aac / mp4a.40.2)
-                            // with no native MediaCodec on this device. Disable audio cleanly so video keeps playing
-                            // instead of throwing DecoderInitializationException [-49999].
-                            bypassUnsupportedAudio = true
-                            mainHandler.post {
-                                val player = exoPlayerRef
-                                if (player != null && !player.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_AUDIO)) {
-                                    audioDisabledForChannel = true
-                                    audioFallbackNotice = context.getString(
-                                        R.string.iptv_audio_unsupported_codec,
-                                        incoming.sampleMimeType
-                                    )
-                                    player.trackSelectionParameters = player.trackSelectionParameters
-                                        .buildUpon()
-                                        .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
-                                        .build()
-                                }
-                            }
-                            return null
-                        }
-                        bypassUnsupportedAudio = false
-                        return super.onInputFormatChanged(formatHolder)
-                    }
-
-                    override fun render(positionUs: Long, elapsedRealtimeUs: Long) {
-                        if (bypassUnsupportedAudio) {
-                            return
-                        }
-                        super.render(positionUs, elapsedRealtimeUs)
-                    }
-                }
-                out.add(safeAudioRenderer)
-                super.buildAudioRenderers(
-                    ctx,
-                    extensionRendererMode,
-                    mediaCodecSelector,
-                    enableDecoderFallback,
-                    audioSink,
-                    eventHandler,
-                    eventListener,
-                    out
-                )
-                // Remove duplicate stock MediaCodecAudioRenderer added by super
-                if (out.size > 1) {
-                    val iterator = out.iterator()
-                    while (iterator.hasNext()) {
-                        val r = iterator.next()
-                        if (r !== safeAudioRenderer && r is MediaCodecAudioRenderer) {
-                            iterator.remove()
-                        }
-                    }
-                }
-            }
-        }
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
-            .setEnableDecoderFallback(true)
-
-        ExoPlayer.Builder(context, renderersFactory)
-            .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .build()
-            .apply {
-                playWhenReady = true
-                exoPlayerRef = this
-            }
+        )
     }
 
     var stoppedByLifecycle by remember { mutableStateOf(false) }
@@ -731,8 +555,8 @@ fun IptvPlayerOverlay(
     // Left/Right moves cursor strictly across the 10 option buttons;
     // Up/Down & CH+/CH- switch channels without ever leaving the bottom row.
     fun Modifier.infoMenuSingleRowFocus(col: Int): Modifier {
-        val prevCol = (col - 1 + 10) % 10
-        val nextCol = (col + 1) % 10
+        val prevCol = (col - 1 + menuButtonsCount) % menuButtonsCount
+        val nextCol = (col + 1) % menuButtonsCount
         val leftCol = if (isRtl) nextCol else prevCol
         val rightCol = if (isRtl) prevCol else nextCol
         val leftTarget = menuFocusRequesters[leftCol]
@@ -885,7 +709,7 @@ fun IptvPlayerOverlay(
                             true
                         }
                         Key.DirectionLeft, Key.DirectionRight -> {
-                            try { menuFocusRequesters[focusedMenuCol.coerceIn(0, 9)].requestFocus() } catch (_: Exception) {}
+                            try { menuFocusRequesters[focusedMenuCol.coerceIn(0, menuButtonsCount - 1)].requestFocus() } catch (_: Exception) {}
                             true
                         }
                         Key.DirectionUp, Key.ChannelUp, Key.PageUp -> {
@@ -897,7 +721,7 @@ fun IptvPlayerOverlay(
                             true
                         }
                         Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
-                            try { menuFocusRequesters[focusedMenuCol.coerceIn(0, 9)].requestFocus() } catch (_: Exception) {}
+                            try { menuFocusRequesters[focusedMenuCol.coerceIn(0, menuButtonsCount - 1)].requestFocus() } catch (_: Exception) {}
                             true
                         }
                         else -> false
@@ -1752,6 +1576,8 @@ fun IptvPlayerOverlay(
                         val sleepSetTemplate = stringResource(R.string.iptv_sleep_toast_set)
                         val sleepOffToast = stringResource(R.string.iptv_sleep_toast_off)
 
+                        val settingsIdx = if (onMinimizeToPiP != null) 9 else 8
+                        val exitIdx = if (onMinimizeToPiP != null) 10 else 9
                         val focusedActionLabel = when (focusedMenuCol) {
                             0 -> if (isPaused) stringResource(R.string.action_play) else stringResource(R.string.action_pause)
                             1 -> stringResource(R.string.iptv_prev_channel)
@@ -1761,7 +1587,14 @@ fun IptvPlayerOverlay(
                             5 -> aspectLabel
                             6 -> timerLabel
                             7 -> stringResource(R.string.action_retry)
-                            8 -> if (onOpenIptvSettings != null) {
+                            8 -> if (onMinimizeToPiP != null) {
+                                "PiP"
+                            } else if (onOpenIptvSettings != null) {
+                                stringResource(R.string.settings_open_iptv_settings)
+                            } else {
+                                stringResource(R.string.iptv_hide_menu)
+                            }
+                            settingsIdx -> if (onOpenIptvSettings != null) {
                                 stringResource(R.string.settings_open_iptv_settings)
                             } else {
                                 stringResource(R.string.iptv_hide_menu)
@@ -1769,8 +1602,8 @@ fun IptvPlayerOverlay(
                             else -> stringResource(R.string.action_cancel)
                         }
                         val focusedAccentColor = when (focusedMenuCol) {
-                            3, 8 -> TvAccentBlue
-                            9 -> TvAccentRed
+                            3, 8, settingsIdx -> TvAccentBlue
+                            exitIdx -> TvAccentRed
                             else -> TvAccentGold
                         }
 
@@ -1779,7 +1612,6 @@ fun IptvPlayerOverlay(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Compact Glass Capsule Dock for all 10 small control/settings icons
                             Row(
                                 modifier = Modifier
                                     .weight(1f, fill = false)
@@ -1864,7 +1696,6 @@ fun IptvPlayerOverlay(
                                     modifier = Modifier.infoMenuSingleRowFocus(col = 3)
                                 )
 
-                                // Subtle group divider
                                 Box(
                                     modifier = Modifier
                                         .padding(horizontal = 2.dp)
@@ -1971,7 +1802,6 @@ fun IptvPlayerOverlay(
                                     modifier = Modifier.infoMenuSingleRowFocus(col = 7)
                                 )
 
-                                // Subtle group divider
                                 Box(
                                     modifier = Modifier
                                         .padding(horizontal = 2.dp)
@@ -1980,7 +1810,23 @@ fun IptvPlayerOverlay(
                                         .background(Color.White.copy(alpha = 0.12f))
                                 )
 
-                                // [8] IPTV Settings Shortcut
+                                // [8] Picture-in-Picture (Mini Player) if available
+                                if (onMinimizeToPiP != null) {
+                                    PlayerControlHudButton(
+                                        icon = Icons.Default.PictureInPictureAlt,
+                                        label = "PiP",
+                                        accentColor = TvAccentBlue,
+                                        focusRequester = menuFocusRequesters[8],
+                                        onFocused = {
+                                            focusedMenuCol = 8
+                                            controlsInteractionTick = System.currentTimeMillis()
+                                        },
+                                        onClick = onMinimizeToPiP,
+                                        modifier = Modifier.infoMenuSingleRowFocus(col = 8)
+                                    )
+                                }
+
+                                // [8 or 9] IPTV Settings Shortcut
                                 PlayerControlHudButton(
                                     icon = if (onOpenIptvSettings != null) Icons.Default.Settings else Icons.Default.VisibilityOff,
                                     label = if (onOpenIptvSettings != null) {
@@ -1989,9 +1835,9 @@ fun IptvPlayerOverlay(
                                         stringResource(R.string.iptv_hide_menu)
                                     },
                                     accentColor = TvAccentBlue,
-                                    focusRequester = menuFocusRequesters[8],
+                                    focusRequester = menuFocusRequesters[settingsIdx],
                                     onFocused = {
-                                        focusedMenuCol = 8
+                                        focusedMenuCol = settingsIdx
                                         controlsInteractionTick = System.currentTimeMillis()
                                     },
                                     onClick = {
@@ -2002,27 +1848,26 @@ fun IptvPlayerOverlay(
                                             try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
                                         }
                                     },
-                                    modifier = Modifier.infoMenuSingleRowFocus(col = 8)
+                                    modifier = Modifier.infoMenuSingleRowFocus(col = settingsIdx)
                                 )
 
-                                // [9] Exit Player
+                                // [9 or 10] Exit Player
                                 PlayerControlHudButton(
                                     icon = Icons.Default.Close,
                                     label = stringResource(R.string.action_cancel),
                                     accentColor = TvAccentRed,
-                                    focusRequester = menuFocusRequesters[9],
+                                    focusRequester = menuFocusRequesters[exitIdx],
                                     onFocused = {
-                                        focusedMenuCol = 9
+                                        focusedMenuCol = exitIdx
                                         controlsInteractionTick = System.currentTimeMillis()
                                     },
                                     onClick = onClose,
-                                    modifier = Modifier.infoMenuSingleRowFocus(col = 9)
+                                    modifier = Modifier.infoMenuSingleRowFocus(col = exitIdx)
                                 )
                             }
 
                             Spacer(modifier = Modifier.width(12.dp))
 
-                            // Active Icon Name Pill (shows what the currently highlighted button does cleanly)
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(50))
@@ -2053,212 +1898,27 @@ fun IptvPlayerOverlay(
             }
         }
 
-        // Horizontal Quick Channel Carousel Strip (Triggered by Left/Right in fullscreen or Quick Channels button)
+        // Horizontal Quick Channel Carousel Strip
         AnimatedVisibility(
             visible = showQuickBar,
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            val listState = rememberLazyListState()
-            val currentPlayingIndex = channels.indexOfFirst { it.id == channel.id }.coerceAtLeast(0)
-
-            LaunchedEffect(showQuickBar, channel.id) {
-                if (showQuickBar && channels.isNotEmpty()) {
-                    listState.scrollToItem((currentPlayingIndex - 2).coerceAtLeast(0))
-                    delay(80)
-                    val targetChannel = channels.getOrNull(currentPlayingIndex)
-                    if (targetChannel != null) {
-                        try {
-                            quickStripFocusRequesters[targetChannel.id]?.requestFocus()
-                        } catch (_: Exception) {}
-                    }
+            IptvQuickChannelCarouselStrip(
+                channel = channel,
+                channels = channels,
+                showQuickBar = showQuickBar,
+                quickStripFocusRequesters = quickStripFocusRequesters,
+                onSelectChannel = onSelectChannel,
+                onInteraction = {
+                    quickBarInteractionTick = System.currentTimeMillis()
+                },
+                onDismiss = {
+                    showQuickBar = false
+                    try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
                 }
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Black.copy(alpha = 0.96f)
-                            )
-                        )
-                    )
-                    .padding(horizontal = 36.dp, vertical = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LiveTv,
-                            contentDescription = null,
-                            tint = TvAccentGold,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.iptv_quick_channels),
-                            color = TvAccentGold,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.1f))
-                                .padding(horizontal = 10.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = "${channels.size}",
-                                color = TvTextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                LazyRow(
-                    state = listState,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    itemsIndexed(channels, key = { _, ch -> ch.id }) { index, ch ->
-                        val isCurrent = (ch.id == channel.id)
-                        val itemFr = quickStripFocusRequesters.getOrPut(ch.id) { FocusRequester() }
-                        TvFocusableCard(
-                            onClick = {
-                                onSelectChannel(ch)
-                                showQuickBar = false
-                                try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
-                            },
-                            onFocused = {
-                                quickBarInteractionTick = System.currentTimeMillis()
-                            },
-                            focusRequester = itemFr,
-                            scaleUpRatio = 1.08f,
-                            elevation = 0.dp,
-                            cardBackgroundColor = Color.Transparent,
-                            useDefaultBorder = false,
-                            modifier = Modifier
-                                .width(180.dp)
-                                .height(114.dp)
-                                .focusProperties {
-                                    up = itemFr
-                                    down = itemFr
-                                }
-                        ) { isFocused ->
-                            val tileShape = RoundedCornerShape(18.dp)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(tileShape)
-                                    .background(
-                                        when {
-                                            isFocused -> TvAccentGold.copy(alpha = 0.24f)
-                                            isCurrent -> TvAccentBlue.copy(alpha = 0.28f)
-                                            else -> PlayerHudGlassTop
-                                        }
-                                    )
-                                    .border(
-                                        width = if (isFocused) 2.5.dp else if (isCurrent) 1.5.dp else 1.dp,
-                                        color = when {
-                                            isFocused -> TvAccentGold
-                                            isCurrent -> TvAccentBlue
-                                            else -> Color.White.copy(alpha = 0.12f)
-                                        },
-                                        shape = tileShape
-                                    )
-                                    .padding(10.dp)
-                            ) {
-                                // Channel Index Top-Start
-                                Text(
-                                    text = "#${index + 1}",
-                                    color = if (isFocused) TvAccentGold else TvTextSecondary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.align(Alignment.TopStart)
-                                )
-
-                                // LIVE badge Top-End if current
-                                if (isCurrent) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(TvAccentRed)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.iptv_live_tag),
-                                            color = Color.White,
-                                            fontSize = 8.sp,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
-                                    }
-                                } else if (ch.isFavorite) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = TvAccentGold,
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .size(13.dp)
-                                    )
-                                }
-
-                                Column(
-                                    modifier = Modifier.align(Alignment.Center),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    if (ch.logoUrl.isNotBlank()) {
-                                        AsyncImage(
-                                            model = ch.logoUrl,
-                                            contentDescription = ch.name,
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.LiveTv,
-                                            contentDescription = null,
-                                            tint = if (isCurrent || isFocused) TvAccentGold else TvTextPrimary,
-                                            modifier = Modifier.size(30.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(5.dp))
-
-                                    Text(
-                                        text = ch.name,
-                                        color = if (isCurrent || isFocused) Color.White else TvTextSecondary,
-                                        fontSize = 11.5.sp,
-                                        lineHeight = 13.5.sp,
-                                        fontWeight = if (isCurrent || isFocused) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            )
         }
 
         // Numeric Channel Zapping OSD Badge (0-9)
@@ -2344,114 +2004,3 @@ fun IptvPlayerOverlay(
     }
 }
 
-@Composable
-private fun PlayerControlHudButton(
-    icon: ImageVector,
-    label: String,
-    modifier: Modifier = Modifier,
-    isActive: Boolean = false,
-    accentColor: Color = TvAccentGold,
-    focusRequester: FocusRequester = remember { FocusRequester() },
-    onFocused: () -> Unit = {},
-    onClick: () -> Unit
-) {
-    TvFocusableCard(
-        onClick = onClick,
-        onFocused = onFocused,
-        focusRequester = focusRequester,
-        scaleUpRatio = 1.12f,
-        elevation = 0.dp,
-        cardBackgroundColor = Color.Transparent,
-        useDefaultBorder = false,
-        modifier = modifier.size(width = 36.dp, height = 32.dp)
-    ) { isFocused ->
-        val shape = RoundedCornerShape(10.dp)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(shape)
-                .background(
-                    when {
-                        isFocused -> accentColor
-                        isActive -> accentColor.copy(alpha = 0.20f)
-                        else -> Color.White.copy(alpha = 0.06f)
-                    }
-                )
-                .border(
-                    width = if (isFocused) 1.5.dp else if (isActive) 1.dp else 0.6.dp,
-                    color = when {
-                        isFocused -> Color.White
-                        isActive -> accentColor.copy(alpha = 0.72f)
-                        else -> Color.White.copy(alpha = 0.10f)
-                    },
-                    shape = shape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = when {
-                    isFocused -> if (accentColor == TvAccentRed) Color.White else Color.Black
-                    isActive -> accentColor
-                    else -> TvTextPrimary.copy(alpha = 0.90f)
-                },
-                modifier = Modifier.size(17.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun PlayerErrorActionButton(
-    icon: ImageVector,
-    label: String,
-    accentColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    focusRequester: FocusRequester = remember { FocusRequester() }
-) {
-    TvFocusableCard(
-        onClick = onClick,
-        focusRequester = focusRequester,
-        scaleUpRatio = 1.06f,
-        elevation = 0.dp,
-        cardBackgroundColor = Color.Transparent,
-        useDefaultBorder = false,
-        modifier = modifier.height(48.dp)
-    ) { isFocused ->
-        val shape = RoundedCornerShape(14.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(shape)
-                .background(
-                    if (isFocused) accentColor else Color.White.copy(alpha = 0.08f)
-                )
-                .border(
-                    width = if (isFocused) 2.dp else 1.dp,
-                    color = if (isFocused) Color.White else accentColor.copy(alpha = 0.45f),
-                    shape = shape
-                )
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (isFocused) (if (accentColor == TvAccentRed) Color.White else Color.Black) else accentColor,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = label,
-                color = if (isFocused) (if (accentColor == TvAccentRed) Color.White else Color.Black) else TvTextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}

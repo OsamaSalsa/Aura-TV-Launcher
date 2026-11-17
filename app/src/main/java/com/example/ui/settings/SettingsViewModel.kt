@@ -73,6 +73,75 @@ class SettingsViewModel(
         }
     }
 
+    val lowRamMode: StateFlow<Boolean> = preferences.lowRamModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setLowRamMode(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setLowRamMode(enabled)
+            _statusMessage.value = StatusUiText.DynamicString(
+                if (enabled) "Lite / Low-RAM Mode Enabled" else "Lite / Low-RAM Mode Disabled"
+            )
+        }
+    }
+
+    val nightComfortMode: StateFlow<String> = preferences.nightComfortModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "off")
+
+    fun setNightComfortMode(mode: String) {
+        viewModelScope.launch {
+            preferences.setNightComfortMode(mode)
+        }
+    }
+
+    fun exportBackup(context: Context) {
+        viewModelScope.launch {
+            val result = com.example.util.BackupRestoreManager.exportBackupToFile(
+                context = context,
+                preferences = preferences,
+                iptvRepository = iptvRepository
+            )
+            result.onSuccess { path ->
+                _statusMessage.value = StatusUiText.DynamicString("Backup saved: $path")
+            }.onFailure { err ->
+                _statusMessage.value = StatusUiText.DynamicString("Backup error: ${err.message}")
+            }
+        }
+    }
+
+    fun importBackup(context: Context) {
+        viewModelScope.launch {
+            val result = com.example.util.BackupRestoreManager.importBackupFromFile(
+                context = context,
+                preferences = preferences,
+                iptvRepository = iptvRepository
+            )
+            result.onSuccess { path ->
+                appRepository.triggerReload()
+                _statusMessage.value = StatusUiText.DynamicString("Restored from: $path")
+            }.onFailure { err ->
+                _statusMessage.value = StatusUiText.DynamicString("Restore error: ${err.message}")
+            }
+        }
+    }
+
+    fun importBackupFromUri(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            val result = com.example.util.BackupRestoreManager.importBackupFromFile(
+                context = context,
+                preferences = preferences,
+                iptvRepository = iptvRepository,
+                sourceUri = uri
+            )
+            result.onSuccess { path ->
+                appRepository.triggerReload()
+                _statusMessage.value = StatusUiText.DynamicString("Restored from: $path")
+            }.onFailure { err ->
+                _statusMessage.value = StatusUiText.DynamicString("Restore error: ${err.message}")
+            }
+        }
+    }
+
     val customWebBookmarks: StateFlow<List<WebBookmark>> = preferences.customWebBookmarksFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

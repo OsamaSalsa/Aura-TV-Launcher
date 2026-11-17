@@ -180,7 +180,7 @@ private fun installApk(context: Context, file: File) {
         }
         context.startActivity(installIntent)
     } catch (e: Exception) {
-        e.printStackTrace()
+        android.util.Log.w("AuraStoreScreen", "Failed to launch APK installer", e)
         Toast.makeText(context, context.getString(R.string.aurastore_installer_error).format(e.message), Toast.LENGTH_LONG).show()
     }
 }
@@ -406,7 +406,7 @@ fun AuraStoreScreen(
                     installApk(context, outputFile)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.w("AuraStoreScreen", "Download failed in Aura Store", e)
                 withContext(Dispatchers.Main) {
                     downloadState = AuraDownloadState.Error(e.message ?: context.getString(R.string.aurastore_download_error_generic))
                 }
@@ -761,7 +761,7 @@ fun AuraStoreScreen(
                             refreshDownloadedFiles()
                             Toast.makeText(context, context.getString(R.string.aurastore_file_deleted), Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            android.util.Log.w("AuraStoreScreen", "Failed to delete file", e)
                         }
                     },
                     onClearAllFiles = {
@@ -770,7 +770,7 @@ fun AuraStoreScreen(
                             refreshDownloadedFiles()
                             Toast.makeText(context, context.getString(R.string.aurastore_all_cleared), Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            android.util.Log.w("AuraStoreScreen", "Failed to clear all files", e)
                         }
                     },
                     onBackToBrowser = { currentSubView = AuraStoreSubView.STORE_BROWSER }
@@ -929,7 +929,7 @@ fun AuraStoreScreen(
                                         refreshDownloadedFiles()
                                         Toast.makeText(context, context.getString(R.string.aurastore_file_deleted), Toast.LENGTH_SHORT).show()
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        android.util.Log.w("AuraStoreScreen", "Failed to delete downloaded APK", e)
                                     }
                                     downloadState = AuraDownloadState.Idle
                                 },

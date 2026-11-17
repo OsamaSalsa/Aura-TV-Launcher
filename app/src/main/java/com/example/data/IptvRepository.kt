@@ -29,6 +29,21 @@ class IptvRepository(
             }
         }
 
+    val recentChannelsFlow: Flow<List<IptvChannel>> = kotlinx.coroutines.flow.combine(
+        preferences.recentChannelIdsFlow,
+        activePlaylistFlow.flatMapLatest { active ->
+            if (active != null) iptvDao.getChannelsByPlaylist(active.id) else flowOf(emptyList())
+        },
+        favoriteChannelsFlow
+    ) { recentIds, activeChannels, favChannels ->
+        if (recentIds.isEmpty()) {
+            emptyList()
+        } else {
+            val byId = (activeChannels + favChannels).associateBy { it.id }
+            recentIds.mapNotNull { byId[it] }
+        }
+    }
+
     val categoriesFlow: Flow<List<String>> = activePlaylistFlow.flatMapLatest { active ->
         if (active != null) {
             iptvDao.getCategoriesByPlaylist(active.id)
@@ -42,6 +57,7 @@ class IptvRepository(
             when (category) {
                 // Unified deduplicated favorites across ALL playlists into a single list
                 "Favorites", "المفضلة" -> favoriteChannelsFlow
+                "Recent" -> recentChannelsFlow
                 "All", "" -> if (active != null) iptvDao.getChannelsByPlaylist(active.id) else flowOf(emptyList())
                 else -> if (active != null) iptvDao.getChannelsByCategoryAndPlaylist(category, active.id) else flowOf(emptyList())
             }

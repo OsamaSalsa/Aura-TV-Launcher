@@ -2,9 +2,11 @@ package com.example.ui.common
 
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.RadialGradient
 import android.graphics.Shader
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
+import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -17,23 +19,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.createBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
-import android.os.Build
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import com.example.ui.theme.TvMidnightBackground
+import kotlin.math.PI
+import kotlin.math.cos
 
 data class AuroraColors(
     val glow: Color = Color(0xFF38BDF8),   // Vibrant Cyan/Sky Blue
@@ -58,6 +61,34 @@ fun Modifier.safeBlur(radius: Dp, edgeTreatment: BlurredEdgeTreatment = BlurredE
     }
 }
 
+/**
+ * Resamples sparse gradient keyframes into a dense C1-continuous cosine-eased table
+ * so Skia hardware shaders never produce Mach bands or visible contour lines.
+ */
+private fun buildCosineGradientStops(
+    keyframes: List<Pair<Float, Color>>,
+    steps: Int = 14
+): Pair<IntArray, FloatArray> {
+    val colors = IntArray(steps)
+    val positions = FloatArray(steps)
+    val lastIdx = steps - 1
+    for (i in 0 until steps) {
+        val t = i.toFloat() / lastIdx.toFloat()
+        positions[i] = t
+        var segIdx = 0
+        while (segIdx < keyframes.size - 2 && t > keyframes[segIdx + 1].first) {
+            segIdx++
+        }
+        val (p0, c0) = keyframes[segIdx]
+        val (p1, c1) = keyframes[segIdx + 1]
+        val span = (p1 - p0).coerceAtLeast(0.0001f)
+        val localT = ((t - p0) / span).coerceIn(0f, 1f)
+        val easedT = 0.5f * (1f - cos(PI.toFloat() * localT))
+        colors[i] = lerp(c0, c1, easedT).toArgb()
+    }
+    return colors to positions
+}
+
 @Composable
 fun AuroraBackground(
     target: AuroraColors = AuroraColors(),
@@ -74,147 +105,207 @@ fun AuroraBackground(
     val magenta by animateColorAsState(target.magenta, spec, label = "magenta")
     val amber by animateColorAsState(target.amber, spec, label = "amber")
 
-    // High-performance precomputed blue-noise dither shader (cached once, runs via GPU repeat mode)
-    // Eliminates color banding (خطوط تدرج الألوان) completely on all TV screen panels
-    val ditherShaderBrush = remember {
-        val size = 64
+    // Native Paint with hardware DITHER_FLAG enabled per gradient draw call
+    val nativePaint = remember {
+        Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
+            isDither = true
+            isFilterBitmap = true
+        }
+    }
+
+    // Ultra-subtle balanced 128x128 triangular micro-dither paint to eliminate 8-bit HDMI/panel banding
+    val ditherPaint = remember {
+        val size = 128
         val bmp = createBitmap(size, size)
-        val rand = java.util.Random(1337)
+        val rand = java.util.Random(1337L)
         val pixels = IntArray(size * size)
         for (i in pixels.indices) {
-            val lum = rand.nextInt(256)
-            val alpha = rand.nextInt(7) + 1 // Subtle alpha (1..7 / 255) to smoothly break color quantization steps
+            // Triangular zero-mean noise: tiny +/- luma perturbation at 1..2 alpha
+            val bright = rand.nextBoolean()
+            val lum = if (bright) 255 else 0
+            val alpha = 1 + rand.nextInt(2)
             pixels[i] = android.graphics.Color.argb(alpha, lum, lum, lum)
         }
         bmp.setPixels(pixels, 0, size, 0, 0, size, size)
-        ShaderBrush(BitmapShader(bmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT))
+        Paint(Paint.DITHER_FLAG).apply {
+            isDither = true
+            isFilterBitmap = false
+            shader = BitmapShader(bmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+        }
     }
 
     Box(modifier = modifier.fillMaxSize().background(base)) {
         Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeBlur(radius = 28.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+            modifier = Modifier.fillMaxSize()
         ) {
             val w = size.width
             val h = size.height
+            if (w <= 1f || h <= 1f) return@Canvas
 
-            // 1) Seamless multi-stop smooth linear base gradient (no harsh color jumps)
-            drawRect(
-                brush = Brush.linearGradient(
-                    0.00f to deep.copy(alpha = 0.60f),
-                    0.20f to deep.copy(alpha = 0.45f),
-                    0.40f to accent.copy(alpha = 0.30f),
-                    0.65f to base.copy(alpha = 0.65f),
-                    0.85f to base.copy(alpha = 0.88f),
-                    1.00f to base,
-                    start = Offset(0f, 0f),
-                    end = Offset(w, h)
+            drawIntoCanvas { canvas ->
+                val nc = canvas.nativeCanvas
+
+                // 1) Seamless multi-stop diagonal backdrop gradient
+                val (baseCols, basePos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to deep.copy(alpha = 0.62f),
+                        0.38f to accent.copy(alpha = 0.28f),
+                        0.72f to base.copy(alpha = 0.78f),
+                        1.00f to base
+                    ),
+                    steps = 16
                 )
-            )
-
-            // 2) Middle-left rich cobalt/sapphire bloom with harmonic color stops
-            drawRect(
-                brush = Brush.radialGradient(
-                    0.00f to mid.copy(alpha = 0.80f),
-                    0.25f to mid.copy(alpha = 0.55f),
-                    0.50f to deep.copy(alpha = 0.35f),
-                    0.75f to deep.copy(alpha = 0.12f),
-                    1.00f to Color.Transparent,
-                    center = Offset(w * 0.22f, h * 0.42f),
-                    radius = w * 0.95f
+                nativePaint.shader = LinearGradient(
+                    0f, 0f, w, h,
+                    baseCols, basePos,
+                    Shader.TileMode.CLAMP
                 )
-            )
+                nc.drawRect(0f, 0f, w, h, nativePaint)
 
-            // 3) Upper-right luminous Teal & Cyan atmospheric beam
-            withTransform({ scale(1.1f, 0.50f, pivot = Offset(w * 0.75f, h * 0.15f)) }) {
-                drawRect(
-                    brush = Brush.radialGradient(
-                        0.00f to teal.copy(alpha = 0.75f),
-                        0.25f to teal.copy(alpha = 0.50f),
-                        0.50f to glow.copy(alpha = 0.30f),
-                        0.75f to teal.copy(alpha = 0.10f),
-                        1.00f to Color.Transparent,
-                        center = Offset(w * 0.75f, h * 0.15f),
-                        radius = w * 0.80f
+                // 2) Middle-left rich cobalt/sapphire bloom (drawn as full radial circle — zero clipping)
+                val (midCols, midPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to mid.copy(alpha = 0.78f),
+                        0.45f to deep.copy(alpha = 0.36f),
+                        1.00f to deep.copy(alpha = 0f)
                     )
                 )
-            }
+                val midCx = w * 0.22f
+                val midCy = h * 0.42f
+                val midR = w * 0.95f
+                nativePaint.shader = RadialGradient(
+                    midCx, midCy, midR,
+                    midCols, midPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.drawCircle(midCx, midCy, midR, nativePaint)
 
-            // 4) Top-center luminous Cyan hotspot band
-            withTransform({ scale(1.0f, 0.45f, pivot = Offset(w * 0.35f, h * 0.12f)) }) {
-                drawRect(
-                    brush = Brush.radialGradient(
-                        0.00f to Color.White.copy(alpha = 0.40f),
-                        0.20f to glow.copy(alpha = 0.70f),
-                        0.45f to mid.copy(alpha = 0.42f),
-                        0.70f to accent.copy(alpha = 0.18f),
-                        0.90f to deep.copy(alpha = 0.06f),
-                        1.00f to Color.Transparent,
-                        center = Offset(w * 0.35f, h * 0.12f),
-                        radius = w * 0.85f
+                // 3) Upper-right luminous Teal & Cyan atmospheric beam (drawCircle inside scale prevents rect clipping lines)
+                val (tealCols, tealPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to teal.copy(alpha = 0.72f),
+                        0.48f to glow.copy(alpha = 0.30f),
+                        1.00f to teal.copy(alpha = 0f)
                     )
                 )
-            }
+                val tealCx = w * 0.75f
+                val tealCy = h * 0.16f
+                val tealR = w * 0.80f
+                nativePaint.shader = RadialGradient(
+                    tealCx, tealCy, tealR,
+                    tealCols, tealPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.save()
+                nc.scale(1.10f, 0.54f, tealCx, tealCy)
+                nc.drawCircle(tealCx, tealCy, tealR, nativePaint)
+                nc.restore()
 
-            // 5) Right-side professional Magenta & Purple glow streak
-            withTransform({ scale(1.2f, 0.45f, pivot = Offset(w * 0.82f, h * 0.35f)) }) {
-                drawRect(
-                    brush = Brush.radialGradient(
-                        0.00f to magenta.copy(alpha = 0.70f),
-                        0.25f to magenta.copy(alpha = 0.48f),
-                        0.55f to accent.copy(alpha = 0.26f),
-                        0.80f to magenta.copy(alpha = 0.08f),
-                        1.00f to Color.Transparent,
-                        center = Offset(w * 0.82f, h * 0.35f),
-                        radius = w * 0.70f
+                // 4) Top-center luminous Cyan hotspot band (unclipped elliptical circle)
+                val (cyanCols, cyanPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to Color.White.copy(alpha = 0.32f),
+                        0.24f to glow.copy(alpha = 0.64f),
+                        0.55f to mid.copy(alpha = 0.34f),
+                        0.80f to accent.copy(alpha = 0.12f),
+                        1.00f to deep.copy(alpha = 0f)
+                    ),
+                    steps = 16
+                )
+                val cyanCx = w * 0.35f
+                val cyanCy = h * 0.12f
+                val cyanR = w * 0.85f
+                nativePaint.shader = RadialGradient(
+                    cyanCx, cyanCy, cyanR,
+                    cyanCols, cyanPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.save()
+                nc.scale(1.05f, 0.48f, cyanCx, cyanCy)
+                nc.drawCircle(cyanCx, cyanCy, cyanR, nativePaint)
+                nc.restore()
+
+                // 5) Right-side Magenta & Purple glow streak (unclipped elliptical circle)
+                val (magCols, magPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to magenta.copy(alpha = 0.66f),
+                        0.50f to accent.copy(alpha = 0.28f),
+                        1.00f to magenta.copy(alpha = 0f)
                     )
                 )
-            }
+                val magCx = w * 0.82f
+                val magCy = h * 0.36f
+                val magR = w * 0.72f
+                nativePaint.shader = RadialGradient(
+                    magCx, magCy, magR,
+                    magCols, magPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.save()
+                nc.scale(1.20f, 0.48f, magCx, magCy)
+                nc.drawCircle(magCx, magCy, magR, nativePaint)
+                nc.restore()
 
-            // 6) Bottom-left warm Amber/Gold subtle atmospheric touch for cinematic depth
-            withTransform({ scale(1.0f, 0.50f, pivot = Offset(w * 0.15f, h * 0.88f)) }) {
-                drawRect(
-                    brush = Brush.radialGradient(
-                        0.00f to amber.copy(alpha = 0.35f),
-                        0.30f to amber.copy(alpha = 0.20f),
-                        0.60f to accent.copy(alpha = 0.10f),
-                        1.00f to Color.Transparent,
-                        center = Offset(w * 0.15f, h * 0.88f),
-                        radius = w * 0.60f
+                // 6) Bottom-left warm Amber/Gold subtle highlight (unclipped elliptical circle)
+                val (ambCols, ambPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to amber.copy(alpha = 0.34f),
+                        0.55f to accent.copy(alpha = 0.10f),
+                        1.00f to accent.copy(alpha = 0f)
                     )
                 )
+                val ambCx = w * 0.15f
+                val ambCy = h * 0.88f
+                val ambR = w * 0.62f
+                nativePaint.shader = RadialGradient(
+                    ambCx, ambCy, ambR,
+                    ambCols, ambPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.save()
+                nc.scale(1.05f, 0.54f, ambCx, ambCy)
+                nc.drawCircle(ambCx, ambCy, ambR, nativePaint)
+                nc.restore()
+
+                // 7) Smooth top cinematic vignette spanning full 0..1 of 0.30h
+                val topVignetteH = h * 0.30f
+                val (topVigCols, topVigPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to Color.Black.copy(alpha = 0.68f),
+                        0.45f to Color.Black.copy(alpha = 0.24f),
+                        1.00f to Color.Black.copy(alpha = 0f)
+                    ),
+                    steps = 12
+                )
+                nativePaint.shader = LinearGradient(
+                    0f, 0f, 0f, topVignetteH,
+                    topVigCols, topVigPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.drawRect(0f, 0f, w, topVignetteH, nativePaint)
+
+                // 8) Bottom-right corner rich vignette (unclipped circle)
+                val (brVigCols, brVigPos) = buildCosineGradientStops(
+                    listOf(
+                        0.00f to Color.Black.copy(alpha = 0.86f),
+                        0.52f to Color.Black.copy(alpha = 0.36f),
+                        1.00f to Color.Black.copy(alpha = 0f)
+                    ),
+                    steps = 12
+                )
+                val brCx = w * 1.05f
+                val brCy = h * 1.05f
+                val brR = w * 0.68f
+                nativePaint.shader = RadialGradient(
+                    brCx, brCy, brR,
+                    brVigCols, brVigPos,
+                    Shader.TileMode.CLAMP
+                )
+                nc.drawCircle(brCx, brCy, brR, nativePaint)
+
+                // 9) Fast micro-dither pass for 8-bit TV panel smoothness
+                nc.drawRect(0f, 0f, w, h, ditherPaint)
             }
-
-            // 7) Deep cinematic top vignette
-            drawRect(
-                brush = Brush.verticalGradient(
-                    0.00f to Color.Black.copy(alpha = 0.70f),
-                    0.08f to Color.Black.copy(alpha = 0.32f),
-                    0.15f to Color.Black.copy(alpha = 0.10f),
-                    0.22f to Color.Transparent,
-                    startY = 0f,
-                    endY = h * 0.25f
-                )
-            )
-
-            // 8) Bottom-right corner rich vignette
-            drawRect(
-                brush = Brush.radialGradient(
-                    0.00f to Color.Black.copy(alpha = 0.88f),
-                    0.35f to Color.Black.copy(alpha = 0.60f),
-                    0.65f to Color.Black.copy(alpha = 0.30f),
-                    0.85f to Color.Black.copy(alpha = 0.08f),
-                    1.00f to Color.Transparent,
-                    center = Offset(w * 1.05f, h * 1.05f),
-                    radius = w * 0.65f
-                )
-            )
-        }
-
-        // Fast GPU dithering layer to break gradient color steps smoothly without any lines
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(ditherShaderBrush)
         }
 
         content?.invoke()

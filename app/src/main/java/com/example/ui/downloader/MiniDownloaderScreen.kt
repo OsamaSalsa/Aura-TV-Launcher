@@ -107,83 +107,6 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.math.roundToInt
 
-enum class DownloaderSubScreen {
-    KEYPAD, BROWSER, DOWNLOADS
-}
-
-data class MiniDownloadedItem(
-    val file: File,
-    val fileName: String,
-    val fileSize: Long,
-    val lastModified: Long,
-    val sourceUrl: String?
-)
-
-sealed class DownloadState {
-    object Idle : DownloadState()
-    data class Downloading(val fileName: String, val downloadedBytes: Long, val totalBytes: Long, val percent: Int) : DownloadState()
-    data class Completed(val file: File, val fileName: String, val fileSize: Long) : DownloadState()
-    data class Error(val message: String, val url: String? = null) : DownloadState()
-}
-
-private fun sanitizeFileName(name: String): String {
-    val clean = name.replace(Regex("""[\\/:*?"<>|]"""), "_").trim()
-    return if (clean.isEmpty()) "app_${System.currentTimeMillis()}.apk" else clean
-}
-
-private fun extractFileName(
-    url: String,
-    contentDisposition: String?,
-    mimeType: String?,
-    discoveredName: String? = null
-): String {
-    // 1. Content-Disposition header
-    if (!contentDisposition.isNullOrBlank()) {
-        val cdMatcher = Regex("""filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?""", RegexOption.IGNORE_CASE)
-            .find(contentDisposition)
-        if (cdMatcher != null) {
-            val rawName = Uri.decode(cdMatcher.groupValues[1].trim())
-            if (rawName.isNotEmpty()) {
-                val s = sanitizeFileName(rawName)
-                return if (s.endsWith(".apk", ignoreCase = true)) s else "$s.apk"
-            }
-        }
-    }
-
-    // 2. Discovered name from HTML intermediate page (e.g. Google Drive virus-scan warning)
-    if (!discoveredName.isNullOrBlank()) {
-        val cleanDiscovered = sanitizeFileName(Uri.decode(discoveredName.trim()))
-        if (cleanDiscovered.isNotEmpty()) {
-            return if (cleanDiscovered.endsWith(".apk", ignoreCase = true)) cleanDiscovered else "$cleanDiscovered.apk"
-        }
-    }
-
-    // 3. Extract from URL (e.g. /lm-fos-re-1-1-9-apk.6272018/ or app-v1.apk)
-    val apkMatcher = Regex("""/([a-zA-Z0-9_\-\.]+?)(?:-apk|\.apk)(?:\.[0-9]+)?(?:/|\?|#|$)""", RegexOption.IGNORE_CASE)
-        .find(url)
-    if (apkMatcher != null) {
-        val baseName = Uri.decode(apkMatcher.groupValues[1].trim())
-        if (baseName.isNotEmpty()) {
-            return sanitizeFileName("$baseName.apk")
-        }
-    }
-
-    val driveId = com.example.ui.common.DownloadUrlResolver.extractGoogleDriveFileId(url)
-    if (!driveId.isNullOrBlank()) {
-        return sanitizeFileName("gdrive_${driveId.take(10)}.apk")
-    }
-
-    // 4. Fallback to URLUtil
-    val guessed = URLUtil.guessFileName(url, contentDisposition, mimeType)
-    val sanitized = sanitizeFileName(guessed)
-    return when {
-        sanitized.endsWith(".apk", ignoreCase = true) -> sanitized
-        sanitized.endsWith(".bin", ignoreCase = true) -> sanitized.replace(".bin", ".apk", ignoreCase = true)
-        sanitized.contains(".") -> sanitized.substringBeforeLast(".") + ".apk"
-        else -> "$sanitized.apk"
-    }
-}
-
 @Composable
 fun MiniDownloaderScreen(
     onBackToHome: () -> Unit
@@ -415,14 +338,14 @@ fun MiniDownloaderScreen(
                     try {
                         prefs.edit { putString("url_${outputFile.name}", currentUrl) }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        android.util.Log.w("MiniDownloaderScreen", "Failed to persist download source URL", e)
                     }
                     refreshDownloadedFiles()
                     downloadState = DownloadState.Completed(outputFile, guessedName, outputFile.length())
                     installApk(context, outputFile)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.w("MiniDownloaderScreen", "Direct download failed, falling back to browser", e)
                 withContext(Dispatchers.Main) {
                     if (currentUrl.isNotBlank()) {
                         activeUrlToLoad = currentUrl
@@ -523,7 +446,7 @@ fun MiniDownloaderScreen(
                         refreshDownloadedFiles()
                         Toast.makeText(context, context.getString(R.string.mini_downloader_file_deleted), Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        android.util.Log.w("MiniDownloaderScreen", "Failed to delete file", e)
                     }
                 },
                 onClearAllFiles = {
@@ -532,7 +455,7 @@ fun MiniDownloaderScreen(
                         refreshDownloadedFiles()
                         Toast.makeText(context, context.getString(R.string.mini_downloader_all_cleared), Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        android.util.Log.w("MiniDownloaderScreen", "Failed to clear all downloads", e)
                     }
                 },
                 onBackToPrevious = {
@@ -686,7 +609,7 @@ fun MiniDownloaderScreen(
                                         refreshDownloadedFiles()
                                         Toast.makeText(context, context.getString(R.string.mini_downloader_file_deleted), Toast.LENGTH_SHORT).show()
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        android.util.Log.w("MiniDownloaderScreen", "Failed to delete completed file", e)
                                     }
                                     downloadState = DownloadState.Idle
                                 },
@@ -865,7 +788,7 @@ private fun installApk(context: Context, file: File) {
         }
         context.startActivity(installIntent)
     } catch (e: Exception) {
-        e.printStackTrace()
+        android.util.Log.w("MiniDownloaderScreen", "Failed to open APK installer", e)
         Toast.makeText(context, context.getString(R.string.mini_downloader_error_installer).format(e.message), Toast.LENGTH_LONG).show()
     }
 }
@@ -1900,439 +1823,3 @@ fun BrowserScreen(
     }
 }
 
-/**
- * Virtual Mouse Pointer overlay component:
- * High-visibility pointer arrow with subtle shadow and click animation.
- */
-@Composable
-fun VirtualMousePointer(
-    x: Float,
-    y: Float,
-    isClicking: Boolean
-) {
-    Box(
-        modifier = Modifier
-            .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
-            .size(32.dp)
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawMousePointer(isClicking)
-        }
-    }
-}
-
-private fun DrawScope.drawMousePointer(isClicking: Boolean) {
-    val scale = if (isClicking) 0.88f else 1.0f
-    val path = Path().apply {
-        moveTo(0f * scale, 0f * scale)
-        lineTo(0f * scale, 24f * scale)
-        lineTo(6f * scale, 19f * scale)
-        lineTo(11f * scale, 29f * scale)
-        lineTo(15f * scale, 27f * scale)
-        lineTo(10f * scale, 17f * scale)
-        lineTo(18f * scale, 17f * scale)
-        close()
-    }
-
-    // Shadow
-    val shadowPath = Path().apply {
-        moveTo(1.5f * scale, 1.5f * scale)
-        lineTo(1.5f * scale, 25.5f * scale)
-        lineTo(7.5f * scale, 20.5f * scale)
-        lineTo(12.5f * scale, 30.5f * scale)
-        lineTo(16.5f * scale, 28.5f * scale)
-        lineTo(11.5f * scale, 18.5f * scale)
-        lineTo(19.5f * scale, 18.5f * scale)
-        close()
-    }
-
-    drawPath(shadowPath, color = Color.Black.copy(alpha = 0.6f))
-    drawPath(path, color = if (isClicking) Color(0xFFE11D48) else Color.White)
-
-    // Inner outline/stroke
-    drawPath(
-        path,
-        color = if (isClicking) Color.White else Color.Black,
-        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8f)
-    )
-}
-
-/**
- * Screen 3: Downloaded Files Manager Screen for Mini Downloader
- * Allows reviewing, installing, re-downloading, and deleting files.
- */
-@Composable
-fun MiniDownloadsManagerScreen(
-    files: List<MiniDownloadedItem>,
-    onInstallFile: (MiniDownloadedItem) -> Unit,
-    onRedownloadFile: (MiniDownloadedItem) -> Unit,
-    onDeleteFile: (MiniDownloadedItem) -> Unit,
-    onClearAllFiles: () -> Unit,
-    onBackToPrevious: () -> Unit
-) {
-    val dateFormat = remember { SimpleDateFormat("yyyy/MM/dd • HH:mm", Locale.getDefault()) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF881337), // Crimson/Rose deep tone matching Downloader
-                        TvMidnightBackground,
-                        Color(0xFF020617)
-                    )
-                )
-            )
-            .padding(horizontal = 48.dp, vertical = 24.dp)
-    ) {
-        // Top Navigation Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TvFocusableCard(
-                    onClick = onBackToPrevious,
-                    modifier = Modifier.size(42.dp)
-                ) { isFocused ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(if (isFocused) TvAccentGold else Color.White.copy(alpha = 0.12f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = if (isFocused) Color.Black else Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFE11D48)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column {
-                    Text(
-                        text = stringResource(R.string.mini_downloader_downloads_title),
-                        color = TvTextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Text(
-                        text = stringResource(R.string.mini_downloader_downloads_subtitle),
-                        color = TvTextSecondary,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-
-            if (files.isNotEmpty()) {
-                TvFocusableCard(
-                    onClick = onClearAllFiles,
-                    modifier = Modifier.height(40.dp)
-                ) { isFocused ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .background(
-                                if (isFocused) Color(0xFFEF4444) else Color(0xFFEF4444).copy(alpha = 0.25f),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Text(
-                            text = stringResource(R.string.mini_downloader_clear_all),
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-
-        if (files.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.FolderOpen,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.3f),
-                        modifier = Modifier.size(80.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.mini_downloader_no_files),
-                        color = TvTextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.mini_downloader_no_files_desc),
-                        color = TvTextSecondary,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    TvFocusableCard(
-                        onClick = onBackToPrevious,
-                        modifier = Modifier.height(44.dp).width(190.dp)
-                    ) { isFocused ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(if (isFocused) TvAccentGold else Color(0xFFE11D48), RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "العودة للوحة الأرقام",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(files, key = { it.file.absolutePath }) { item ->
-                    val sizeMb = item.fileSize / (1024f * 1024f)
-                    val dateFormatted = try {
-                        dateFormat.format(item.lastModified)
-                    } catch (e: Exception) {
-                        ""
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF1E293B).copy(alpha = 0.7f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            // File Info Row
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f).padding(end = 16.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFFE11D48).copy(alpha = 0.2f))
-                                        .border(1.dp, Color(0xFFE11D48).copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Android,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFB7185),
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column {
-                                    Text(
-                                        text = item.fileName,
-                                        color = TvTextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "%.1f MB".format(sizeMb),
-                                            color = TvAccentGold,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-
-                                        if (dateFormatted.isNotEmpty()) {
-                                            Text(
-                                                text = "•",
-                                                color = TvTextSecondary,
-                                                fontSize = 12.sp
-                                            )
-                                            Text(
-                                                text = dateFormatted,
-                                                color = TvTextSecondary,
-                                                fontSize = 13.sp
-                                            )
-                                        }
-
-                                        if (!item.sourceUrl.isNullOrBlank()) {
-                                            Text(
-                                                text = "•",
-                                                color = TvTextSecondary,
-                                                fontSize = 12.sp
-                                            )
-                                            val shortUrl = try {
-                                                val uri = item.sourceUrl.toUri()
-                                                uri.host ?: item.sourceUrl
-                                            } catch (e: Exception) {
-                                                item.sourceUrl
-                                            }
-                                            Text(
-                                                text = shortUrl,
-                                                color = Color(0xFF60A5FA),
-                                                fontSize = 12.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Actions Row: Install / Re-download / Delete
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // 1. Install
-                                TvFocusableCard(
-                                    onClick = { onInstallFile(item) },
-                                    modifier = Modifier.height(40.dp)
-                                ) { isFocused ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .background(
-                                                if (isFocused) TvAccentGold else Color(0xFF10B981),
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                            .padding(horizontal = 14.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = if (isFocused) Color.Black else Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.mini_downloader_install_now),
-                                            color = if (isFocused) Color.Black else Color.White,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-
-                                // 2. Re-download
-                                TvFocusableCard(
-                                    onClick = { onRedownloadFile(item) },
-                                    modifier = Modifier.height(40.dp)
-                                ) { isFocused ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .background(
-                                                if (isFocused) TvAccentGold else Color(0xFF2563EB),
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                            .padding(horizontal = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = null,
-                                            tint = if (isFocused) Color.Black else Color.White,
-                                            modifier = Modifier.size(17.dp)
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.mini_downloader_redownload),
-                                            color = if (isFocused) Color.Black else Color.White,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-
-                                // 3. Delete
-                                TvFocusableCard(
-                                    onClick = { onDeleteFile(item) },
-                                    modifier = Modifier.size(40.dp)
-                                ) { isFocused ->
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(
-                                                if (isFocused) Color(0xFFEF4444) else Color(0xFFEF4444).copy(alpha = 0.25f),
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

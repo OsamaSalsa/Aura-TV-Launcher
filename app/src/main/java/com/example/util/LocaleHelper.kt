@@ -92,9 +92,6 @@ object LocaleHelper {
         LocaleList.setDefault(localeList)
         config.setLocales(localeList)
 
-        applyConfigIfNeeded(context.resources, locale, useRtl)
-        applyConfigIfNeeded(context.applicationContext?.resources, locale, useRtl)
-
         return context.createConfigurationContext(config)
     }
 
@@ -104,7 +101,6 @@ object LocaleHelper {
         if (Locale.getDefault().language != locale.language) {
             Locale.setDefault(locale)
         }
-        applyConfigIfNeeded(activity.resources, locale, useRtl)
         applyConfigIfNeeded(activity.applicationContext?.resources, locale, useRtl)
     }
 

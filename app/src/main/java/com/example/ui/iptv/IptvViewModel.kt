@@ -47,6 +47,12 @@ class IptvViewModel(
     val favoriteChannels: StateFlow<List<IptvChannel>> = iptvRepository.favoriteChannelsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val recentChannels: StateFlow<List<IptvChannel>> = iptvRepository.recentChannelsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _miniPlayerChannel = MutableStateFlow<IptvChannel?>(null)
+    val miniPlayerChannel: StateFlow<IptvChannel?> = _miniPlayerChannel.asStateFlow()
+
     // Category Lock & PIN Protection
     val lockedCategories: StateFlow<Set<String>> = preferences.lockedIptvCategoriesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
@@ -73,6 +79,7 @@ class IptvViewModel(
 
     init {
         viewModelScope.launch {
+            kotlinx.coroutines.delay(1500L)
             combine(activePlaylist, epgUrlOverride) { playlist, override ->
                 override.ifBlank { playlist?.epgUrl.orEmpty() }
             }.collectLatest { url ->
@@ -212,7 +219,7 @@ class IptvViewModel(
     }
 
     fun toggleCategoryLock(category: String) {
-        if (category == "All" || category == "Favorites") return
+        if (category == "All" || category == "Favorites" || category == "Recent") return
         viewModelScope.launch {
             val isCurrentlyLocked = lockedCategories.value.contains(category)
             val willLock = !isCurrentlyLocked
@@ -232,9 +239,41 @@ class IptvViewModel(
 
     fun playChannel(channel: IptvChannel) {
         _playbackError.value = null
+        _miniPlayerChannel.value = null
         _currentPlayingChannel.value = channel
         viewModelScope.launch {
             preferences.setLastPlayedChannelId(channel.id)
+        }
+    }
+
+    fun minimizeToPiP() {
+        val current = _currentPlayingChannel.value ?: return
+        _currentPlayingChannel.value = null
+        _playbackError.value = null
+        _miniPlayerChannel.value = current
+    }
+
+    fun expandMiniPlayer(): IptvChannel? {
+        val mini = _miniPlayerChannel.value ?: return null
+        _miniPlayerChannel.value = null
+        _currentPlayingChannel.value = mini
+        return mini
+    }
+
+    fun closeMiniPlayer() {
+        _miniPlayerChannel.value = null
+    }
+
+    fun nextMiniPlayerChannel() {
+        val currentList = channels.value.ifEmpty { favoriteChannels.value }
+        val current = _miniPlayerChannel.value ?: return
+        val currentIndex = currentList.indexOfFirst { it.id == current.id }
+        if (currentIndex != -1 && currentList.isNotEmpty()) {
+            val nextCh = currentList[(currentIndex + 1) % currentList.size]
+            _miniPlayerChannel.value = nextCh
+            viewModelScope.launch {
+                preferences.setLastPlayedChannelId(nextCh.id)
+            }
         }
     }
 

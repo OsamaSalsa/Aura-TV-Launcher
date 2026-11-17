@@ -148,9 +148,9 @@ fun TvTopBar(
         updateNetworkStatus()
         
         val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(n: android.net.Network) { updateNetworkStatus() }
-            override fun onLost(n: android.net.Network) { updateNetworkStatus() }
-            override fun onCapabilitiesChanged(n: android.net.Network, nc: NetworkCapabilities) { updateNetworkStatus() }
+            override fun onAvailable(n: android.net.Network) { postOnMain { updateNetworkStatus() } }
+            override fun onLost(n: android.net.Network) { postOnMain { updateNetworkStatus() } }
+            override fun onCapabilitiesChanged(n: android.net.Network, nc: NetworkCapabilities) { postOnMain { updateNetworkStatus() } }
         }
         
         val request = NetworkRequest.Builder()

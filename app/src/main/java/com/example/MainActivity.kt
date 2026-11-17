@@ -19,6 +19,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.home.HomeScreen
@@ -125,16 +127,31 @@ class MainActivity : ComponentActivity() {
      */
     fun updateScreenAwakePolicy(keepAwake: Boolean) {
         shouldKeepScreenOnFlag = keepAwake
-        runOnUiThread {
+        val applyPolicy = {
             try {
+                val flags = window.attributes?.flags ?: 0
+                val hasKeepOnFlag = (flags and android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0
                 if (keepAwake) {
-                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    window.decorView.keepScreenOn = true
+                    if (!hasKeepOnFlag) {
+                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    if (!window.decorView.keepScreenOn) {
+                        window.decorView.keepScreenOn = true
+                    }
                 } else {
-                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    window.decorView.keepScreenOn = false
+                    if (hasKeepOnFlag) {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    if (window.decorView.keepScreenOn) {
+                        window.decorView.keepScreenOn = false
+                    }
                 }
             } catch (_: Exception) {}
+        }
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            applyPolicy()
+        } else {
+            runOnUiThread(applyPolicy)
         }
     }
 
@@ -216,14 +233,6 @@ class MainActivity : ComponentActivity() {
                                 delay(500L)
                                 hasShownIntroProcessFlag = true
                                 showStartupSplash = false
-                                delay(340L)
-                            }
-                            runOnUiThread {
-                                try {
-                                    window.setBackgroundDrawable(
-                                        android.graphics.Color.BLACK.toDrawable()
-                                    )
-                                } catch (_: Exception) {}
                             }
                         }
 
@@ -233,6 +242,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
                                 if (isLauncherContentMounted) {
+                                    var didSetBlackWindowBg by remember { mutableStateOf(false) }
                                     LauncherNavigation(
                                         app = app,
                                         onHomePressed = onHomePressed,
@@ -245,7 +255,8 @@ class MainActivity : ComponentActivity() {
                                             updateScreenAwakePolicy(keepAwake)
                                         },
                                         onResetWindowBackgroundBlack = {
-                                            runOnUiThread {
+                                            if (!didSetBlackWindowBg) {
+                                                didSetBlackWindowBg = true
                                                 try {
                                                     window.setBackgroundDrawable(
                                                         android.graphics.Color.BLACK.toDrawable()
@@ -492,7 +503,9 @@ fun LauncherNavigation(
     }
 
     val currentPlayingChannel by iptvViewModel.currentPlayingChannel.collectAsState()
+    val miniPlayerChannel by iptvViewModel.miniPlayerChannel.collectAsState()
     val isYouTubeVideoPlaying by youtubeViewModel.isVideoPlaying.collectAsState()
+    val nightComfortMode by app.preferences.nightComfortModeFlow.collectAsState(initial = "off")
     val screensaverTimeout by homeViewModel.screensaverTimeout.collectAsState()
     val screensaverMode by homeViewModel.screensaverMode.collectAsState()
     val screensaverWallpaper by homeViewModel.screensaverWallpaper.collectAsState()
@@ -504,7 +517,8 @@ fun LauncherNavigation(
 
     val isPlaybackActive = (currentScreen == LauncherScreen.YOUTUBE) ||
             isYouTubeVideoPlaying ||
-            (currentPlayingChannel != null)
+            (currentPlayingChannel != null) ||
+            (miniPlayerChannel != null)
 
     var lastGlobalInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     var showGlobalAmbientMode by remember { mutableStateOf(false) }
@@ -525,14 +539,6 @@ fun LauncherNavigation(
         lastGlobalInteractionTime = System.currentTimeMillis()
         if (isPlaybackActive && showGlobalAmbientMode) {
             showGlobalAmbientMode = false
-        }
-    }
-
-    LaunchedEffect(screensaverMode, screensaverVideo) {
-        if (screensaverMode == "video_stream" && screensaverVideo.isNotBlank()) {
-            try {
-                com.example.util.YouTubeStreamResolver.prefetch(screensaverVideo)
-            } catch (_: Exception) {}
         }
     }
 
@@ -840,6 +846,29 @@ fun LauncherNavigation(
             }
         }
 
+        val activeMiniChannel = miniPlayerChannel
+        if (activeMiniChannel != null && currentScreen != LauncherScreen.IPTV) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+            ) {
+                com.example.ui.iptv.IptvMiniPlayerOverlay(
+                    channel = activeMiniChannel,
+                    onExpand = {
+                        iptvViewModel.expandMiniPlayer()
+                        currentScreen = LauncherScreen.IPTV
+                    },
+                    onNextChannel = {
+                        iptvViewModel.nextMiniPlayerChannel()
+                    },
+                    onClose = {
+                        iptvViewModel.closeMiniPlayer()
+                    }
+                )
+            }
+        }
+
         pendingUpdateInfo?.let { updateInfo ->
             com.example.ui.common.AppUpdateDialog(
                 updateInfo = updateInfo,
@@ -867,6 +896,31 @@ fun LauncherNavigation(
                     lastGlobalInteractionTime = System.currentTimeMillis()
                     showGlobalAmbientMode = false
                 }
+            )
+        }
+
+        // Night Eye-Comfort Warm Dim Filter ("always" or "auto" 22:00 - 06:00)
+        var currentHour by remember {
+            mutableStateOf(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+        }
+        LaunchedEffect(nightComfortMode) {
+            if (nightComfortMode == "auto") {
+                while (true) {
+                    currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                    delay(60_000L)
+                }
+            }
+        }
+        val isNightDimActive = when (nightComfortMode) {
+            "always" -> true
+            "auto" -> currentHour >= 22 || currentHour < 6
+            else -> false
+        }
+        if (isNightDimActive) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x381A0D00))
             )
         }
     }

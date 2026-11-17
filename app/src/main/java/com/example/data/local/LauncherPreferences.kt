@@ -75,6 +75,9 @@ class LauncherPreferences(private val context: Context) {
         val KEY_SLIDESHOW_SHUFFLE = booleanPreferencesKey("slideshow_shuffle")
         val KEY_SLIDESHOW_DIM_LEVEL = intPreferencesKey("slideshow_dim_level")
         val KEY_HEADER_CONTROL_MODE = stringPreferencesKey("header_control_mode")
+        val KEY_RECENT_CHANNELS = stringPreferencesKey("recent_iptv_channel_ids")
+        val KEY_LOW_RAM_MODE = booleanPreferencesKey("low_ram_lite_mode")
+        val KEY_NIGHT_COMFORT_MODE = stringPreferencesKey("night_comfort_mode")
         val DEFAULT_PRESET_VIDEO_IDS = listOf("EG_g7BFaL5s", "TtLeec_DR-Y", "8xXHeRnLwNQ")
     }
 
@@ -495,9 +498,23 @@ class LauncherPreferences(private val context: Context) {
         prefs[KEY_LAST_PLAYED_CHANNEL_ID] ?: -1L
     }
 
+    val recentChannelIdsFlow: Flow<List<Long>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_RECENT_CHANNELS] ?: ""
+        if (raw.isBlank()) emptyList()
+        else raw.split(",").mapNotNull { it.trim().toLongOrNull() }.filter { it > 0L }
+    }
+
     suspend fun setLastPlayedChannelId(channelId: Long) {
         context.dataStore.edit { prefs ->
             prefs[KEY_LAST_PLAYED_CHANNEL_ID] = channelId
+            if (channelId > 0L) {
+                val existing = (prefs[KEY_RECENT_CHANNELS] ?: "")
+                    .split(",")
+                    .mapNotNull { it.trim().toLongOrNull() }
+                    .filter { it > 0L && it != channelId }
+                val updated = (listOf(channelId) + existing).take(12)
+                prefs[KEY_RECENT_CHANNELS] = updated.joinToString(",")
+            }
         }
     }
 
@@ -783,5 +800,93 @@ class LauncherPreferences(private val context: Context) {
             prefs[KEY_HEADER_CONTROL_MODE] = mode
         }
     }
+
+    val lowRamModeFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LOW_RAM_MODE] ?: run {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            am?.isLowRamDevice == true
+        }
+    }
+
+    suspend fun setLowRamMode(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LOW_RAM_MODE] = enabled
+        }
+    }
+
+    val nightComfortModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_NIGHT_COMFORT_MODE] ?: "off"
+    }
+
+    suspend fun setNightComfortMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_NIGHT_COMFORT_MODE] = mode
+        }
+    }
+
+    suspend fun exportPreferencesSnapshot(): Map<String, Any> {
+        val result = linkedMapOf<String, Any>()
+        context.dataStore.edit { prefs ->
+            for ((key, value) in prefs.asMap()) {
+                when (value) {
+                    is Boolean, is Int, is Long, is Float, is Double, is String -> result[key.name] = value
+                    is Set<*> -> result[key.name] = value.filterIsInstance<String>()
+                }
+            }
+        }
+        return result
+    }
+
+    suspend fun importPreferencesSnapshot(entries: Map<String, Any?>) {
+        context.dataStore.edit { prefs ->
+            val stringKeys = listOf(
+                KEY_APP_ORDER, KEY_IPTV_URL, KEY_WALLPAPER_MODE, KEY_CUSTOM_WALLPAPER_URL,
+                KEY_LANGUAGE, KEY_YOUTUBE_MODE, KEY_DNS_BLOCKER_MODE, KEY_APP_LOCK_PIN,
+                KEY_SCREENSAVER_TIMEOUT, KEY_SCREENSAVER_MODE, KEY_SCREENSAVER_WALLPAPER,
+                KEY_SCREENSAVER_VIDEO, KEY_CLOCK_SIZE, KEY_DATE_FORMAT_STYLE, KEY_GREETING_MODE,
+                KEY_CUSTOM_GREETING_TEXT, KEY_EPG_URL_OVERRIDE, KEY_RECENT_APPS,
+                KEY_SLIDESHOW_SOURCE, KEY_SLIDESHOW_FOLDER_URI, KEY_SLIDESHOW_MOTION,
+                KEY_SLIDESHOW_TRANSITION, KEY_SLIDESHOW_EFFECT, KEY_SLIDESHOW_CLOCK_MODE,
+                KEY_SLIDESHOW_MUSIC_MODE, KEY_SLIDESHOW_CUSTOM_MUSIC_URI, KEY_HEADER_CONTROL_MODE,
+                KEY_RECENT_CHANNELS, KEY_NIGHT_COMFORT_MODE
+            )
+            val boolKeys = listOf(
+                KEY_DYNAMIC_BG, KEY_CLOCK_24H, KEY_HAS_PROMPTED_LAUNCHER, KEY_ADS_BLOCKER_ENABLED,
+                KEY_SHOW_ONLY_TV_APPS, KEY_CLOCK_SHOW_SECONDS, KEY_IPTV_PRESETS_INITIALIZED,
+                KEY_AUTO_CHECK_UPDATES, KEY_AUTO_RESUME_LAST_CHANNEL, KEY_SHOW_RECENT_APPS,
+                KEY_USE_DYNAMIC_COLOR, KEY_SLIDESHOW_SHUFFLE, KEY_LOW_RAM_MODE
+            )
+            val intKeys = listOf(
+                KEY_APPS_PER_ROW, KEY_GLASS_OPACITY, KEY_APPS_TOP_OFFSET,
+                KEY_SLIDESHOW_INTERVAL_SEC, KEY_SLIDESHOW_MUSIC_VOLUME, KEY_SLIDESHOW_DIM_LEVEL
+            )
+            val longKeys = listOf(KEY_LAST_PLAYED_CHANNEL_ID)
+            val stringSetKeys = listOf(
+                KEY_HIDDEN_APPS, KEY_CUSTOM_GAMES, KEY_CUSTOM_NON_GAMES, KEY_LOCKED_APPS,
+                KEY_CUSTOM_SCREENSAVER_VIDEOS, KEY_DELETED_SCREENSAVER_PRESETS,
+                KEY_LOCKED_IPTV_CATEGORIES, KEY_CUSTOM_WEB_BOOKMARKS, KEY_SLIDESHOW_CUSTOM_PHOTOS
+            )
+
+            for (k in stringKeys) {
+                (entries[k.name] as? String)?.let { prefs[k] = it }
+            }
+            for (k in boolKeys) {
+                (entries[k.name] as? Boolean)?.let { prefs[k] = it }
+            }
+            for (k in intKeys) {
+                (entries[k.name] as? Number)?.toInt()?.let { prefs[k] = it }
+            }
+            for (k in longKeys) {
+                (entries[k.name] as? Number)?.toLong()?.let { prefs[k] = it }
+            }
+            for (k in stringSetKeys) {
+                @Suppress("UNCHECKED_CAST")
+                (entries[k.name] as? Collection<*>)?.mapNotNull { it as? String }?.toSet()?.let {
+                    prefs[k] = it
+                }
+            }
+        }
+    }
 }
+
 

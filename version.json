@@ -1,7 +1,7 @@
 {
-  "versionCode": 4,
-  "versionName": "1.3",
+  "versionCode": 5,
+  "versionName": "1.4",
   "apkUrl": "https://raw.githubusercontent.com/OsamaSalsa/Aura-TV-Launcher/main/aura-tv-launcher.apk",
-  "changelog": "Aura TV Launcher v1.3 - Unified YouTube TV User-Agent for Web Bookmarks, Full 21-Language Localization & Plurals Support, Security & Performance Optimizations, Adaptive & Monochrome Icons",
+  "changelog": "Aura TV Launcher v1.4 - Fullscreen 3-Stage YouTube Video Screensaver (Zero Clutter & Fast Start), Clock Handover Fix, Dual-Mode DNS Shield, App Storage Manager, and Updated 21-Language Docs",
   "mandatory": false
 }
